@@ -59,24 +59,23 @@ extern "C" {
 
 #endif
 
-int RS232_OpenComport(int comport_number, int baudrate, const char *mode, int flowctrl);
-int RS232_PollComport(int comport_number, unsigned char *buf, int size);
-int RS232_SendByte(int comport_number, unsigned char byte);
-int RS232_SendBuf(int comport_number, unsigned char *buf, int size);
-void RS232_CloseComport(int comport_number);
-void RS232_cputs(int comport_number, const char *text);
-int RS232_IsDCDEnabled(int comport_number);
-int RS232_IsRINGEnabled(int comport_number);
-int RS232_IsCTSEnabled(int comport_number);
-int RS232_IsDSREnabled(int comport_number);
-void RS232_enableDTR(int comport_number);
-void RS232_disableDTR(int comport_number);
-void RS232_enableRTS(int comport_number);
-void RS232_disableRTS(int comport_number);
-void RS232_flushRX(int comport_number);
-void RS232_flushTX(int comport_number);
-void RS232_flushRXTX(int comport_number);
-int RS232_GetPortnr(const char *comport);
+int RS232_OpenComport(const char *comport, int baudrate, const char *mode, int flowctrl);
+ssize_t RS232_PollComport(unsigned char *buf, int size);
+ssize_t RS232_SendByte(unsigned char byte);
+ssize_t RS232_SendBuf(unsigned char *buf, int size);
+void RS232_CloseComport();
+void RS232_cputs(const char *text);
+int RS232_IsDCDEnabled();
+int RS232_IsRINGEnabled();
+int RS232_IsCTSEnabled();
+int RS232_IsDSREnabled();
+void RS232_enableDTR();
+void RS232_disableDTR();
+void RS232_enableRTS();
+void RS232_disableRTS();
+void RS232_flushRX();
+void RS232_flushTX();
+void RS232_flushRXTX();
 
 #ifdef __cplusplus
 } /* extern "C" */

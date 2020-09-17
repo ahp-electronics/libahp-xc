@@ -1,121 +1,233 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include "rs232.h"
 #include "ahp_xc.h"
 
-static unsigned int xc_bps;
-static unsigned int xc_nlines;
-static unsigned int xc_nbaselines;
-static unsigned int xc_delaysize;
-static unsigned int xc_frequency;
-static unsigned int xc_packetsize;
-static unsigned long *xc_counts;
-static unsigned long *xc_autocorrelations;
-static unsigned long *xc_correlations;
-static int comport_number;
+static int xc_bps = -1;
+static int xc_nlines = -1;
+static int xc_nbaselines = -1;
+static int xc_delaysize = -1;
+static int xc_frequency = -1;
+static int xc_packetsize = 16;
+static unsigned char xc_flags = 0;
+static baud_rate xc_rate = R_57600;
+static unsigned long *xc_counts = NULL;
+static unsigned long *xc_autocorrelations = NULL;
+static unsigned long *xc_crosscorrelations = NULL;
+static char xc_comport[128];
 
-unsigned long xc_get_bps()
+int xc_get_flags()
+{
+    return xc_flags;
+}
+
+int xc_get_baudrate()
+{
+    return XC_BASE_RATE << xc_rate;
+}
+
+int xc_get_bps()
 {
     return xc_bps;
 }
 
-unsigned long xc_get_nlines()
+int xc_get_nlines()
 {
     return xc_nlines;
 }
 
-unsigned long xc_get_nbaselines()
+int xc_get_nbaselines()
 {
     return xc_nbaselines;
 }
 
-unsigned long xc_get_delaysize()
+int xc_get_delaysize()
 {
     return xc_delaysize;
 }
 
-unsigned long xc_get_frequency()
+int xc_get_frequency()
 {
     return xc_frequency;
 }
 
-unsigned long xc_get_packetsize()
+unsigned int xc_get_packettime()
+{
+    return (unsigned char)11000000 * (unsigned char)xc_get_packetsize() / (unsigned char)xc_get_baudrate();
+}
+
+int xc_get_packetsize()
 {
     return xc_packetsize;
 }
 
-void xc_connect(char *port)
+int xc_connect(const char *port)
 {
-    comport_number = RS232_GetPortnr(port);
-    RS232_OpenComport(comport_number, XC_BASE_RATE, "8N2", 0);
+    xc_bps = -1;
+    xc_nlines = -1;
+    xc_nbaselines = -1;
+    xc_delaysize = -1;
+    xc_frequency = -1;
+    xc_packetsize = 16;
+    xc_rate = R_57600;
+    xc_counts = NULL;
+    xc_autocorrelations = NULL;
+    xc_crosscorrelations = NULL;
+    strncpy(xc_comport, port, strlen(port));
+    return RS232_OpenComport(xc_comport, XC_BASE_RATE, "8N2", 0);
 }
 
 void xc_disconnect()
 {
     xc_set_rate(R_57600);
-    RS232_CloseComport(comport_number);
+    RS232_CloseComport();
+    if(xc_counts != NULL)
+        free(xc_counts);
+    if(xc_autocorrelations != NULL)
+        free(xc_autocorrelations);
+    if(xc_crosscorrelations != NULL)
+        free(xc_crosscorrelations);
 }
 
-static int send_char(unsigned char c)
+static ssize_t send_char(unsigned char c)
 {
-    RS232_flushTX(comport_number);
-    return RS232_SendByte(comport_number, c);
+    return RS232_SendByte(c);
 }
 
-void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *correlations)
+void xc_scan_crosscorrelations(int index1, int index2, unsigned long *crosscorrelations, double *percent)
 {
-    unsigned int x = 0;
-    char *buf = (char*)malloc(xc_packetsize);
-    RS232_PollComport(comport_number, (unsigned char*)buf, (int)xc_packetsize);
-    buf += 16;
-    for(x = 0; x < xc_nlines; x++) {
-        unsigned int n = xc_bps/4;
-        char *sample = (char*)malloc(xc_bps/4);
-        strncpy(sample, buf+x*n, n);
-        sscanf(sample, "%lX", &xc_counts[x]);
+    int i = 0;
+    char *buf = (char*)malloc((unsigned int)xc_packetsize);
+    memset(crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_delaysize()*2+1);
+    int n = (int)xc_get_bps()/4;
+    char *sample = (char*)malloc((unsigned int)n);
+    int idx = (index1*(xc_get_nlines()+xc_get_nlines()-index1-1)/2+index2-index1-1);
+    for(i = (unsigned char)-xc_get_delaysize(); i < (unsigned char)xc_get_delaysize(); i ++) {
+        xc_set_delay(index1, (unsigned char)max(0, -i));
+        xc_set_delay(index2, (unsigned char)max(0, i));
+        xc_enable_capture(1);
+        ssize_t n_read = RS232_PollComport((unsigned char*)buf, (int)xc_packetsize);
+        xc_enable_capture(0);
+        if(n_read == xc_packetsize) {
+            int offset = (int)xc_get_nlines() * 2 + ((int)xc_get_nbaselines()-1-idx);
+            char* packet = buf + 16 + offset * n;
+            strncpy(sample, packet, (unsigned int)n);
+            crosscorrelations[i+xc_get_delaysize()] = (unsigned long)strtol(sample, NULL, 16);
+            (*percent) += 0.5 / xc_get_delaysize();
+        } else i--;
     }
-    for(x = 0; x < xc_nlines; x++) {
-        unsigned int n = xc_bps/4;
-        char *sample = (char*)malloc(xc_bps/4);
-        strncpy(sample, buf+x*n, n);
-        sscanf(sample, "%lX", &xc_autocorrelations[x]);
+    free(buf);
+    free(sample);
+}
+
+void xc_scan_spectrum(int index, unsigned long *spectrum, double *percent)
+{
+    unsigned char i = 0;
+    char *buf = (char*)malloc((unsigned int)xc_packetsize);
+    memset(spectrum, 0, sizeof(unsigned long)*(unsigned int)xc_get_delaysize());
+    int n = (int)xc_get_bps()/4;
+    char *sample = (char*)malloc((unsigned int)n);
+    for(i = 0; i < xc_get_delaysize(); i ++) {
+        xc_set_line(index, i);
+        xc_enable_capture(1);
+        ssize_t n_read = RS232_PollComport((unsigned char*)buf, (int)xc_packetsize);
+        xc_enable_capture(0);
+        if(n_read == xc_packetsize) {
+            int offset = (int)xc_get_nlines() + ((int)xc_get_nlines()-1-index);
+            char* packet = buf + 16 + offset * n;
+            strncpy(sample, packet, (unsigned int)n);
+            spectrum[i] = (unsigned long)strtol(sample, NULL, 16);
+            (*percent) += 1.0 / xc_get_delaysize();
+        } else i--;
     }
+    free(buf);
+    free(sample);
+}
+
+int xc_align_frame()
+{
+    unsigned char c = 0;
+    int ntries = 4096;
+    RS232_flushRX();
+    while (ntries-- > 0 && c != '\r') {
+        usleep(10000);
+        RS232_PollComport(&c, 1);
+    }
+    return 0;
+}
+
+void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations)
+{
+    int x = 0;
+    char *buf = (char*)malloc((unsigned int)xc_packetsize);
+    memset(buf, 0, (unsigned int)xc_packetsize);
+    memset(xc_counts, 0, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
+    memset(xc_autocorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
+    memset(xc_crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_nbaselines());
+    ssize_t n_read = RS232_PollComport((unsigned char*)buf, xc_get_packetsize());
+    if(n_read != xc_get_packetsize())
+        goto err_end;
+    int offset = 16;
+    int n = xc_bps/4;
+    char *sample = (char*)malloc((unsigned int)xc_bps/4);
+    for(x = 0; x < xc_nlines; x++) {
+        strncpy(sample, buf+offset+x*n, (unsigned int)n);
+        xc_counts[xc_get_nlines()-1-x] = (unsigned long)strtol(sample, NULL, 16);
+    }
+    offset += xc_nlines*n;
+    for(x = 0; x < xc_nlines; x++) {
+        strncpy(sample, buf+offset+x*n, (unsigned int)n);
+        xc_autocorrelations[xc_get_nlines()-1-x] = (unsigned long)strtol(sample, NULL, 16);
+    }
+    offset += xc_nlines*n;
     for(x = 0; x < xc_nbaselines; x++) {
-        unsigned int n = xc_bps/4;
-        char *sample = (char*)malloc(xc_bps/4);
-        strncpy(sample, buf+x*n, n);
-        sscanf(sample, "%lX", &xc_correlations[x]);
+        strncpy(sample, buf+offset+x*n, (unsigned int)n);
+        xc_crosscorrelations[xc_get_nbaselines()-1-x] = (unsigned long)strtol(sample, NULL, 16);
     }
-    counts = xc_counts;
-    autocorrelations = xc_autocorrelations;
-    correlations = xc_correlations;
+    free(sample);
+err_end:
+    free(buf);
+    memcpy(counts, xc_counts, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
+    memcpy(autocorrelations, xc_autocorrelations, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
+    memcpy(crosscorrelations, xc_crosscorrelations, sizeof(unsigned long)*(unsigned int)xc_get_nbaselines());
 }
 
-void xc_get_properties()
+int xc_get_properties()
 {
-    unsigned char buf[16];
-    RS232_flushRX(comport_number);
+    unsigned char header[16];
+    ssize_t n_read;
     xc_enable_capture(1);
-    RS232_PollComport(comport_number, buf, 16);
+    n_read = RS232_PollComport(header, 16);
     xc_enable_capture(0);
-    RS232_flushRX(comport_number);
-    unsigned int _bps, _nlines, _jittersize, _delaysize, _frequency;
-    sscanf((char*)buf, "%02X%01X%02X%03X%08X", &_bps, &_nlines, &_jittersize, &_delaysize, &_frequency);
+    xc_enable_capture(1);
+    n_read = RS232_PollComport(header, 16);
+    xc_enable_capture(0);
+    if(n_read != 16)
+        return -2;
+    int _bps, _nlines, _flags, _delaysize, _frequency;
+    n_read = sscanf((char*)header, "%02X%01X%02X%03X%08X", &_bps, &_nlines, &_flags, &_delaysize, &_frequency);
+    if(n_read != 5)
+        return -1;
     xc_bps = _bps;
-    xc_nlines = _nlines;
+    xc_nlines = _nlines+1;
     xc_nbaselines = xc_nlines*(xc_nlines-1)/2;
     xc_packetsize = (xc_nlines*2+xc_nbaselines)*xc_bps/4+16+1;
+    xc_flags = (unsigned char)_flags;
     xc_delaysize = _delaysize;
     xc_frequency = _frequency;
-    xc_counts = (unsigned long*)malloc(sizeof(long)*xc_nlines);
-    xc_autocorrelations = (unsigned long*)malloc(sizeof(long)*xc_nlines);
-    xc_correlations = (unsigned long*)malloc(sizeof(long)*xc_nbaselines);
+    xc_counts = (unsigned long*)malloc(sizeof(long)*(unsigned int)xc_nlines);
+    xc_autocorrelations = (unsigned long*)malloc(sizeof(long)*(unsigned int)xc_nlines);
+    xc_crosscorrelations = (unsigned long*)malloc(sizeof(long)*(unsigned int)xc_nbaselines);
+    return 0;
 }
 
 void xc_enable_capture(int enable)
 {
     xc_send_command(ENABLE_CAPTURE, (unsigned char)enable);
+    if(enable)
+        xc_align_frame();
 }
 
 void xc_select_input(int index)
@@ -125,37 +237,42 @@ void xc_select_input(int index)
 
 void xc_set_rate(baud_rate rate)
 {
+    xc_rate = rate;
     xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
-    RS232_CloseComport(comport_number);
-    RS232_OpenComport(comport_number, XC_BASE_RATE<<rate, "8N2", 0);
+    RS232_CloseComport();
+    RS232_OpenComport(xc_comport, XC_BASE_RATE<<xc_rate, "8N2", 0);
 }
 
-void xc_set_5v(int index, int value)
+void xc_set_power(int index, int lv, int hv)
 {
     xc_select_input(index);
-    xc_send_command(SET_LEDS, value&0x1);
-}
-
-void xc_set_ht(int index, int value)
-{
-    xc_select_input(index);
-    xc_send_command(SET_LEDS, (value>>1)&0x1);
+    xc_send_command(SET_LEDS, (lv&1)|((hv<<1)&2));
 }
 
 void xc_set_delay(int index, unsigned char value)
 {
     xc_select_input(index);
-    xc_send_command(SET_DELAY_LO, value&0xf);
-    value >>= 4;
-    xc_send_command(SET_DELAY_HI, value&0xf);
+    int idx = 0;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), value&0x7);
+    value >>= 3;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), value&0x7);
+    value >>= 3;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), value&0x7);
+    value >>= 3;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), value&0x7);
 }
 
 void xc_set_line(int index, unsigned char value)
 {
     xc_select_input(index);
-    xc_send_command(SET_LINE_LO, value&0xf);
-    value >>= 4;
-    xc_send_command(SET_LINE_HI, value&0xf);
+    int idx = 0;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), 0x8|(value&0x7));
+    value >>= 3;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), 0x8|(value&0x7));
+    value >>= 3;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), 0x8|(value&0x7));
+    value >>= 3;
+    xc_send_command((it_cmd)(SET_DELAY|idx++), 0x8|(value&0x7));
 }
 
 void xc_set_frequency_divider(unsigned char value)
@@ -163,9 +280,9 @@ void xc_set_frequency_divider(unsigned char value)
     xc_send_command(SET_FREQ_DIV, value&0x1f);
 }
 
-int xc_send_command(it_cmd c, unsigned char value)
+ssize_t xc_send_command(it_cmd c, unsigned char value)
 {
-    return send_char((unsigned char)((unsigned char)c|(value<<4)));
+    return send_char((unsigned char)((unsigned char)c|(((unsigned char)(value<<4)|(unsigned char)(value>>4))&~c)));
 }
 
 

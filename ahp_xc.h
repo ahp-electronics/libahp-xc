@@ -11,7 +11,23 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+///if min() is not present you can use this one
+#ifndef min
+#define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (a) _b = (b); \
+     _a < _b ? _a : _b; })
+#endif
+///if max() is not present you can use this one
+#ifndef max
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (a) _b = (b); \
+     _a > _b ? _a : _b; })
+#endif
 
 #define XC_BASE_RATE 57600
 
@@ -27,33 +43,34 @@ typedef enum {
     SET_INDEX = 1,
     SET_LEDS = 2,
     SET_BAUD_RATE = 3,
-    SET_DELAY_LO = 4,
-    SET_DELAY_HI = 5,
-    SET_LINE_LO = 6,
-    SET_LINE_HI = 7,
+    SET_DELAY = 4,
     SET_FREQ_DIV = 8,
     ENABLE_CAPTURE = 13
 } it_cmd;
 
-DLL_EXPORT unsigned long xc_get_bps();
-DLL_EXPORT unsigned long xc_get_nlines();
-DLL_EXPORT unsigned long xc_get_nbaselines();
-DLL_EXPORT unsigned long xc_get_delaysize();
-DLL_EXPORT unsigned long xc_get_frequency();
-DLL_EXPORT unsigned long xc_get_packetsize();
-DLL_EXPORT void xc_connect(char *port);
+DLL_EXPORT int xc_get_baudrate();
+DLL_EXPORT int xc_get_bps();
+DLL_EXPORT int xc_get_nlines();
+DLL_EXPORT int xc_get_nbaselines();
+DLL_EXPORT int xc_get_delaysize();
+DLL_EXPORT int xc_get_frequency();
+DLL_EXPORT unsigned int xc_get_packettime();
+DLL_EXPORT int xc_get_packetsize();
+DLL_EXPORT int xc_connect(const char *port);
+DLL_EXPORT int xc_get_properties();
 DLL_EXPORT void xc_disconnect();
-DLL_EXPORT void xc_get_properties();
 DLL_EXPORT void xc_enable_capture(int enable);
 DLL_EXPORT void xc_select_input(int index);
 DLL_EXPORT void xc_set_rate(baud_rate rate);
-DLL_EXPORT void xc_set_5v(int index, int value);
-DLL_EXPORT void xc_set_ht(int index, int value);
+DLL_EXPORT void xc_set_power(int index, int lv, int hv);
 DLL_EXPORT void xc_set_delay(int index, unsigned char value);
 DLL_EXPORT void xc_set_line(int index, unsigned char value);
 DLL_EXPORT void xc_set_frequency_divider(unsigned char value);
+DLL_EXPORT void xc_scan_spectrum(int index, unsigned long *spectrum, double *percent);
+DLL_EXPORT void xc_scan_crosscorrelations(int index1, int index2, unsigned long *crosscorrelations, double *percent);
 DLL_EXPORT void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *correlations);
-DLL_EXPORT int xc_send_command(it_cmd c, unsigned char value);
+DLL_EXPORT int xc_align_frame();
+DLL_EXPORT ssize_t xc_send_command(it_cmd c, unsigned char value);
 
 #ifdef __cplusplus
 } // extern "C"
