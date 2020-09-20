@@ -10,6 +10,7 @@ static int xc_nlines = -1;
 static int xc_nbaselines = -1;
 static int xc_delaysize = -1;
 static int xc_frequency = -1;
+static int xc_frequency_divider = 0;
 static int xc_packetsize = 16;
 static unsigned char xc_flags = 0;
 static baud_rate xc_rate = R_57600;
@@ -50,12 +51,12 @@ int xc_get_delaysize()
 
 int xc_get_frequency()
 {
-    return xc_frequency;
+    return xc_frequency>>xc_frequency_divider;
 }
 
 unsigned int xc_get_packettime()
 {
-    return (unsigned char)11000000 * (unsigned char)xc_get_packetsize() / (unsigned char)xc_get_baudrate();
+    return (unsigned int)10000000 * (unsigned int)xc_get_packetsize() / (unsigned int)xc_get_baudrate();
 }
 
 int xc_get_packetsize()
@@ -149,13 +150,12 @@ void xc_scan_spectrum(int index, unsigned long *spectrum, double *percent)
 int xc_align_frame()
 {
     unsigned char c = 0;
-    int ntries = 4096;
-    RS232_flushRX();
-    while (ntries-- > 0 && c != '\r') {
-        usleep(10000);
-        RS232_PollComport(&c, 1);
+    int ret = 0;
+    while (c != '\r') {
+        if((ret = RS232_PollComport(&c, 1))<0)
+            break;
     }
-    return 0;
+    return ret;
 }
 
 void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations)
@@ -163,35 +163,33 @@ void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsig
     int x = 0;
     char *buf = (char*)malloc((unsigned int)xc_packetsize);
     memset(buf, 0, (unsigned int)xc_packetsize);
-    memset(xc_counts, 0, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
-    memset(xc_autocorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
-    memset(xc_crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_nbaselines());
+    memset(counts, 0, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
+    memset(autocorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
+    memset(crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_nbaselines());
+    xc_align_frame();
     ssize_t n_read = RS232_PollComport((unsigned char*)buf, xc_get_packetsize());
     if(n_read != xc_get_packetsize())
         goto err_end;
     int offset = 16;
     int n = xc_bps/4;
-    char *sample = (char*)malloc((unsigned int)xc_bps/4);
+    char *sample = (char*)malloc((unsigned int)n);
     for(x = 0; x < xc_nlines; x++) {
         strncpy(sample, buf+offset+x*n, (unsigned int)n);
-        xc_counts[xc_get_nlines()-1-x] = (unsigned long)strtol(sample, NULL, 16);
+        counts[xc_get_nlines()-1-x] = (unsigned long)strtoul(sample, NULL, 16);
     }
     offset += xc_nlines*n;
     for(x = 0; x < xc_nlines; x++) {
         strncpy(sample, buf+offset+x*n, (unsigned int)n);
-        xc_autocorrelations[xc_get_nlines()-1-x] = (unsigned long)strtol(sample, NULL, 16);
+        autocorrelations[xc_get_nlines()-1-x] = (unsigned long)strtoul(sample, NULL, 16);
     }
     offset += xc_nlines*n;
     for(x = 0; x < xc_nbaselines; x++) {
         strncpy(sample, buf+offset+x*n, (unsigned int)n);
-        xc_crosscorrelations[xc_get_nbaselines()-1-x] = (unsigned long)strtol(sample, NULL, 16);
+        crosscorrelations[xc_get_nbaselines()-1-x] = (unsigned long)strtoul(sample, NULL, 16);
     }
     free(sample);
 err_end:
     free(buf);
-    memcpy(counts, xc_counts, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
-    memcpy(autocorrelations, xc_autocorrelations, sizeof(unsigned long)*(unsigned int)xc_get_nlines());
-    memcpy(crosscorrelations, xc_crosscorrelations, sizeof(unsigned long)*(unsigned int)xc_get_nbaselines());
 }
 
 int xc_get_properties()
@@ -213,7 +211,7 @@ int xc_get_properties()
     xc_bps = _bps;
     xc_nlines = _nlines+1;
     xc_nbaselines = xc_nlines*(xc_nlines-1)/2;
-    xc_packetsize = (xc_nlines*2+xc_nbaselines)*xc_bps/4+16+1;
+    xc_packetsize = (xc_nlines*2+xc_nbaselines)*xc_bps/4+16;
     xc_flags = (unsigned char)_flags;
     xc_delaysize = _delaysize;
     xc_frequency = _frequency;
@@ -277,7 +275,9 @@ void xc_set_line(int index, unsigned char value)
 
 void xc_set_frequency_divider(unsigned char value)
 {
-    xc_send_command(SET_FREQ_DIV, value&0x1f);
+    value %= 0x40;
+    xc_send_command(SET_FREQ_DIV, value);
+    xc_frequency_divider = value;
 }
 
 ssize_t xc_send_command(it_cmd c, unsigned char value)
