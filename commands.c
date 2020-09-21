@@ -96,28 +96,38 @@ static ssize_t send_char(unsigned char c)
     return RS232_SendByte(c);
 }
 
-void xc_scan_crosscorrelations(int index1, int index2, unsigned long *crosscorrelations, double *percent)
+void xc_scan_crosscorrelations(unsigned long *crosscorrelations, double *percent)
 {
     int i = 0;
+    int index1, index2;
     char *buf = (char*)malloc((unsigned int)xc_packetsize);
-    memset(crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_delaysize()*2+1);
+    memset(crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)(xc_get_delaysize()*2+1)*(unsigned int)xc_get_nbaselines());
     int n = (int)xc_get_bps()/4;
     char *sample = (char*)malloc((unsigned int)n);
-    int idx = (index1*(xc_get_nlines()+xc_get_nlines()-index1-1)/2+index2-index1-1);
-    for(i = -xc_get_delaysize(); i < xc_get_delaysize(); i ++) {
-        xc_set_delay(index1, max(0, -i));
-        xc_set_delay(index2, max(0, i));
-        xc_enable_capture(1);
-        xc_align_frame();
-        ssize_t n_read = RS232_PollComport((unsigned char*)buf, (int)xc_packetsize);
-        xc_enable_capture(0);
-        if(n_read == xc_packetsize) {
-            int offset = (int)xc_get_nlines() * 2 + ((int)xc_get_nbaselines()-1-idx);
-            char* packet = buf + 16 + offset * n;
-            strncpy(sample, packet, (unsigned int)n);
-            crosscorrelations[i+xc_get_delaysize()] = (unsigned long)strtol(sample, NULL, 16);
-            (*percent) += 50.0 / xc_get_delaysize();
-        } else i--;
+    for(index1 = 0; index1 < xc_get_nlines(); index1++)
+        xc_set_delay(index1, 0);
+    for(index1 = 0; index1 < xc_get_nlines(); index1++) {
+        for(i = xc_get_delaysize()-1; i >= 0; i --) {
+            xc_set_delay(index1, i);
+            for(index2 = 0; index2 < xc_get_nlines(); index2++) {
+                if(index2 == index1)
+                    continue;
+                int idx1 = (index1<index2?index1:index2);
+                int idx2 = (index1>index2?index1:index2);
+                int idx = (idx1*(xc_get_nlines()+xc_get_nlines()-idx1-1)/2+idx2-idx1-1);
+                xc_enable_capture(1);
+                xc_align_frame();
+                ssize_t n_read = RS232_PollComport((unsigned char*)buf, (int)xc_packetsize);
+                xc_enable_capture(0);
+                if(n_read == xc_packetsize) {
+                    int offset = (int)xc_get_nlines()*2+((int)xc_get_nbaselines()-1-idx);
+                    char* packet = buf+16+offset*n;
+                    strncpy(sample, packet, (unsigned int)n);
+                    crosscorrelations[(index1>index2?-i:i)+xc_get_delaysize()+(xc_get_delaysize()*2+1)*idx] = (unsigned long)strtol(sample, NULL, 16);
+                    (*percent) += 50.0 / (xc_get_delaysize()*xc_get_nbaselines());
+                } else index2--;
+            }
+        }
     }
     free(buf);
     free(sample);
@@ -147,7 +157,7 @@ void xc_scan_spectrum(unsigned long *spectrum, double *percent)
                 spectrum[i+xc_get_delaysize()*index] = (unsigned long)strtol(sample, NULL, 16);
                 xc_set_line(index, i+1);
             }
-            (*percent) += 100.0 / xc_get_delaysize();
+            (*percent) += 100.0 / (xc_get_delaysize()*xc_get_nlines());
         } else i--;
     }
     free(buf);
