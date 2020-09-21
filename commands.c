@@ -4,7 +4,6 @@
 #include <sys/time.h>
 #include "rs232.h"
 #include "ahp_xc.h"
-
 static int xc_bps = -1;
 static int xc_nlines = -1;
 static int xc_nbaselines = -1;
@@ -51,7 +50,7 @@ int xc_get_delaysize()
 
 int xc_get_frequency()
 {
-    return xc_frequency>>xc_frequency_divider;
+    return xc_frequency;
 }
 
 unsigned int xc_get_packettime()
@@ -105,10 +104,11 @@ void xc_scan_crosscorrelations(int index1, int index2, unsigned long *crosscorre
     int n = (int)xc_get_bps()/4;
     char *sample = (char*)malloc((unsigned int)n);
     int idx = (index1*(xc_get_nlines()+xc_get_nlines()-index1-1)/2+index2-index1-1);
-    for(i = (unsigned char)-xc_get_delaysize(); i < (unsigned char)xc_get_delaysize(); i ++) {
-        xc_set_delay(index1, (unsigned char)max(0, -i));
-        xc_set_delay(index2, (unsigned char)max(0, i));
+    for(i = -xc_get_delaysize(); i < xc_get_delaysize(); i ++) {
+        xc_set_delay(index1, max(0, -i));
+        xc_set_delay(index2, max(0, i));
         xc_enable_capture(1);
+        xc_align_frame();
         ssize_t n_read = RS232_PollComport((unsigned char*)buf, (int)xc_packetsize);
         xc_enable_capture(0);
         if(n_read == xc_packetsize) {
@@ -116,7 +116,7 @@ void xc_scan_crosscorrelations(int index1, int index2, unsigned long *crosscorre
             char* packet = buf + 16 + offset * n;
             strncpy(sample, packet, (unsigned int)n);
             crosscorrelations[i+xc_get_delaysize()] = (unsigned long)strtol(sample, NULL, 16);
-            (*percent) += 0.5 / xc_get_delaysize();
+            (*percent) += 50.0 / xc_get_delaysize();
         } else i--;
     }
     free(buf);
@@ -133,6 +133,7 @@ void xc_scan_spectrum(int index, unsigned long *spectrum, double *percent)
     for(i = 0; i < xc_get_delaysize(); i ++) {
         xc_set_line(index, i);
         xc_enable_capture(1);
+        xc_align_frame();
         ssize_t n_read = RS232_PollComport((unsigned char*)buf, (int)xc_packetsize);
         xc_enable_capture(0);
         if(n_read == xc_packetsize) {
@@ -140,7 +141,7 @@ void xc_scan_spectrum(int index, unsigned long *spectrum, double *percent)
             char* packet = buf + 16 + offset * n;
             strncpy(sample, packet, (unsigned int)n);
             spectrum[i] = (unsigned long)strtol(sample, NULL, 16);
-            (*percent) += 1.0 / xc_get_delaysize();
+            (*percent) += 100.0 / xc_get_delaysize();
         } else i--;
     }
     free(buf);
@@ -247,7 +248,7 @@ void xc_set_power(int index, int lv, int hv)
     xc_send_command(SET_LEDS, (lv&1)|((hv<<1)&2));
 }
 
-void xc_set_delay(int index, unsigned char value)
+void xc_set_delay(int index, int value)
 {
     xc_select_input(index);
     int idx = 0;
@@ -260,7 +261,7 @@ void xc_set_delay(int index, unsigned char value)
     xc_send_command((it_cmd)(SET_DELAY|idx++), value&0x7);
 }
 
-void xc_set_line(int index, unsigned char value)
+void xc_set_line(int index, int value)
 {
     xc_select_input(index);
     int idx = 0;
@@ -275,8 +276,9 @@ void xc_set_line(int index, unsigned char value)
 
 void xc_set_frequency_divider(unsigned char value)
 {
-    value %= 0x40;
+    value = min(value, 0x3f);
     xc_send_command(SET_FREQ_DIV, value);
+    xc_get_properties();
     xc_frequency_divider = value;
 }
 

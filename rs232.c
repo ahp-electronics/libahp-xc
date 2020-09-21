@@ -31,7 +31,7 @@
 
 
 #include "rs232.h"
-
+#include <pthread.h>
 
 #if defined(__linux__) || defined(__FreeBSD__)   /* Linux & FreeBSD */
 
@@ -40,6 +40,7 @@
 
 static int fd,
     error;
+static pthread_mutex_t mutex;
 
 static struct termios new_port_settings, old_port_settings;
 
@@ -245,6 +246,7 @@ http://man7.org/linux/man-pages/man3/termios.3.html
     return(1);
   }
 
+  pthread_mutex_init(&mutex, NULL);
   return(0);
 }
 
@@ -253,8 +255,9 @@ ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
   ssize_t n;
 
+  pthread_mutex_lock(&mutex);
   n = read(fd, buf, (size_t)size);
-
+  pthread_mutex_unlock(&mutex);
   if(n < 0)
   {
     if(errno == EAGAIN)  return 0;
@@ -305,7 +308,7 @@ ssize_t RS232_SendBuf(unsigned char *buf, int size)
 void RS232_CloseComport()
 {
   int status;
-
+  pthread_mutex_destroy(&mutex);
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
     perror("unable to get portstatus");
