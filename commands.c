@@ -123,24 +123,30 @@ void xc_scan_crosscorrelations(int index1, int index2, unsigned long *crosscorre
     free(sample);
 }
 
-void xc_scan_spectrum(int index, unsigned long *spectrum, double *percent)
+void xc_scan_spectrum(unsigned long *spectrum, double *percent)
 {
     unsigned char i = 0;
     char *buf = (char*)malloc((unsigned int)xc_packetsize);
-    memset(spectrum, 0, sizeof(unsigned long)*(unsigned int)xc_get_delaysize());
+    memset(spectrum, 0, sizeof(unsigned long)*(unsigned int)xc_get_delaysize()*(unsigned int)xc_get_nlines());
     int n = (int)xc_get_bps()/4;
+    int index = 0;
     char *sample = (char*)malloc((unsigned int)n);
+    for(index = 0; index < xc_get_nlines(); index++) {
+        xc_set_line(index, 0);
+    }
     for(i = 0; i < xc_get_delaysize(); i ++) {
-        xc_set_line(index, i);
         xc_enable_capture(1);
         xc_align_frame();
         ssize_t n_read = RS232_PollComport((unsigned char*)buf, (int)xc_packetsize);
         xc_enable_capture(0);
         if(n_read == xc_packetsize) {
-            int offset = (int)xc_get_nlines() + ((int)xc_get_nlines()-1-index);
-            char* packet = buf + 16 + offset * n;
-            strncpy(sample, packet, (unsigned int)n);
-            spectrum[i] = (unsigned long)strtol(sample, NULL, 16);
+            for(index = 0; index < xc_get_nlines(); index++) {
+                int offset = (int)xc_get_nlines() + ((int)xc_get_nlines()-1-index);
+                char* packet = buf + 16 + offset * n;
+                strncpy(sample, packet, (unsigned int)n);
+                spectrum[i+xc_get_delaysize()*index] = (unsigned long)strtol(sample, NULL, 16);
+                xc_set_line(index, i+1);
+            }
             (*percent) += 100.0 / xc_get_delaysize();
         } else i--;
     }

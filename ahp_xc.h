@@ -66,7 +66,7 @@ DLL_EXPORT void xc_set_power(int index, int lv, int hv);
 DLL_EXPORT void xc_set_delay(int index, int value);
 DLL_EXPORT void xc_set_line(int index, int value);
 DLL_EXPORT void xc_set_frequency_divider(unsigned char value);
-DLL_EXPORT void xc_scan_spectrum(int index, unsigned long *spectrum, double *percent);
+DLL_EXPORT void xc_scan_spectrum(unsigned long *spectrum, double *percent);
 DLL_EXPORT void xc_scan_crosscorrelations(int index1, int index2, unsigned long *crosscorrelations, double *percent);
 DLL_EXPORT void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *correlations);
 DLL_EXPORT int xc_align_frame();
