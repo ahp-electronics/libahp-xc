@@ -44,7 +44,7 @@ static pthread_mutex_t mutex;
 
 static struct termios new_port_settings, old_port_settings;
 
-int RS232_OpenComport(const char* devname, int baudrate, const char *mode, int flowctrl)
+int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
 {
   int baudr,
       status;
@@ -170,27 +170,6 @@ int RS232_OpenComport(const char* devname, int baudrate, const char *mode, int f
               return(1);
   }
 
-/*
-http://pubs.opengroup.org/onlinepubs/7908799/xsh/termios.h.html
-
-http://man7.org/linux/man-pages/man3/termios.3.html
-*/
-
-  fd = open(devname, O_RDWR | O_NOCTTY | O_NDELAY);
-  if(fd==-1)
-  {
-    perror("unable to open comport ");
-    return(1);
-  }
-
-  /* lock access so that another process can't also use the port */
-  if(flock(fd, LOCK_EX | LOCK_NB) != 0)
-  {
-    close(fd);
-    perror("Another process has locked the comport.");
-    return(1);
-  }
-
   error = tcgetattr(fd, &old_port_settings);
   if(error==-1)
   {
@@ -250,6 +229,29 @@ http://man7.org/linux/man-pages/man3/termios.3.html
   return(0);
 }
 
+int RS232_OpenComport(const char* devname)
+{
+    fd = open(devname, O_RDWR | O_NOCTTY | O_NDELAY);
+
+    if(fd==-1)
+    {
+      perror("unable to setup comport");
+      return(1);
+    }
+
+    /* lock access so that another process can't also use the port */
+    if(flock(fd, LOCK_EX | LOCK_NB) != 0)
+    {
+      close(fd);
+      perror("Another process has locked the comport.");
+      return(1);
+    }
+}
+
+void RS232_SetFD(int f)
+{
+    fd = f;
+}
 
 ssize_t RS232_PollComport(unsigned char *buf, int size)
 {

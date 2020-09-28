@@ -98,6 +98,21 @@ int xc_get_packetsize()
     return xc_packetsize;
 }
 
+void xc_connect_fd(int fd)
+{
+    xc_bps = -1;
+    xc_nlines = -1;
+    xc_nbaselines = -1;
+    xc_delaysize = -1;
+    xc_frequency = -1;
+    xc_packetsize = 16;
+    xc_rate = R_57600;
+    xc_counts = NULL;
+    xc_autocorrelations = NULL;
+    xc_crosscorrelations = NULL;
+    RS232_SetFD(fd);
+}
+
 int xc_connect(const char *port)
 {
     xc_bps = -1;
@@ -111,12 +126,14 @@ int xc_connect(const char *port)
     xc_autocorrelations = NULL;
     xc_crosscorrelations = NULL;
     strncpy(xc_comport, port, strlen(port));
-    return RS232_OpenComport(xc_comport, XC_BASE_RATE, "8N2", 0);
+    if(!RS232_OpenComport(xc_comport))
+        return  RS232_SetupPort(XC_BASE_RATE, "8N2", 0);
+    return -1;
 }
 
 void xc_disconnect()
 {
-    xc_set_baudrate(R_57600);
+    xc_set_baudrate(R_57600, 1);
     RS232_CloseComport();
     if(xc_counts != NULL)
         free(xc_counts);
@@ -264,12 +281,12 @@ void xc_enable_capture(int enable)
         xc_align_frame();
 }
 
-void xc_set_baudrate(baud_rate rate)
+void xc_set_baudrate(baud_rate rate, int setterm)
 {
     xc_rate = rate;
     xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
-    RS232_CloseComport();
-    RS232_OpenComport(xc_comport, XC_BASE_RATE<<xc_rate, "8N2", 0);
+    if(setterm)
+        RS232_SetupPort(XC_BASE_RATE<<xc_rate, "8N2", 0);
 }
 
 void xc_set_power(int index, int lv, int hv)

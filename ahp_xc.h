@@ -107,22 +107,92 @@ typedef enum {
  * \defgroup Communication
 */
 /*@{*/
+
+/**
+* \brief Connect to a serial port
+* \param port The serial port name or filename
+* \return Returns 0 on success, -1 if any error was encountered
+* \sa xc_disconnect
+*/
 DLL_EXPORT int xc_connect(const char *port);
+
+/**
+* \brief Connect to a serial port or other stream with the given file descriptor
+* \param fd The file descriptor of the stream
+*/
+DLL_EXPORT void xc_connect_fd(int fd);
+
+/**
+* \brief Disconnect from the serial port opened with xc_connect()
+* \sa xc_connect
+*/
 DLL_EXPORT void xc_disconnect();
+
+/**
+* \brief Obtain the current baud rate
+* \return Returns the baud rate
+*/
 DLL_EXPORT int xc_get_baudrate();
-DLL_EXPORT void xc_set_baudrate(baud_rate rate);
+
+/**
+* \brief Obtain the current baud rate
+* \param rate The new baud rate index
+* \param setterm Change the termios settings of the current fd or port opened
+*/
+DLL_EXPORT void xc_set_baudrate(baud_rate rate, int setterm);
+
 /*@}*/
 /**
  * \defgroup Features of the correlator
 */
 /*@{*/
+
+/**
+* \brief Obtain the current baud rate
+* \return Returns 0 on success, -1 if any error was encountered
+*/
 DLL_EXPORT int xc_get_properties();
+
+/**
+* \brief Obtain the correlator bits per sample
+* \return Returns the bits per sample value
+*/
 DLL_EXPORT int xc_get_bps();
+
+/**
+* \brief Obtain the correlator number of lines
+* \return Returns the number of lines
+*/
 DLL_EXPORT int xc_get_nlines();
+
+/**
+* \brief Obtain the correlator total baselines
+* \return Returns the baselines quantity
+*/
 DLL_EXPORT int xc_get_nbaselines();
+
+/**
+* \brief Obtain the correlator maximum delay value
+* \return Returns the delay size
+*/
 DLL_EXPORT int xc_get_delaysize();
+
+/**
+* \brief Obtain the correlator maximum readout frequency
+* \return Returns the maximum readout frequency
+*/
 DLL_EXPORT int xc_get_frequency();
+
+/**
+* \brief Obtain the serial packet time
+* \return Returns the packet transmission time
+*/
 DLL_EXPORT unsigned int xc_get_packettime();
+
+/**
+* \brief Obtain the serial packet size
+* \return Returns the packet size
+*/
 DLL_EXPORT int xc_get_packetsize();
 /*@}*/
 /**

@@ -15,4 +15,4 @@ link_directories(${CMAKE_LIBRARY_PATH})
 add_library(ahp_xc SHARED ${SOURCES})
 
 install(TARGETS ahp_xc LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-install(FILES ahp_xc.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+install(FILES ahp_xc.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)

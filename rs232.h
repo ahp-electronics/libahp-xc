@@ -59,7 +59,9 @@ extern "C" {
 
 #endif
 
-int RS232_OpenComport(const char *comport, int baudrate, const char *mode, int flowctrl);
+int RS232_SetupPort(int baudrate, const char *mode, int flowctrl);
+int RS232_OpenComport(const char *comport);
+void RS232_SetFD(int f);
 ssize_t RS232_PollComport(unsigned char *buf, int size);
 ssize_t RS232_SendByte(unsigned char byte);
 ssize_t RS232_SendBuf(unsigned char *buf, int size);
