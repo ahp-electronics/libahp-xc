@@ -148,61 +148,67 @@ static ssize_t send_char(unsigned char c)
     return RS232_SendByte(c);
 }
 
-void xc_scan_crosscorrelations(unsigned long *crosscorrelations, double *percent, int *interrupt)
+void xc_scan_crosscorrelations(correlation *crosscorrelations, double *percent, int *interrupt)
 {
     int i = 0;
     int index1, index2;
-    unsigned long *data = (unsigned long*)malloc((unsigned int)xc_get_nbaselines()*sizeof(unsigned long));
-    memset(crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)(xc_get_delaysize()*2+1)*(unsigned int)xc_get_nbaselines());
+    unsigned long *data1 = (unsigned long*)malloc((unsigned int)xc_get_nlines()*sizeof(unsigned long));
+    unsigned long *data2 = (unsigned long*)malloc((unsigned int)xc_get_nbaselines()*sizeof(unsigned long));
+    memset(crosscorrelations, 0, sizeof(correlation)*(unsigned int)(xc_get_delaysize()*2+1)*(unsigned int)xc_get_nbaselines());
     for(index1 = 0; index1 < xc_get_nlines(); index1++)
         xc_set_delay(index1, 0);
     xc_enable_capture(1);
     for(index1 = 0; index1 < xc_get_nlines(); index1++) {
         for(i = xc_get_delaysize()-1; i >= 0; i --) {
-            xc_set_delay(index1, i);
+            if(*interrupt)
+                goto stop;
+            xc_get_packet(data1, NULL, data2);
+            xc_set_delay(index1, i+1);
             for(index2 = 0; index2 < xc_get_nlines(); index2++) {
-                if(*interrupt)
-                    goto stop;
                 if(index2 == index1)
                     continue;
                 int idx1 = (index1<index2?index1:index2);
                 int idx2 = (index1>index2?index1:index2);
                 int idx = (idx1*(xc_get_nlines()+xc_get_nlines()-idx1-1)/2+idx2-idx1-1);
-                RS232_flushRX();
-                xc_get_packet(NULL, NULL, data);
-                crosscorrelations[(index1>index2?-i:i)+xc_get_delaysize()+(xc_get_delaysize()*2+1)*idx] = data[idx];
-                (*percent) += 50.0 / (xc_get_delaysize()*xc_get_nlines()*xc_get_nlines()-xc_get_nlines());
+                int index = ((index1>index2?-i:i)+xc_get_delaysize()+(xc_get_delaysize()*2+1)*idx);
+                crosscorrelations[index].counts = data1[index1]+data1[index2];
+                crosscorrelations[index].correlations = data2[idx];
+                crosscorrelations[index].coherence = (double)crosscorrelations[index].correlations/(double)crosscorrelations[index].counts;
             }
+            (*percent) += 100.0 / (xc_get_delaysize()*xc_get_nlines());
         }
     }
-    xc_enable_capture(0);
 stop:
-    free(data);
+    xc_enable_capture(0);
+    free(data1);
+    free(data2);
 }
 
-void xc_scan_autocorrelations(unsigned long *autocorrelations, double *percent, int *interrupt)
+void xc_scan_autocorrelations(correlation *autocorrelations, double *percent, int *interrupt)
 {
     int i = 0;
-    unsigned long *data = (unsigned long*)malloc((unsigned int)xc_get_nlines()*sizeof(unsigned long));
-    memset(autocorrelations, 0, sizeof(unsigned long)*(unsigned int)xc_get_delaysize()*(unsigned int)xc_get_nlines());
+    unsigned long *data1 = (unsigned long*)malloc((unsigned int)xc_get_nlines()*sizeof(unsigned long));
+    unsigned long *data2 = (unsigned long*)malloc((unsigned int)xc_get_nlines()*sizeof(unsigned long));
+    memset(autocorrelations, 0, sizeof(correlation)*(unsigned int)xc_get_delaysize()*(unsigned int)xc_get_nlines());
     int index = 0;
-    for(index = 0; index < xc_get_nlines(); index++) {
-        xc_set_line(index, 0);
-    }
     xc_enable_capture(1);
     for(i = 0; i < xc_get_delaysize(); i ++) {
         if(*interrupt)
             goto stop;
-        RS232_flushRX();
-        xc_get_packet(NULL, data, NULL);
+        xc_get_packet(data1, data2, NULL);
         for(index = 0; index < xc_get_nlines(); index++) {
-            autocorrelations[i+xc_get_delaysize()*index] = data[index];
+            int idx = i+xc_get_delaysize()*index;
+            autocorrelations[idx].counts = data1[index];
+            autocorrelations[idx].correlations = data2[index];
+            autocorrelations[idx].coherence = (double)autocorrelations[idx].correlations/(double)autocorrelations[idx].counts;
+            xc_set_line(index, i+1);
         }
-        (*percent) += 100.0 / (xc_get_delaysize()*xc_get_nlines());
+        (*percent) += 100.0 / xc_get_delaysize();
     }
-    xc_enable_capture(0);
 stop:
-    free(data);
+    xc_enable_capture(0);
+    free(data1);
+    free(data2);
 }
 
 void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations)
@@ -330,7 +336,7 @@ void xc_set_frequency_divider(unsigned char value)
 
 ssize_t xc_send_command(it_cmd c, unsigned char value)
 {
-    return send_char((unsigned char)((unsigned char)c|(((unsigned char)(value<<4)|(unsigned char)(value>>4))&~c)));
+    return send_char((unsigned char)((unsigned char)c|(((unsigned char)(value<<4))|((unsigned char)(value>>4)&~c))));
 }
 
 

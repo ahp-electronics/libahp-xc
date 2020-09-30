@@ -173,8 +173,6 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   error = tcgetattr(fd, &old_port_settings);
   if(error==-1)
   {
-    close(fd);
-    flock(fd, LOCK_UN);  /* free the port so that others can use it. */
     perror("unable to read portsettings ");
     return(1);
   }
@@ -198,8 +196,6 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   if(error==-1)
   {
     tcsetattr(fd, TCSANOW, &old_port_settings);
-    close(fd);
-    flock(fd, LOCK_UN);  /* free the port so that others can use it. */
     perror("unable to adjust portsettings ");
     return(1);
   }
@@ -209,7 +205,6 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
     tcsetattr(fd, TCSANOW, &old_port_settings);
-    flock(fd, LOCK_UN);  /* free the port so that others can use it. */
     perror("unable to get portstatus");
     return(1);
   }
@@ -220,7 +215,6 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   if(ioctl(fd, TIOCMSET, &status) == -1)
   {
     tcsetattr(fd, TCSANOW, &old_port_settings);
-    flock(fd, LOCK_UN);  /* free the port so that others can use it. */
     perror("unable to set portstatus");
     return(1);
   }
@@ -246,11 +240,6 @@ int RS232_OpenComport(const char* devname)
       perror("Another process has locked the comport.");
       return(1);
     }
-}
-
-void RS232_SetFD(int f)
-{
-    fd = f;
 }
 
 ssize_t RS232_PollComport(unsigned char *buf, int size)
@@ -490,14 +479,27 @@ HANDLE fd;
 char mode_str[128];
 
 
-int RS232_OpenComport(int baudrate, const char *mode, int flowctrl)
+int RS232_OpenComport(const char *dev_name)
 {
-  if((comport_number>=RS232_PORTNR)||(comport_number<0))
-  {
-    printf("illegal comport number\n");
-    return(1);
-  }
+    char *dev_name = strcat("\\\\.\\", devname);
+    fd = CreateFileA(dev_name,
+                        GENERIC_READ|GENERIC_WRITE,
+                        0,                          /* no share  */
+                        NULL,                       /* no security */
+                        OPEN_EXISTING,
+                        0,                          /* no threads */
+                        NULL);                      /* no templates */
 
+    if(fd==INVALID_HANDLE_VALUE)
+    {
+      printf("unable to open comport\n");
+      return(1);
+    }
+    return(0);
+}
+
+int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
+{
   switch(baudrate)
   {
     case     110 : strcpy(mode_str, "baud=110");
@@ -608,21 +610,6 @@ http://technet.microsoft.com/en-us/library/cc732236.aspx
 https://docs.microsoft.com/en-us/windows/desktop/api/winbase/ns-winbase-_dcb
 */
 
-  char *dev_name = strcat("\\\\.\\", devname);
-  fd = CreateFileA(dev_name,
-                      GENERIC_READ|GENERIC_WRITE,
-                      0,                          /* no share  */
-                      NULL,                       /* no security */
-                      OPEN_EXISTING,
-                      0,                          /* no threads */
-                      NULL);                      /* no templates */
-
-  if(fd==INVALID_HANDLE_VALUE)
-  {
-    printf("unable to open comport\n");
-    return(1);
-  }
-
   DCB port_settings;
   memset(&port_settings, 0, sizeof(port_settings));  /* clear the new struct  */
   port_settings.DCBlength = sizeof(port_settings);
@@ -630,7 +617,6 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winbase/ns-winbase-_dcb
   if(!BuildCommDCBA(mode_str, &port_settings))
   {
     printf("unable to set comport dcb settings\n");
-    CloseHandle(fd);
     return(1);
   }
 
@@ -643,7 +629,6 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winbase/ns-winbase-_dcb
   if(!SetCommState(fd, &port_settings))
   {
     printf("unable to set comport cfg settings\n");
-    CloseHandle(fd);
     return(1);
   }
 
@@ -658,7 +643,6 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winbase/ns-winbase-_dcb
   if(!SetCommTimeouts(fd, &Cptimeouts))
   {
     printf("unable to set comport time-out settings\n");
-    CloseHandle(fd);
     return(1);
   }
 
@@ -805,6 +789,11 @@ void RS232_flushRXTX()
 
 #endif
 
+
+void RS232_SetFD(int f)
+{
+    fd = f;
+}
 
 void RS232_cputs(const char *text)  /* sends a string to serial port */
 {
