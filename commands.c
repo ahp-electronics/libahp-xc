@@ -171,7 +171,7 @@ void xc_scan_crosscorrelations(correlation *crosscorrelations, double *percent, 
                 int idx2 = (index1>index2?index1:index2);
                 int idx = (idx1*(xc_get_nlines()+xc_get_nlines()-idx1-1)/2+idx2-idx1-1);
                 int index = ((index1>index2?-i:i)+xc_get_delaysize()+(xc_get_delaysize()*2+1)*idx);
-                crosscorrelations[index].counts = data1[index1]+data1[index2];
+                crosscorrelations[index].counts = (data1[index1]+data1[index2])/2;
                 crosscorrelations[index].correlations = data2[idx];
                 crosscorrelations[index].coherence = (double)crosscorrelations[index].correlations/(double)crosscorrelations[index].counts;
             }
