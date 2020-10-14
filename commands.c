@@ -29,7 +29,7 @@ static int xc_nbaselines = -1;
 static int xc_delaysize = -1;
 static int xc_frequency = -1;
 static int xc_frequency_divider = 0;
-static int xc_packetsize = 16;
+static int xc_packetsize = 4096;
 static unsigned char xc_flags = 0;
 static baud_rate xc_rate = R_57600;
 static unsigned long *xc_counts = NULL;
@@ -40,18 +40,6 @@ static char xc_comport[128];
 static void xc_select_input(int index)
 {
     xc_send_command(SET_INDEX, (unsigned char)index);
-}
-
-static int xc_align_frame()
-{
-    unsigned char c = 0;
-    int ntries = 10;
-    while (c != '\r' && ntries-- > 0) {
-        if(RS232_PollComport(&c, 1)<0)
-            break;
-        usleep(xc_get_packettime());
-    }
-    return c == '\r';
 }
 
 int xc_get_flags()
@@ -217,8 +205,6 @@ void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsig
     int x = 0;
     char *buf = (char*)malloc((unsigned int)xc_packetsize);
     memset(buf, '0', (unsigned int)xc_packetsize);
-    if(!xc_align_frame())
-        goto err_end;
     ssize_t n_read = RS232_PollComport((unsigned char*)buf, xc_get_packetsize());
     if(n_read != xc_get_packetsize())
         goto err_end;
@@ -257,14 +243,15 @@ int xc_get_properties()
 {
     unsigned char header[16];
     ssize_t n_read;
+    retry:
     xc_enable_capture(1);
+    usleep(xc_get_packettime());
     n_read = RS232_PollComport(header, 16);
     xc_enable_capture(0);
-    xc_enable_capture(1);
-    n_read = RS232_PollComport(header, 16);
-    xc_enable_capture(0);
-    if(n_read != 16)
+    if(n_read < 0)
         return -2;
+    if(n_read < 16)
+        goto retry;
     int _bps, _nlines, _flags, _delaysize, _frequency;
     n_read = sscanf((char*)header, "%02X%01X%02X%03X%08X", &_bps, &_nlines, &_flags, &_delaysize, &_frequency);
     if(n_read != 5)
@@ -285,10 +272,6 @@ int xc_get_properties()
 void xc_enable_capture(int enable)
 {
     xc_send_command(ENABLE_CAPTURE, (unsigned char)enable);
-    if(enable) {
-        if (!xc_align_frame())
-            xc_send_command(ENABLE_CAPTURE, (unsigned char)0);
-    }
 }
 
 void xc_set_baudrate(baud_rate rate, int setterm)
