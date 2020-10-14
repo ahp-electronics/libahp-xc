@@ -146,7 +146,6 @@ void xc_scan_crosscorrelations(correlation *crosscorrelations, double *percent, 
     memset(crosscorrelations, 0, sizeof(correlation)*(unsigned int)(xc_get_delaysize()*2+1)*(unsigned int)xc_get_nbaselines());
     for(index1 = 0; index1 < xc_get_nlines(); index1++)
         xc_set_delay(index1, 0);
-    xc_enable_capture(1);
     for(index1 = 0; index1 < xc_get_nlines(); index1++) {
         for(i = xc_get_delaysize()-1; i >= 0; i --) {
             if(*interrupt)
@@ -168,7 +167,6 @@ void xc_scan_crosscorrelations(correlation *crosscorrelations, double *percent, 
         }
     }
 stop:
-    xc_enable_capture(0);
     free(data1);
     free(data2);
 }
@@ -180,7 +178,6 @@ void xc_scan_autocorrelations(correlation *autocorrelations, double *percent, in
     unsigned long *data2 = (unsigned long*)malloc((unsigned int)xc_get_nlines()*sizeof(unsigned long));
     memset(autocorrelations, 0, sizeof(correlation)*(unsigned int)xc_get_delaysize()*(unsigned int)xc_get_nlines());
     int index = 0;
-    xc_enable_capture(1);
     for(i = 0; i < xc_get_delaysize(); i ++) {
         if(*interrupt)
             goto stop;
@@ -195,7 +192,6 @@ void xc_scan_autocorrelations(correlation *autocorrelations, double *percent, in
         (*percent) += 100.0 / xc_get_delaysize();
     }
 stop:
-    xc_enable_capture(0);
     free(data1);
     free(data2);
 }
@@ -205,7 +201,10 @@ void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsig
     int x = 0;
     char *buf = (char*)malloc((unsigned int)xc_packetsize);
     memset(buf, '0', (unsigned int)xc_packetsize);
+    xc_enable_capture(1);
+    usleep(xc_get_packettime());
     ssize_t n_read = RS232_PollComport((unsigned char*)buf, xc_get_packetsize());
+    xc_enable_capture(0);
     if(n_read != xc_get_packetsize())
         goto err_end;
     int offset = 16;
@@ -259,7 +258,7 @@ int xc_get_properties()
     xc_bps = _bps;
     xc_nlines = _nlines+1;
     xc_nbaselines = xc_nlines*(xc_nlines-1)/2;
-    xc_packetsize = (xc_nlines*2+xc_nbaselines)*xc_bps/4+16;
+    xc_packetsize = (xc_nlines*2+xc_nbaselines)*xc_bps/4+16+1;
     xc_flags = (unsigned char)_flags;
     xc_delaysize = _delaysize;
     xc_frequency = _frequency;
