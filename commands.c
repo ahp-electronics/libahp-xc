@@ -45,13 +45,12 @@ static void xc_select_input(int index)
 static int xc_align_frame()
 {
     unsigned char c = 0;
-    int ntries = 10;
-    while (c != '\r' && ntries-- > 0) {
-        if(RS232_PollComport(&c, 1)<0)
+    int ret = 0;
+    while (c != '\r') {
+        if((ret = RS232_PollComport(&c, 1))<0)
             break;
-        usleep(xc_get_packettime());
     }
-    return c == '\r';
+    return ret;
 }
 
 int xc_get_flags()
@@ -217,10 +216,9 @@ void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsig
     int x = 0;
     char *buf = (char*)malloc((unsigned int)xc_packetsize);
     memset(buf, '0', (unsigned int)xc_packetsize);
-    if(!xc_align_frame())
-        goto err_end;
+    xc_align_frame();
     ssize_t n_read = RS232_PollComport((unsigned char*)buf, xc_get_packetsize());
-    if(n_read != xc_get_packetsize())
+    if(n_read < xc_get_packetsize())
         goto err_end;
     int offset = 16;
     int n = xc_bps/4;
@@ -285,10 +283,8 @@ int xc_get_properties()
 void xc_enable_capture(int enable)
 {
     xc_send_command(ENABLE_CAPTURE, (unsigned char)enable);
-    if(enable) {
-        if (!xc_align_frame())
-            xc_send_command(ENABLE_CAPTURE, (unsigned char)0);
-    }
+    if(enable)
+        xc_align_frame();
 }
 
 void xc_set_baudrate(baud_rate rate, int setterm)
