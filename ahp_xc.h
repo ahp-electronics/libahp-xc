@@ -217,7 +217,7 @@ DLL_EXPORT int xc_get_packetsize();
 * \sa xc_set_line
 * \sa xc_set_delay
 */
-DLL_EXPORT void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations);
+DLL_EXPORT int xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations);
 
 /**
 * \brief Scan all available delay channels and get autocorrelations of each input

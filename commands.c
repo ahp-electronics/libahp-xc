@@ -157,24 +157,26 @@ void xc_scan_crosscorrelations(correlation *crosscorrelations, double *percent, 
     memset(crosscorrelations, 0, sizeof(correlation)*(unsigned int)(xc_get_delaysize()*2+1)*(unsigned int)xc_get_nbaselines());
     for(index1 = 0; index1 < xc_get_nlines(); index1++)
         xc_set_delay(index1, 0);
-    for(index1 = 0; index1 < xc_get_nlines(); index1++) {
+    for(index1 = 0; index1 < xc_get_nlines(); ) {
         for(i = xc_get_delaysize()-1; i >= 0; i --) {
             if(*interrupt)
                 goto stop;
-            xc_get_packet(data1, NULL, data2);
-            xc_set_delay(index1, i+1);
-            for(index2 = 0; index2 < xc_get_nlines(); index2++) {
-                if(index2 == index1)
-                    continue;
-                int idx1 = (index1<index2?index1:index2);
-                int idx2 = (index1>index2?index1:index2);
-                int idx = (idx1*(xc_get_nlines()+xc_get_nlines()-idx1-1)/2+idx2-idx1-1);
-                int index = ((index1>index2?-i:i)+xc_get_delaysize()+(xc_get_delaysize()*2+1)*idx);
-                crosscorrelations[index].counts = (data1[index1]+data1[index2])/2;
-                crosscorrelations[index].correlations = data2[idx];
-                crosscorrelations[index].coherence = (double)crosscorrelations[index].correlations/(double)crosscorrelations[index].counts;
+            if(!xc_get_packet(data1, NULL, data2)) {
+                xc_set_delay(index1, i+1);
+                for(index2 = 0; index2 < xc_get_nlines(); index2++) {
+                    if(index2 == index1)
+                        continue;
+                    int idx1 = (index1<index2?index1:index2);
+                    int idx2 = (index1>index2?index1:index2);
+                    int idx = (idx1*(xc_get_nlines()+xc_get_nlines()-idx1-1)/2+idx2-idx1-1);
+                    int index = ((index1>index2?-i:i)+xc_get_delaysize()+(xc_get_delaysize()*2+1)*idx);
+                    crosscorrelations[index].counts = (data1[index1]+data1[index2])/2;
+                    crosscorrelations[index].correlations = data2[idx];
+                    crosscorrelations[index].coherence = (double)crosscorrelations[index].correlations/(double)crosscorrelations[index].counts;
+                }
+                (*percent) += 100.0 / (xc_get_delaysize()*xc_get_nlines());
+                index1++;
             }
-            (*percent) += 100.0 / (xc_get_delaysize()*xc_get_nlines());
         }
     }
 stop:
@@ -189,25 +191,27 @@ void xc_scan_autocorrelations(correlation *autocorrelations, double *percent, in
     unsigned long *data2 = (unsigned long*)malloc((unsigned int)xc_get_nlines()*sizeof(unsigned long));
     memset(autocorrelations, 0, sizeof(correlation)*(unsigned int)xc_get_delaysize()*(unsigned int)xc_get_nlines());
     int index = 0;
-    for(i = 0; i < xc_get_delaysize(); i ++) {
+    for(i = 0; i < xc_get_delaysize(); ) {
         if(*interrupt)
             goto stop;
-        xc_get_packet(data1, data2, NULL);
-        for(index = 0; index < xc_get_nlines(); index++) {
-            int idx = i+xc_get_delaysize()*index;
-            autocorrelations[idx].counts = data1[index];
-            autocorrelations[idx].correlations = data2[index];
-            autocorrelations[idx].coherence = (double)autocorrelations[idx].correlations/(double)autocorrelations[idx].counts;
-            xc_set_line(index, i+1);
+        if(!xc_get_packet(data1, data2, NULL)) {
+            for(index = 0; index < xc_get_nlines(); index++) {
+                int idx = i+xc_get_delaysize()*index;
+                autocorrelations[idx].counts = data1[index];
+                autocorrelations[idx].correlations = data2[index];
+                autocorrelations[idx].coherence = (double)autocorrelations[idx].correlations/(double)autocorrelations[idx].counts;
+                xc_set_line(index, i+1);
+            }
+            (*percent) += 100.0 / xc_get_delaysize();
+            i ++;
         }
-        (*percent) += 100.0 / xc_get_delaysize();
     }
 stop:
     free(data1);
     free(data2);
 }
 
-void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations)
+int xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations)
 {
     int x = 0;
     char *buf = (char*)malloc((unsigned int)xc_packetsize);
@@ -243,8 +247,11 @@ void xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsig
         }
     }
     free(sample);
+    free(buf);
+    return 0;
 err_end:
     free(buf);
+    return 1;
 }
 
 int xc_get_properties()
