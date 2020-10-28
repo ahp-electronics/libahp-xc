@@ -231,7 +231,7 @@ DLL_EXPORT int ahp_xc_get_packet(unsigned long *counts, unsigned long *autocorre
 * \param percent A pointer to a double which, during scanning, will be updated with the percent of completion.
 * \param interrupt A pointer to an integer whose value, during execution, if turns into 1 will abort scanning.
 */
-DLL_EXPORT void ahp_xc_scan_autocorrelations(correlation *autocorrelations, double *percent, int *interrupt);
+DLL_EXPORT void ahp_xc_scan_autocorrelations(correlation *autocorrelations, int stacksize, double *percent, int *interrupt);
 
 /**
 * \brief Scan all available delay channels and get crosscorrelations of each input with others
@@ -239,7 +239,7 @@ DLL_EXPORT void ahp_xc_scan_autocorrelations(correlation *autocorrelations, doub
 * \param percent A pointer to a double which, during scanning, will be updated with the percent of completion.
 * \param interrupt A pointer to an integer whose value, during execution, if turns into 1 will abort scanning.
 */
-DLL_EXPORT void ahp_xc_scan_crosscorrelations(correlation *crosscorrelations, double *percent, int *interrupt);
+DLL_EXPORT void ahp_xc_scan_crosscorrelations(correlation *crosscorrelations, int stacksize, double *percent, int *interrupt);
 
 /*@}*/
 /**
