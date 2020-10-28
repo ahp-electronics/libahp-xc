@@ -170,24 +170,24 @@ void ahp_xc_scan_crosscorrelations(correlation *crosscorrelations, double *perce
                     goto stop;
                 for(index1 = 0; index1 < ahp_xc_get_nlines(); index1++)
                     ahp_xc_set_line(index1, i);
-                ahp_xc_get_packet(data1, NULL, data2);
-                if(!ahp_xc_get_packet(data1, NULL, data2)) {
-                    for(index2 = 0; index2 < ahp_xc_get_nlines(); index2++) {
-                        if(index2 == index1)
-                            continue;
-                        int idx1 = (index1<index2?index1:index2);
-                        int idx2 = (index1>index2?index1:index2);
-                        int idx = (idx1*(ahp_xc_get_nlines()+ahp_xc_get_nlines()-idx1-1)/2+idx2-idx1-1);
-                        int index = (i+ahp_xc_get_delaysize()*x/2);
-                        index = ((index1>index2?-index:index)+(ahp_xc_get_delaysize()*(ahp_xc_get_frequency_divider()+2)/2)+(ahp_xc_get_delaysize()*(ahp_xc_get_frequency_divider()+2)+1)*idx);
-                        crosscorrelations[index].counts = (data1[index1]+data1[index2])/2;
-                        crosscorrelations[index].correlations = data2[idx];
-                        if(crosscorrelations[idx].counts > 0)
-                            crosscorrelations[index].coherence = (double)crosscorrelations[index].correlations/(double)crosscorrelations[index].counts;
-                    }
-                    (*percent) += 100.0 / (ahp_xc_get_delaysize()*ahp_xc_get_nlines()*(ahp_xc_get_frequency_divider() + 2)/2);
-                    index1++;
+                int ntries = 5;
+                while(ahp_xc_get_packet(data1, NULL, data2) && ntries-- > 0)
+                    usleep(ahp_xc_get_packettime());
+                for(index2 = 0; index2 < ahp_xc_get_nlines(); index2++) {
+                    if(index2 == index1)
+                        continue;
+                    int idx1 = (index1<index2?index1:index2);
+                    int idx2 = (index1>index2?index1:index2);
+                    int idx = (idx1*(ahp_xc_get_nlines()+ahp_xc_get_nlines()-idx1-1)/2+idx2-idx1-1);
+                    int index = (i+ahp_xc_get_delaysize()*x/2);
+                    index = ((index1>index2?-index:index)+(ahp_xc_get_delaysize()*(ahp_xc_get_frequency_divider()+2)/2)+(ahp_xc_get_delaysize()*(ahp_xc_get_frequency_divider()+2)+1)*idx);
+                    crosscorrelations[index].counts = (data1[index1]+data1[index2])/2;
+                    crosscorrelations[index].correlations = data2[idx];
+                    if(crosscorrelations[idx].counts > 0)
+                        crosscorrelations[index].coherence = (double)crosscorrelations[index].correlations/(double)crosscorrelations[index].counts;
                 }
+                (*percent) += 100.0 / (ahp_xc_get_delaysize()*ahp_xc_get_nlines()*(ahp_xc_get_frequency_divider() + 2)/2);
+                index1++;
             }
         }
     }
@@ -213,20 +213,20 @@ void ahp_xc_scan_autocorrelations(correlation *autocorrelations, double *percent
             }
             for(index = 0; index < ahp_xc_get_nlines(); index++)
                 ahp_xc_set_line(index, i);
-            ahp_xc_get_packet(data1, data2, NULL);
-            if(!ahp_xc_get_packet(data1, data2, NULL)) {
-                for(index = 0; index < ahp_xc_get_nlines(); index++) {
-                    int idx = index * ahp_xc_get_delaysize() * (ahp_xc_get_frequency_divider() + 2) / 2;
-                    idx += i;
-                    idx += ahp_xc_get_delaysize() * x / 2;
-                    autocorrelations[idx].counts = data1[index];
-                    autocorrelations[idx].correlations = data2[index];
-                    if(autocorrelations[idx].counts > 0)
-                        autocorrelations[idx].coherence = (double)autocorrelations[idx].correlations/(double)autocorrelations[idx].counts;
-                }
-                (*percent) += 100.0 / (ahp_xc_get_delaysize() * (ahp_xc_get_frequency_divider() + 2) / 2);
-                i ++;
+            int ntries = 5;
+            while(ahp_xc_get_packet(data1, data2, NULL) && ntries-- > 0)
+                usleep(ahp_xc_get_packettime());
+            for(index = 0; index < ahp_xc_get_nlines(); index++) {
+                int idx = index * ahp_xc_get_delaysize() * (ahp_xc_get_frequency_divider() + 2) / 2;
+                idx += i;
+                idx += ahp_xc_get_delaysize() * x / 2;
+                autocorrelations[idx].counts = data1[index];
+                autocorrelations[idx].correlations = data2[index];
+                if(autocorrelations[idx].counts > 0)
+                    autocorrelations[idx].coherence = (double)autocorrelations[idx].correlations/(double)autocorrelations[idx].counts;
             }
+            (*percent) += 100.0 / (ahp_xc_get_delaysize() * (ahp_xc_get_frequency_divider() + 2) / 2);
+            i ++;
         }
     }
 stop:
