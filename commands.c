@@ -111,7 +111,7 @@ void ahp_xc_connect_fd(int fd)
     ahp_xc_delaysize = -1;
     ahp_xc_frequency = -1;
     ahp_xc_packetsize = 16;
-    ahp_xc_rate = R_57600;
+    ahp_xc_rate = R_115200;
     ahp_xc_counts = NULL;
     ahp_xc_autocorrelations = NULL;
     ahp_xc_crosscorrelations = NULL;
@@ -126,7 +126,7 @@ int ahp_xc_connect(const char *port)
     ahp_xc_delaysize = -1;
     ahp_xc_frequency = -1;
     ahp_xc_packetsize = 16;
-    ahp_xc_rate = R_57600;
+    ahp_xc_rate = R_115200;
     ahp_xc_counts = NULL;
     ahp_xc_autocorrelations = NULL;
     ahp_xc_crosscorrelations = NULL;
@@ -138,7 +138,7 @@ int ahp_xc_connect(const char *port)
 
 void ahp_xc_disconnect()
 {
-    ahp_xc_set_baudrate(R_57600, 1);
+    ahp_xc_set_baudrate(R_115200, 1);
     RS232_CloseComport();
     if(ahp_xc_counts != NULL)
         free(ahp_xc_counts);
@@ -162,6 +162,7 @@ void ahp_xc_scan_crosscorrelations(correlation *crosscorrelations, int stacksize
     memset(crosscorrelations, 0, sizeof(correlation)*(unsigned int)(ahp_xc_get_delaysize()*(ahp_xc_get_frequency_divider()+2)+1)*(unsigned int)ahp_xc_get_nbaselines());
     for(index1 = 0; index1 < ahp_xc_get_nlines(); index1++)
         ahp_xc_set_delay(index1, 0);
+    ahp_xc_enable_capture(1);
     for(x = ahp_xc_get_frequency_divider(); x >= 0; x--) {
         ahp_xc_send_command(SET_FREQ_DIV, x);
         for(index1 = 0; index1 < ahp_xc_get_nlines(); ) {
@@ -205,6 +206,7 @@ void ahp_xc_scan_crosscorrelations(correlation *crosscorrelations, int stacksize
         }
     }
 stop:
+    ahp_xc_enable_capture(0);
     free(data1);
     free(data2);
 }
@@ -216,6 +218,7 @@ void ahp_xc_scan_autocorrelations(correlation *autocorrelations, int stacksize, 
     unsigned long *data2 = (unsigned long*)malloc((unsigned int)ahp_xc_get_nlines()*sizeof(unsigned long));
     memset(autocorrelations, 0, sizeof(correlation)*(unsigned int)ahp_xc_get_delaysize()*(unsigned int)ahp_xc_get_nlines()*(ahp_xc_get_frequency_divider()+2)/2);
     int index = 0;
+    ahp_xc_enable_capture(1);
     for(x = 0; x <= ahp_xc_get_frequency_divider(); x++) {
         ahp_xc_send_command(SET_FREQ_DIV, x);
         for(i = 0; i < ahp_xc_get_delaysize(); ) {
@@ -251,6 +254,7 @@ void ahp_xc_scan_autocorrelations(correlation *autocorrelations, int stacksize, 
         }
     }
 stop:
+    ahp_xc_enable_capture(0);
     free(data1);
     free(data2);
 }

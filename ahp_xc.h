@@ -66,7 +66,7 @@ extern "C" {
 #endif
 
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
-#define XC_BASE_RATE 57600
+#define XC_BASE_RATE 115200
 
 /*@}*/
 
