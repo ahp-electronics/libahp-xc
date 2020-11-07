@@ -247,7 +247,7 @@ DLL_EXPORT void ahp_xc_scan_crosscorrelations(correlation *crosscorrelations, in
 */
 /*@{*/
 DLL_EXPORT void ahp_xc_enable_capture(int enable);
-DLL_EXPORT void ahp_xc_set_power(int index, int lv, int hv);
+DLL_EXPORT void ahp_xc_set_leds(int index, int leds);
 DLL_EXPORT void ahp_xc_set_delay(int index, int value);
 DLL_EXPORT void ahp_xc_set_line(int index, int value);
 DLL_EXPORT void ahp_xc_set_frequency_divider(unsigned char value);

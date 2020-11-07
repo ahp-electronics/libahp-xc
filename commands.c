@@ -30,7 +30,6 @@ static int ahp_xc_delaysize = -1;
 static int ahp_xc_frequency = -1;
 static int ahp_xc_frequency_divider = 0;
 static int ahp_xc_packetsize = 4096;
-static unsigned char ahp_xc_flags = 0;
 static baud_rate ahp_xc_rate = R_57600;
 static unsigned long *ahp_xc_counts = NULL;
 static unsigned long *ahp_xc_autocorrelations = NULL;
@@ -39,7 +38,14 @@ static char ahp_xc_comport[128];
 
 static void ahp_xc_select_input(int index)
 {
-    ahp_xc_send_command(SET_INDEX, (unsigned char)index);
+    int idx = 0;
+    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
+    index >>= 2;
+    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
+    index >>= 2;
+    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
+    index >>= 2;
+    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
 }
 
 static int ahp_xc_align_frame()
@@ -51,11 +57,6 @@ static int ahp_xc_align_frame()
             break;
     }
     return ret;
-}
-
-int ahp_xc_get_flags()
-{
-    return ahp_xc_flags;
 }
 
 int ahp_xc_get_baudrate()
@@ -314,15 +315,14 @@ int ahp_xc_get_properties()
         goto retry;
     if(ntries == 0)
         return -1;
-    int _bps, _nlines, _flags, _delaysize, _frequency;
-    n_read = sscanf((char*)header, "%02X%01X%02X%03X%08X", &_bps, &_nlines, &_flags, &_delaysize, &_frequency);
-    if(n_read != 5)
+    int _bps, _nlines, _delaysize, _frequency;
+    n_read = sscanf((char*)header, "%02X%03X%03X%08X", &_bps, &_nlines, &_delaysize, &_frequency);
+    if(n_read != 4)
         return -1;
     ahp_xc_bps = _bps;
     ahp_xc_nlines = _nlines+1;
     ahp_xc_nbaselines = ahp_xc_nlines*(ahp_xc_nlines-1)/2;
     ahp_xc_packetsize = (ahp_xc_nlines*2+ahp_xc_nbaselines)*ahp_xc_bps/4+16+1;
-    ahp_xc_flags = (unsigned char)_flags;
     ahp_xc_delaysize = _delaysize;
     ahp_xc_frequency = _frequency;
     ahp_xc_counts = (unsigned long*)malloc(sizeof(long)*(unsigned int)ahp_xc_nlines);
@@ -346,10 +346,10 @@ void ahp_xc_set_baudrate(baud_rate rate, int setterm)
         RS232_SetupPort(XC_BASE_RATE<<ahp_xc_rate, "8N2", 0);
 }
 
-void ahp_xc_set_power(int index, int lv, int hv)
+void ahp_xc_set_leds(int index, int leds)
 {
     ahp_xc_select_input(index);
-    ahp_xc_send_command(SET_LEDS, (lv&1)|((hv<<1)&2));
+    ahp_xc_send_command(SET_LEDS, (unsigned char)(leds&0xf));
 }
 
 void ahp_xc_set_delay(int index, int value)
