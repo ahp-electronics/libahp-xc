@@ -39,13 +39,13 @@ static char ahp_xc_comport[128];
 static void ahp_xc_select_input(int index)
 {
     int idx = 0;
-    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
+    ahp_xc_send_command(SET_INDEX, (unsigned char)((idx++)<<2)|(index&0x3));
     index >>= 2;
-    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
+    ahp_xc_send_command(SET_INDEX, (unsigned char)((idx++)<<2)|(index&0x3));
     index >>= 2;
-    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
+    ahp_xc_send_command(SET_INDEX, (unsigned char)((idx++)<<2)|(index&0x3));
     index >>= 2;
-    ahp_xc_send_command(SET_INDEX, (unsigned char)(((idx++)<<2)&0xc)|(index&0x3));
+    ahp_xc_send_command(SET_INDEX, (unsigned char)((idx++)<<2)|(index&0x3));
 }
 
 static int ahp_xc_align_frame()
