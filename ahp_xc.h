@@ -66,7 +66,7 @@ extern "C" {
 #endif
 
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
-#define XC_BASE_RATE 57600
+#define XC_BASE_RATE ((int)57600)
 
 /*@}*/
 
@@ -148,7 +148,7 @@ DLL_EXPORT int ahp_xc_get_baudrate();
 * \param rate The new baud rate index
 * \param setterm Change the termios settings of the current fd or port opened
 */
-DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate, int setterm);
+DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate);
 
 /*@}*/
 /**

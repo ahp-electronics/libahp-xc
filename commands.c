@@ -139,7 +139,7 @@ int ahp_xc_connect(const char *port)
 
 void ahp_xc_disconnect()
 {
-    ahp_xc_set_baudrate(R_57600, 1);
+    ahp_xc_set_baudrate(R_57600);
     RS232_CloseComport();
     if(ahp_xc_counts != NULL)
         free(ahp_xc_counts);
@@ -338,12 +338,13 @@ void ahp_xc_enable_capture(int enable)
         ahp_xc_align_frame();
 }
 
-void ahp_xc_set_baudrate(baud_rate rate, int setterm)
+void ahp_xc_set_baudrate(baud_rate rate)
 {
     ahp_xc_rate = rate;
     ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
-    if(setterm)
-        RS232_SetupPort(XC_BASE_RATE<<ahp_xc_rate, "8N2", 0);
+    RS232_CloseComport();
+    RS232_OpenComport(ahp_xc_comport);
+    RS232_SetupPort(XC_BASE_RATE<<((int)ahp_xc_rate), "8N2", 0);
 }
 
 void ahp_xc_set_leds(int index, int leds)
