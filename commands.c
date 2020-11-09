@@ -316,7 +316,7 @@ int ahp_xc_get_properties()
     if(ntries == 0)
         return -1;
     int _bps, _nlines, _delaysize, _frequency;
-    n_read = sscanf((char*)header, "%02X%03X%03X%08X", &_bps, &_nlines, &_delaysize, &_frequency);
+    n_read = sscanf((char*)header, "%02X%02X%04X%08X", &_bps, &_nlines, &_delaysize, &_frequency);
     if(n_read != 4)
         return -1;
     ahp_xc_bps = _bps;
