@@ -26,14 +26,12 @@
 static int ahp_xc_bps = -1;
 static int ahp_xc_nlines = -1;
 static int ahp_xc_nbaselines = -1;
+static int ahp_xc_jittersize = -1;
 static int ahp_xc_delaysize = -1;
 static int ahp_xc_frequency = -1;
 static int ahp_xc_frequency_divider = 0;
 static int ahp_xc_packetsize = 4096;
 static baud_rate ahp_xc_rate = R_57600;
-static unsigned long *ahp_xc_counts = NULL;
-static unsigned long *ahp_xc_autocorrelations = NULL;
-static unsigned long *ahp_xc_crosscorrelations = NULL;
 static char ahp_xc_comport[128];
 
 static void ahp_xc_select_input(int index)
@@ -84,6 +82,11 @@ int ahp_xc_get_delaysize()
     return ahp_xc_delaysize;
 }
 
+int ahp_xc_get_jittersize()
+{
+    return ahp_xc_jittersize;
+}
+
 int ahp_xc_get_frequency()
 {
     return ahp_xc_frequency;
@@ -113,9 +116,6 @@ void ahp_xc_connect_fd(int fd)
     ahp_xc_frequency = -1;
     ahp_xc_packetsize = 16;
     ahp_xc_rate = R_57600;
-    ahp_xc_counts = NULL;
-    ahp_xc_autocorrelations = NULL;
-    ahp_xc_crosscorrelations = NULL;
     RS232_SetFD(fd);
 }
 
@@ -128,9 +128,6 @@ int ahp_xc_connect(const char *port)
     ahp_xc_frequency = -1;
     ahp_xc_packetsize = 16;
     ahp_xc_rate = R_57600;
-    ahp_xc_counts = NULL;
-    ahp_xc_autocorrelations = NULL;
-    ahp_xc_crosscorrelations = NULL;
     strncpy(ahp_xc_comport, port, strlen(port));
     if(!RS232_OpenComport(ahp_xc_comport))
         return  RS232_SetupPort(XC_BASE_RATE, "8N2", 0);
@@ -141,12 +138,6 @@ void ahp_xc_disconnect()
 {
     ahp_xc_set_baudrate(R_57600);
     RS232_CloseComport();
-    if(ahp_xc_counts != NULL)
-        free(ahp_xc_counts);
-    if(ahp_xc_autocorrelations != NULL)
-        free(ahp_xc_autocorrelations);
-    if(ahp_xc_crosscorrelations != NULL)
-        free(ahp_xc_crosscorrelations);
 }
 
 static ssize_t send_char(unsigned char c)
@@ -258,37 +249,41 @@ stop:
 
 int ahp_xc_get_packet(unsigned long *counts, unsigned long *autocorrelations, unsigned long *crosscorrelations)
 {
-    int x = 0;
-    char *buf = (char*)malloc((unsigned int)ahp_xc_packetsize);
-    memset(buf, '0', (unsigned int)ahp_xc_packetsize);
+    int x = 0, y = 0;
+    char *buf = (char*)malloc((unsigned int)ahp_xc_get_packetsize());
+    memset(buf, '0', (unsigned int)ahp_xc_get_packetsize());
     ahp_xc_align_frame();
     ssize_t n_read = RS232_PollComport((unsigned char*)buf, ahp_xc_get_packetsize());
-    if(n_read < ahp_xc_get_packetsize())
+    if(n_read < 0)
         goto err_end;
     int offset = 16;
-    int n = ahp_xc_bps/4;
+    int n = ahp_xc_get_bps()/4;
     char *sample = (char*)malloc((unsigned int)n);
     if(counts != NULL) {
         memset(counts, 0, sizeof(unsigned long)*(unsigned int)ahp_xc_get_nlines());
-        for(x = 0; x < ahp_xc_nlines; x++) {
+        for(x = 0; x < ahp_xc_get_nlines(); x++) {
             strncpy(sample, buf+offset+x*n, (unsigned int)n);
             counts[ahp_xc_get_nlines()-1-x] = (unsigned long)strtoul(sample, NULL, 16);
         }
     }
-    offset += ahp_xc_nlines*n;
+    offset += ahp_xc_get_nlines()*n;
     if(autocorrelations != NULL) {
-        memset(autocorrelations, 0, sizeof(unsigned long)*(unsigned int)ahp_xc_get_nlines());
-        for(x = 0; x < ahp_xc_nlines; x++) {
-            strncpy(sample, buf+offset+x*n, (unsigned int)n);
-            autocorrelations[ahp_xc_get_nlines()-1-x] = (unsigned long)strtoul(sample, NULL, 16);
+        memset(autocorrelations, 0, sizeof(unsigned long)*(unsigned int)ahp_xc_get_nlines()*(unsigned int)ahp_xc_get_jittersize());
+        for(x = 0; x < ahp_xc_get_nlines(); x++) {
+            for(y = 0; y < ahp_xc_get_jittersize(); y++) {
+                strncpy(sample, buf+offset+(x*ahp_xc_get_jittersize()+y)*n, (unsigned int)n);
+                autocorrelations[ahp_xc_get_nlines()*ahp_xc_get_jittersize()-x*ahp_xc_get_jittersize()-1-y] = (unsigned long)strtoul(sample, NULL, 16);
+            }
         }
     }
-    offset += ahp_xc_nlines*n;
+    offset += ahp_xc_get_nlines()*ahp_xc_get_jittersize()*n;
     if(crosscorrelations != NULL) {
-        memset(crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)ahp_xc_get_nbaselines());
-        for(x = 0; x < ahp_xc_nbaselines; x++) {
-            strncpy(sample, buf+offset+x*n, (unsigned int)n);
-            crosscorrelations[ahp_xc_get_nbaselines()-1-x] = (unsigned long)strtoul(sample, NULL, 16);
+        memset(crosscorrelations, 0, sizeof(unsigned long)*(unsigned int)ahp_xc_get_nbaselines()*((unsigned int)ahp_xc_get_jittersize()*2-1));
+        for(x = 0; x < ahp_xc_get_nbaselines(); x++) {
+            for(y = 0; y < ahp_xc_get_jittersize()*2-1; y++) {
+                strncpy(sample, buf+offset+(x*(ahp_xc_get_jittersize()*2-1)+n)*n, (unsigned int)n);
+                crosscorrelations[ahp_xc_get_nbaselines()*(ahp_xc_get_jittersize()*2-1)-x*(ahp_xc_get_jittersize()*2-1)-1-y] = (unsigned long)strtoul(sample, NULL, 16);
+            }
         }
     }
     free(sample);
@@ -306,7 +301,7 @@ int ahp_xc_get_properties()
     int ntries = 5;
     retry:
     ahp_xc_enable_capture(1);
-    usleep(ahp_xc_get_packettime());
+    ahp_xc_align_frame();
     n_read = RS232_PollComport(header, 16);
     ahp_xc_enable_capture(0);
     if(n_read < 0)
@@ -315,19 +310,17 @@ int ahp_xc_get_properties()
         goto retry;
     if(ntries == 0)
         return -1;
-    int _bps, _nlines, _delaysize, _frequency;
-    n_read = sscanf((char*)header, "%02X%02X%04X%08X", &_bps, &_nlines, &_delaysize, &_frequency);
-    if(n_read != 4)
+    int _bps, _nlines, _delaysize, _jittersize, _tau;
+    n_read = sscanf((char*)header, "%02X%02X%04X%04X%04X", &_bps, &_nlines, &_delaysize, &_jittersize, &_tau);
+    if(n_read != 5)
         return -1;
     ahp_xc_bps = _bps;
     ahp_xc_nlines = _nlines+1;
     ahp_xc_nbaselines = ahp_xc_nlines*(ahp_xc_nlines-1)/2;
-    ahp_xc_packetsize = (ahp_xc_nlines*2+ahp_xc_nbaselines)*ahp_xc_bps/4+16+1;
     ahp_xc_delaysize = _delaysize;
-    ahp_xc_frequency = _frequency;
-    ahp_xc_counts = (unsigned long*)malloc(sizeof(long)*(unsigned int)ahp_xc_nlines);
-    ahp_xc_autocorrelations = (unsigned long*)malloc(sizeof(long)*(unsigned int)ahp_xc_nlines);
-    ahp_xc_crosscorrelations = (unsigned long*)malloc(sizeof(long)*(unsigned int)ahp_xc_nbaselines);
+    ahp_xc_jittersize = _jittersize;
+    ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_jittersize*ahp_xc_nlines+(ahp_xc_jittersize*2-1)*ahp_xc_nbaselines)*ahp_xc_bps/4+16;
+    ahp_xc_frequency = (int)((long)1000000000000/(long)_tau);
     return 0;
 }
 

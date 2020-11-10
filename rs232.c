@@ -244,7 +244,7 @@ ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
   ssize_t n;
 
-  n = read(fd, buf, (size_t)size);
+  n = read(fd, buf, (size_t)(size));
   if(n < 0)
   {
     if(errno == EAGAIN)  return 0;

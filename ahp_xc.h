@@ -187,6 +187,12 @@ DLL_EXPORT int ahp_xc_get_nbaselines();
 DLL_EXPORT int ahp_xc_get_delaysize();
 
 /**
+* \brief Obtain the correlator jitter buffer size
+* \return Returns the jitter size
+*/
+DLL_EXPORT int ahp_xc_get_jittersize();
+
+/**
 * \brief Obtain the correlator maximum readout frequency
 * \return Returns the maximum readout frequency
 */
