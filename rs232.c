@@ -243,11 +243,13 @@ int RS232_OpenComport(const char* devname)
 ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
   ssize_t n;
-
+  int ntries = n;
+retry:
+  usleep(10000);
   n = read(fd, buf, (size_t)(size));
   if(n < 0)
   {
-    if(errno == EAGAIN)  return 0;
+    if(errno == EAGAIN && ntries-- > 0) goto retry;
   }
 
   return(n);
