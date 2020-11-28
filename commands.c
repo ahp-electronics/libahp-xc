@@ -327,7 +327,7 @@ int ahp_xc_get_properties()
     ahp_xc_delaysize = _delaysize;
     ahp_xc_jittersize = _jittersize;
     ahp_xc_flags = _flags;
-    ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_nlines+(ahp_xc_get_crosscorrelator_jittersize()*2-1)*ahp_xc_nbaselines)*ahp_xc_bps/4+16;
+    ahp_xc_packetsize = (ahp_xc_get_autocorrelator_jittersize()*ahp_xc_nlines+(ahp_xc_get_crosscorrelator_jittersize()*2-1)*ahp_xc_nbaselines)*ahp_xc_bps/4+16;
     ahp_xc_frequency = (int)((long)1000000000000/(long)_tau);
     return 0;
 }
