@@ -35,14 +35,6 @@ static int ahp_xc_packetsize = 4096;
 static baud_rate ahp_xc_rate = R_57600;
 static char ahp_xc_comport[128];
 
-
-static void ahp_xc_align_packet()
-{
-    unsigned char c = 0;
-    int tries = ahp_xc_get_packetsize();
-    while (c != '\r' && tries-- > 0)
-        RS232_PollComport(&c, 1);
-}
 static void ahp_xc_select_input(int index)
 {
     int idx = 0;
@@ -253,8 +245,9 @@ int ahp_xc_get_packet(correlation *autocorrelations, correlation *crosscorrelati
     int n = ahp_xc_get_bps()/4;
     char *sample = (char*)malloc((unsigned int)n);
     memset(buf, '0', (unsigned int)ahp_xc_get_packetsize());
+    ahp_xc_enable_capture(0);
+    RS232_flushRX();
     ahp_xc_enable_capture(1);
-    ahp_xc_align_packet();
     ssize_t n_read = RS232_PollComport((unsigned char*)buf, ahp_xc_get_packetsize());
     if(n_read < ahp_xc_get_packetsize())
         goto err_end;
@@ -307,8 +300,9 @@ int ahp_xc_get_properties()
     ssize_t n_read;
     int ntries = 50;
     retry:
+    ahp_xc_enable_capture(0);
+    RS232_flushRX();
     ahp_xc_enable_capture(1);
-    ahp_xc_align_packet();
     n_read = RS232_PollComport(header, 16);
     ahp_xc_enable_capture(0);
     if(n_read < 0)
