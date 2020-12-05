@@ -49,10 +49,9 @@ static void ahp_xc_select_input(int index)
 
 static void ahp_xc_align_packet()
 {
-    unsigned char c = 0;
-    int tries = ahp_xc_get_packetsize();
-    while (c != '\r' && tries-- > 0)
-        RS232_PollComport(&c, 1);
+    ahp_xc_enable_capture(0);
+    RS232_flushRX();
+    ahp_xc_enable_capture(1);
 }
 
 int ahp_xc_get_baudrate()
@@ -133,7 +132,7 @@ int ahp_xc_connect(const char *port)
     ahp_xc_rate = R_57600;
     strncpy(ahp_xc_comport, port, strlen(port));
     if(!RS232_OpenComport(ahp_xc_comport))
-        return  RS232_SetupPort(XC_BASE_RATE, "8N1", 0);
+        return  RS232_SetupPort(XC_BASE_RATE, "8N2", 0);
     return -1;
 }
 
@@ -309,8 +308,6 @@ int ahp_xc_get_properties()
     ssize_t n_read;
     int ntries = 50;
     retry:
-    ahp_xc_enable_capture(0);
-    RS232_flushRX();
     ahp_xc_enable_capture(1);
     ahp_xc_align_packet();
     n_read = RS232_PollComport(header, 16);
@@ -339,8 +336,6 @@ int ahp_xc_get_properties()
 void ahp_xc_enable_capture(int enable)
 {
     ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)enable);
-    if(enable)
-        ahp_xc_align_packet();
 }
 
 void ahp_xc_set_baudrate(baud_rate rate)
