@@ -224,7 +224,7 @@ void ahp_xc_scan_autocorrelations(correlation *autocorrelations, int stacksize, 
                     autocorrelations[idx].coherence = (double)autocorrelations[idx].correlations/(double)autocorrelations[idx].counts;
                 }
             }
-            (*percent) += 50.0 / (ahp_xc_get_delaysize() * (ahp_xc_get_frequency_divider() + 2) / 2);
+            (*percent) += 100.0 / (ahp_xc_get_delaysize() * (ahp_xc_get_frequency_divider() + 2) / 2);
             i ++;
         }
     }
