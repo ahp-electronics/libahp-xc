@@ -39,15 +39,15 @@
 
 
 static int fd,
-    error;
+    error, baudrate;
 
 static struct termios new_port_settings, old_port_settings;
 
-int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
+int RS232_SetupPort(int bauds, const char *mode, int flowctrl)
 {
   int baudr,
       status;
-
+   baudrate = bauds;
   switch(baudrate)
   {
     case      50 : baudr = B50;
@@ -172,7 +172,7 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   error = tcgetattr(fd, &old_port_settings);
   if(error==-1)
   {
-    fprintf(stderr, "unable to read portsettings ");
+    fprintf(stderr, "unable to read portsettings \n");
     return(1);
   }
   memset(&new_port_settings, 0, sizeof(new_port_settings));  /* clear the new struct */
@@ -195,7 +195,7 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   if(error==-1)
   {
     tcsetattr(fd, TCSANOW, &old_port_settings);
-    fprintf(stderr, "unable to adjust portsettings ");
+    fprintf(stderr, "unable to adjust portsettings \n");
     return(1);
   }
 
@@ -204,7 +204,7 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
     tcsetattr(fd, TCSANOW, &old_port_settings);
-    fprintf(stderr, "unable to get portstatus");
+    fprintf(stderr, "unable to get portstatus\n");
     return(1);
   }
 
@@ -214,7 +214,7 @@ int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
   if(ioctl(fd, TIOCMSET, &status) == -1)
   {
     tcsetattr(fd, TCSANOW, &old_port_settings);
-    fprintf(stderr, "unable to set portstatus");
+    fprintf(stderr, "unable to set portstatus\n");
     return(1);
   }
 
@@ -227,7 +227,7 @@ int RS232_OpenComport(const char* devname)
 
     if(fd==-1)
     {
-      fprintf(stderr, "unable to setup comport");
+      fprintf(stderr, "unable to setup comport\n");
       return(1);
     }
 
@@ -235,24 +235,30 @@ int RS232_OpenComport(const char* devname)
     if(flock(fd, LOCK_EX | LOCK_NB) != 0)
     {
       close(fd);
-      fprintf(stderr, "Another process has locked the comport.");
+      fprintf(stderr, "Another process has locked the comport.\n");
       return(1);
     }
 }
 
 ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
-  ssize_t n;
-  int ntries = n;
-retry:
-  usleep(10000);
-  n = read(fd, buf, (size_t)(size));
-  if(n < 0)
-  {
-    if(errno == EAGAIN && ntries-- > 0) goto retry;
-  }
+    ssize_t nread = 0;
+    ssize_t ntries = size;
+    size_t to_read = size;
+    while(to_read > 0  && ntries-- > 0) {
+        usleep(10000000*to_read/baudrate);
+        int n = read(fd, buf+nread, to_read);
+        if(n<0) {
+          if(errno == EAGAIN)
+              continue;
+          else
+              return n;
+        }
+        nread += n;
+        to_read -= n;
+    }
 
-  return(n);
+    return nread;
 }
 
 
@@ -299,7 +305,7 @@ void RS232_CloseComport()
   int status;
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
-    fprintf(stderr, "unable to get portstatus");
+    fprintf(stderr, "unable to get portstatus\n");
   }
 
   status &= ~TIOCM_DTR;    /* turn off DTR */
@@ -307,7 +313,7 @@ void RS232_CloseComport()
 
   if(ioctl(fd, TIOCMSET, &status) == -1)
   {
-    fprintf(stderr, "unable to set portstatus");
+    fprintf(stderr, "unable to set portstatus\n");
   }
 
   tcsetattr(fd, TCSANOW, &old_port_settings);
@@ -383,14 +389,14 @@ void RS232_enableDTR()
 
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
-    fprintf(stderr, "unable to get portstatus");
+    fprintf(stderr, "unable to get portstatus\n");
   }
 
   status |= TIOCM_DTR;    /* turn on DTR */
 
   if(ioctl(fd, TIOCMSET, &status) == -1)
   {
-    fprintf(stderr, "unable to set portstatus");
+    fprintf(stderr, "unable to set portstatus\n");
   }
 }
 
@@ -401,14 +407,14 @@ void RS232_disableDTR()
 
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
-    fprintf(stderr, "unable to get portstatus");
+    fprintf(stderr, "unable to get portstatus\n");
   }
 
   status &= ~TIOCM_DTR;    /* turn off DTR */
 
   if(ioctl(fd, TIOCMSET, &status) == -1)
   {
-    fprintf(stderr, "unable to set portstatus");
+    fprintf(stderr, "unable to set portstatus\n");
   }
 }
 
@@ -419,14 +425,14 @@ void RS232_enableRTS()
 
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
-    fprintf(stderr, "unable to get portstatus");
+    fprintf(stderr, "unable to get portstatus\n");
   }
 
   status |= TIOCM_RTS;    /* turn on RTS */
 
   if(ioctl(fd, TIOCMSET, &status) == -1)
   {
-    fprintf(stderr, "unable to set portstatus");
+    fprintf(stderr, "unable to set portstatus\n");
   }
 }
 
@@ -437,14 +443,14 @@ void RS232_disableRTS()
 
   if(ioctl(fd, TIOCMGET, &status) == -1)
   {
-    fprintf(stderr, "unable to get portstatus");
+    fprintf(stderr, "unable to get portstatus\n");
   }
 
   status &= ~TIOCM_RTS;    /* turn off RTS */
 
   if(ioctl(fd, TIOCMSET, &status) == -1)
   {
-    fprintf(stderr, "unable to set portstatus");
+    fprintf(stderr, "unable to set portstatus\n");
   }
 }
 
