@@ -47,7 +47,7 @@ extern "C" {
 /*@{*/
 
 ///AHP_XC_VERSION This library version
-#define AHP_XC_VERSION 0x010010
+#define AHP_XC_VERSION 0x010011
 
 ///AHP_XC_LIVE_AUTOCORRELATOR indicates if the correlator can do live spectrum analysis
 #define AHP_XC_LIVE_AUTOCORRELATOR (1<<0)
