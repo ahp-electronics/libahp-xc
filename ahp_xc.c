@@ -420,8 +420,15 @@ void ahp_xc_set_lag_auto(int index, int value)
 
 void ahp_xc_set_frequency_divider(unsigned char value)
 {
-    value = (unsigned char)(value < 0x3f ? value : 0x3f);
+    value = (unsigned char)(value < 0xf ? value : 0xf);
     ahp_xc_send_command(SET_FREQ_DIV, value);
+    ahp_xc_frequency_divider = value;
+}
+
+void ahp_xc_set_voltage(unsigned char value)
+{
+    value = (unsigned char)(value < 0xf ? value : 0xf);
+    ahp_xc_send_command(SET_VOLTAGE, value);
     ahp_xc_frequency_divider = value;
 }
 

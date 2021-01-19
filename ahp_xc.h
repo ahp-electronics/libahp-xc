@@ -92,6 +92,7 @@ typedef enum {
     SET_BAUD_RATE = 3,
     SET_DELAY = 4,
     SET_FREQ_DIV = 8,
+    SET_VOLTAGE = 9,
     ENABLE_CAPTURE = 13
 } it_cmd;
 
@@ -330,6 +331,12 @@ DLL_EXPORT void ahp_xc_set_lag_auto(int index, int value);
 * \param value The clock divider power of 2
 */
 DLL_EXPORT void ahp_xc_set_frequency_divider(unsigned char value);
+
+/**
+* \brief Set the supply voltage on the current line
+* \param value The voltage level
+*/
+DLL_EXPORT void ahp_xc_set_voltage(unsigned char value);
 
 /**
 * \brief Send an arbitrary command to the AHP xc device
