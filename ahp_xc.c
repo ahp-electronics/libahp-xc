@@ -190,13 +190,13 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
 
 void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelations, int *interrupt, double *percent)
 {
-    int i = 0, y;
+    int i = 0, x, y;
     int n = ahp_xc_get_bps()/4;
     *crosscorrelations = NULL;
     if(index1==index2)
         return;
     ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)(ahp_xc_get_delaysize()*2-1), (unsigned int)ahp_xc_get_crosscorrelator_jittersize());
-    unsigned int size = (unsigned int)(ahp_xc_get_packetsize());
+    unsigned int size = (unsigned int)(ahp_xc_get_packetsize()*8);
     unsigned char* buf = (unsigned char*)malloc(size);
     ahp_xc_enable_capture(0);
     RS232_flushRX();
@@ -210,32 +210,48 @@ void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **cross
     i = ahp_xc_get_delaysize();
     char* sample = (char*)malloc((unsigned int)n);
     sample[n] = 0;
+    (*percent) = 0;
     char *packet = (char*)buf;
     while(i-- > 0) {
         if(*interrupt)
             break;
+        usleep(ahp_xc_get_packettime()*8);
         ssize_t nread = RS232_PollComport(buf, (int)size);
-        (*percent) += 100.0 / (ahp_xc_get_delaysize()*2-1);
-        char *packet;
-        packet = strchr((char*)buf, 0x0d);
-        if(packet == NULL)
-            packet = (char*)buf;
-        else packet++;
-        if(packet == NULL)
-            continue;
-        packet += 16;
-        for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
-            memcpy(sample, &packet[n*index1], (unsigned int)n);
-            correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
-            memcpy(sample, &packet[n*index2], (unsigned int)n);
-            correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
-            packet += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
-            int idx1 = (index1 < index2 ? index1 : index2);
-            int idx2 = (index1 > index2 ? index1 : index2);
-            packet += n*((idx1*ahp_xc_get_nlines()*2-idx1-1)/2+idx2-idx1-1);
-            memcpy(sample, packet, (unsigned int)n);
-            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
-            correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+        if(nread < size)
+            break;
+        char *packet = (char*)buf;
+        for(x = 0; x < 8; x++) {
+            if(packet == NULL)
+                continue;
+            char *offset = strchr(packet, 0x0d);
+            if(offset != NULL)
+                offset++;
+            if(offset == NULL)
+                continue;
+            offset += 16;
+            for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
+                memcpy(sample, &packet[n*index1], (unsigned int)n);
+                correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
+                memcpy(sample, &packet[n*index2], (unsigned int)n);
+                correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
+                packet += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
+                int idx1 = (index1 < index2 ? index1 : index2);
+                int idx2 = (index1 > index2 ? index1 : index2);
+                packet += n*((idx1*ahp_xc_get_nlines()*2-idx1-1)/2+idx2-idx1-1);
+                memcpy(sample, packet, (unsigned int)n);
+                correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+                correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+                if(correlations[i].correlations[y].counts == 0 || correlations[i].correlations[y].correlations == 0 || correlations[i].correlations[y].coherence == 1.0) {
+                    if(i>0) {
+                        correlations[i].correlations[y].counts = correlations[i-1].correlations[y].counts;
+                        correlations[i].correlations[y].correlations = correlations[i-1].correlations[y].counts;
+                        correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
+                    }
+                }
+                (*percent) += 50.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
+            }
+            packet = offset;
+            i--;
         }
     }
     ahp_xc_enable_capture(0);
@@ -254,30 +270,44 @@ void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **cross
     while(i < ahp_xc_get_delaysize()*2-1) {
         if(*interrupt)
             break;
+        usleep(ahp_xc_get_packettime()*8);
         ssize_t nread = RS232_PollComport(buf, (int)size);
-        (*percent) += 100.0 / (ahp_xc_get_delaysize()*2-1);
-        char *packet;
-        packet = strchr((char*)buf, 0x0d);
-        if(packet == NULL)
-            packet = (char*)buf;
-        else packet++;
-        if(packet == NULL)
-            continue;
-        packet += 16;
-        for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
-            memcpy(sample, &packet[n*index1], (unsigned int)n);
-            correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
-            memcpy(sample, &packet[n*index2], (unsigned int)n);
-            correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
-            packet += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
-            int idx1 = (index1 < index2 ? index1 : index2);
-            int idx2 = (index1 > index2 ? index1 : index2);
-            packet += n*((idx1*ahp_xc_get_nlines()*2-idx1-1)/2+idx2-idx1-1);
-            memcpy(sample, packet, (unsigned int)n);
-            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
-            correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+        if(nread < size)
+            break;
+        char *packet = (char*)buf;
+        for(x = 0; x < 8; x++) {
+            if(packet == NULL)
+                continue;
+            char *offset = strchr(packet, 0x0d);
+            if(offset != NULL)
+                offset++;
+            if(offset == NULL)
+                continue;
+            offset += 16;
+            for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
+                memcpy(sample, &packet[n*index1], (unsigned int)n);
+                correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
+                memcpy(sample, &packet[n*index2], (unsigned int)n);
+                correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
+                packet += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
+                int idx1 = (index1 < index2 ? index1 : index2);
+                int idx2 = (index1 > index2 ? index1 : index2);
+                packet += n*((idx1*ahp_xc_get_nlines()*2-idx1-1)/2+idx2-idx1-1);
+                memcpy(sample, packet, (unsigned int)n);
+                correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+                correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+                if(correlations[i].correlations[y].counts == 0 || correlations[i].correlations[y].correlations == 0 || correlations[i].correlations[y].coherence == 1.0) {
+                    if(i>0) {
+                        correlations[i].correlations[y].counts = correlations[i-1].correlations[y].counts;
+                        correlations[i].correlations[y].correlations = correlations[i-1].correlations[y].counts;
+                        correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
+                    }
+                }
+                (*percent) += 50.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
+            }
+            packet = offset;
+            i++;
         }
-        i++;
     }
     ahp_xc_enable_capture(0);
     ahp_xc_clear_test(index1, SCAN_CROSS);
@@ -289,11 +319,11 @@ void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **cross
 
 void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int *interrupt, double *percent)
 {
-    int i = 0, y;
+    int i = 0, x, y;
     int n = ahp_xc_get_bps()/4;
     *autocorrelations = NULL;
     ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)ahp_xc_get_delaysize(), (unsigned int)ahp_xc_get_autocorrelator_jittersize());
-    unsigned int size = (unsigned int)(ahp_xc_get_packetsize());
+    unsigned int size = (unsigned int)(ahp_xc_get_packetsize()*8);
     unsigned char* buf = (unsigned char*)malloc(size);
     ahp_xc_set_lag_auto(index, 0);
     ahp_xc_set_lag_cross(index, 0);
@@ -305,26 +335,40 @@ void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, i
     sample[n] = 0;
     (*percent) = 0;
     while(i < ahp_xc_get_delaysize()) {
-        if(*interrupt)
-            break;
+        usleep(ahp_xc_get_packettime()*8);
         ssize_t nread = RS232_PollComport(buf, (int)size);
-        (*percent) += 100.0 / ahp_xc_get_delaysize();
-        char *packet;
-        packet = strchr(buf, 0x0d);
-        if(packet == NULL)
-            packet = (char*)buf;
-        else packet++;
-        if(packet == NULL)
-            continue;
-        packet += 16;
-        for(y = 0; y < ahp_xc_get_autocorrelator_jittersize(); y++) {
-            memcpy(sample, &packet[n*index], (unsigned int)n);
-            correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
-            memcpy(sample, &packet[(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*index)*n], (unsigned int)n);
-            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
-            correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+        if(nread < size)
+            break;
+        char *packet = (char*)buf;
+        for(x = 0; x < 8; x++) {
+            if(*interrupt || i >= ahp_xc_get_delaysize())
+                break;
+            if(packet == NULL)
+                continue;
+            char *offset = strchr(packet, 0x0d);
+            if(offset != NULL)
+                offset++;
+            else
+                continue;
+            offset += 16;
+            for(y = 0; y < ahp_xc_get_autocorrelator_jittersize(); y++) {
+                memcpy(sample, &offset[n*index], (unsigned int)n);
+                correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
+                memcpy(sample, &offset[(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*index)*n], (unsigned int)n);
+                correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+                correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+                if(correlations[i].correlations[y].counts == 0 || correlations[i].correlations[y].correlations == 0 || correlations[i].correlations[y].coherence == 1.0) {
+                    if(i>0) {
+                        correlations[i].correlations[y].counts = correlations[i-1].correlations[y].counts;
+                        correlations[i].correlations[y].correlations = correlations[i-1].correlations[y].counts;
+                        correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
+                    }
+                }
+                (*percent) += 100.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
+            }
+            packet = offset;
+            i++;
         }
-        i++;
     }
     free(buf);
     free(sample);
@@ -343,22 +387,34 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     memset(data, '0', (unsigned int)ahp_xc_get_packetsize()*3);
     ahp_xc_enable_capture(1);
     int n_read = RS232_PollComport((unsigned char*)data, ahp_xc_get_packetsize()*3);
-    if(n_read != ahp_xc_get_packetsize()*3)
-        return -EIO;
+    if(n_read != ahp_xc_get_packetsize()*3) {
+        ret = -EIO;
+        goto err_end;
+    }
+    if(data == NULL) {
+        ret = -ENODATA;
+        goto err_end;
+    }
     unsigned char *buf = strchr(data, 0x0d)+1;
     unsigned char *end = strchr(buf, 0x0d);
     *end = 0;
-    if(strlen(buf) < ahp_xc_get_packetsize())
-        return -EBUSY;
+    if(strlen(buf) < ahp_xc_get_packetsize()-1) {
+        ret = -EBUSY;
+        goto err_end;
+    }
     ahp_xc_enable_capture(0);
-    if(packet == NULL)
+    if(packet == NULL) {
+        ret = -EINVAL;
         goto end;
+    }
     buf += 16;
     for(x = 0; x < ahp_xc_get_nlines(); x++) {
         sample[n] = 0;
         memcpy(sample, buf, (unsigned int)n);
-        if(1>sscanf(sample, "%lX", &packet->counts[x]))
-            goto err_end;
+        if(1>sscanf(sample, "%lX", &packet->counts[x])) {
+            ret = -ENOENT;
+            goto end;
+        }
         packet->counts[x] = (packet->counts[x] == 0 ? 1 : packet->counts[x]);
         buf += n;
     }
@@ -367,8 +423,10 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         for(y = 0; y < ahp_xc_get_autocorrelator_jittersize(); y++) {
             sample[n] = 0;
             memcpy(sample, buf, (unsigned int)n);
-            if(1>sscanf(sample, "%lX",  &packet->autocorrelations[x].correlations[y].correlations))
-                goto err_end;
+            if(1>sscanf(sample, "%lX",  &packet->autocorrelations[x].correlations[y].correlations)) {
+                ret = -ENOENT;
+                goto end;
+            }
             packet->autocorrelations[x].correlations[y].counts = packet->counts[x];
             packet->autocorrelations[x].correlations[y].coherence = (double)packet->autocorrelations[x].correlations[y].correlations/(double)packet->autocorrelations[x].correlations[y].counts;
             buf += n;
@@ -380,8 +438,10 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
             for(z = 0; z < (int)packet->crosscorrelations[idx].jitter_size; z++) {
                 sample[n] = 0;
                 memcpy(sample, buf, (unsigned int)n);
-                if(1>sscanf(sample, "%lX",  &packet->crosscorrelations[x].correlations[z].correlations))
-                    goto err_end;
+                if(1>sscanf(sample, "%lX",  &packet->crosscorrelations[x].correlations[z].correlations)) {
+                    ret = -ENOENT;
+                    goto end;
+                }
                 packet->crosscorrelations[idx].correlations[z].counts = (packet->counts[x]+packet->counts[y])/2;
                 packet->crosscorrelations[idx].correlations[z].coherence = (double)packet->crosscorrelations[idx].correlations[z].correlations/(double)packet->crosscorrelations[idx].correlations[z].counts;
                 idx ++;
@@ -428,7 +488,7 @@ retry:
     ahp_xc_delaysize = _delaysize;
     ahp_xc_jittersize = _jittersize;
     ahp_xc_flags = _flags;
-    ahp_xc_packetsize = (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines()+(ahp_xc_get_crosscorrelator_jittersize()*2-1)*ahp_xc_get_nbaselines())*ahp_xc_get_bps()/4+16;
+    ahp_xc_packetsize = (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines()+(ahp_xc_get_crosscorrelator_jittersize()*2-1)*ahp_xc_get_nbaselines())*ahp_xc_get_bps()/4+16+1;
     ahp_xc_frequency = (int)((long)1000000000000/(long)(!_tau?1:_tau));
     return 0;
 }
