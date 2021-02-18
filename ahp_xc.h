@@ -47,7 +47,7 @@ extern "C" {
 /*@{*/
 
 ///AHP_XC_VERSION This library version
-#define AHP_XC_VERSION 0x010012
+#define AHP_XC_VERSION 0x010013
 
 ///AHP_XC_LIVE_AUTOCORRELATOR indicates if the correlator can do live spectrum analysis
 #define AHP_XC_LIVE_AUTOCORRELATOR (1<<0)
@@ -109,29 +109,35 @@ typedef enum {
 } xc_test;
 
 /**
-* \brief This type is used for correlations
+* \brief Correlations structure
 */
 typedef struct {
-    unsigned long correlations;
-    unsigned long counts;
-    double coherence;
+    unsigned long correlations; ///Correlations count
+    unsigned long counts; ///Pulses count
+    double coherence; ///Coherence ratio given by correlations/counts
 } ahp_xc_correlation;
 
+/**
+* \brief Sample structure
+*/
 typedef struct {
-    unsigned long jitter_size;
-    ahp_xc_correlation *correlations;
+    unsigned long jitter_size; ///Maximum lag in a single shot
+    ahp_xc_correlation *correlations; ///Correlations array, of size jitter_size in an ahp_xc_packet
 } ahp_xc_sample;
 
+/**
+* \brief Packet structure
+*/
 typedef struct {
-    unsigned long n_lines;
-    unsigned long n_baselines;
-    unsigned long tau;
-    unsigned long bps;
-    unsigned long cross_lag;
-    unsigned long auto_lag;
-    unsigned long* counts;
-    ahp_xc_sample* autocorrelations;
-    ahp_xc_sample* crosscorrelations;
+    unsigned long n_lines; ///Number of lines in this correlator
+    unsigned long n_baselines; ///Total number of baselines obtainable
+    unsigned long tau; ///Bandwidth inverse frequency
+    unsigned long bps; ///Bits capacity in each sample
+    unsigned long cross_lag; ///Maximum crosscorrelation lag in a single shot
+    unsigned long auto_lag; ///Maximum autocorrelation lag in a single shot
+    unsigned long* counts; ///Counts in the current shot
+    ahp_xc_sample* autocorrelations; ///Autocorrelations in the current shot
+    ahp_xc_sample* crosscorrelations; ///Crosscorrelations in the current shot
 } ahp_xc_packet;
 
 /*@}*/
@@ -269,39 +275,55 @@ DLL_EXPORT void ahp_xc_free_packet(ahp_xc_packet *packet);
 
 /**
 * \brief Allocate and return a samples array
+* \param nlines The Number of samples to be allocated.
+* \param len The jitter_size and correlations field size of each sample.
 * \return Returns the samples array
+* \sa ahp_xc_free_samples
+* \sa ahp_xc_sample
+* \sa ahp_xc_packet
 */
 DLL_EXPORT ahp_xc_sample *ahp_xc_alloc_samples(unsigned long nlines, unsigned long len);
 
 /**
 * \brief Free a previously allocated samples array
 * \param packet the samples array to be freed
+* \sa ahp_xc_alloc_samples
+* \sa ahp_xc_sample
+* \sa ahp_xc_packet
 */
 DLL_EXPORT void ahp_xc_free_samples(unsigned long nlines, ahp_xc_sample *samples);
 
 /**
 * \brief Grab a data packet
-* \param counts The counts of each input pulses within the packet time
-* \param autocorrelations The autocorrelations counts of each input pulses with itself delayed by the clock cycles defined with ahp_xc_set_lag_auto.
-* \param crosscorrelations The crosscorrelations counts of each input's with others' pulses.
+* \param packet The xc_packet structure to be filled.
 * \sa ahp_xc_set_lag_auto
 * \sa ahp_xc_set_lag_cross
+* \sa ahp_xc_alloc_packet
+* \sa ahp_xc_free_packet
+* \sa ahp_xc_packet
 */
 DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 
 /**
 * \brief Scan all available delay channels and get autocorrelations of each input
-* \param autocorrelations A pre-allocated correlation array of size delay_size*num_lines which will be filled with the autocorrelated values.
+* \param index the index of the input chosen for autocorrelation.
+* \param autocorrelations An ahp_xc_sample array pointer that this function will allocate, will be filled with the autocorrelated values and will be of size ahp_xc_delaysize.
 * \param percent A pointer to a double which, during scanning, will be updated with the percent of completion.
 * \param interrupt A pointer to an integer whose value, during execution, if turns into 1 will abort scanning.
+* \sa ahp_xc_get_delaysize
+* \sa ahp_xc_sample
 */
 DLL_EXPORT void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int *interrupt, double *percent);
 
 /**
 * \brief Scan all available delay channels and get crosscorrelations of each input with others
-* \param autocorrelations A pre-allocated correlation array of size (delay_size*2+1)*num_baselines which will be filled with the crosscorrelated values.
+* \param index1 the index of the first input in this baseline.
+* \param index2 the index of the second input in this baseline.
+* \param crosscorrelations An ahp_xc_sample array pointer that this function will allocate, will be filled with the crosscorrelated values and will be of size ahp_xc_delaysize*2-1.
 * \param percent A pointer to a double which, during scanning, will be updated with the percent of completion.
 * \param interrupt A pointer to an integer whose value, during execution, if turns into 1 will abort scanning.
+* \sa ahp_xc_get_delaysize
+* \sa ahp_xc_sample
 */
 DLL_EXPORT void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelation, int *interrupt, double *percent);
 
