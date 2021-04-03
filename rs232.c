@@ -38,8 +38,8 @@
 #define RS232_PORTNR  38
 
 
-static int fd,
-    error, baudrate;
+static int fd = -1,
+    error = 0, baudrate = 57600;
 
 static struct termios new_port_settings, old_port_settings;
 
@@ -240,14 +240,31 @@ int RS232_OpenComport(const char* devname)
     }
 }
 
+ssize_t RS232_AlignFrame(int sof)
+{
+    int n;
+    int c = 0;
+    while(c != sof) {
+        usleep((10000000/baudrate));
+        n = read(fd, &c, 1);
+        if(n<0) {
+          if(errno == EAGAIN)
+              continue;
+          else
+              return -1;
+        }
+    }
+}
+
 ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
     ssize_t nread = 0;
-    ssize_t ntries = size;
+    ssize_t ntries = size*2;
     size_t to_read = size;
+    int n;
     while(to_read > 0  && ntries-- > 0) {
-        usleep(10000000*to_read/baudrate);
-        int n = read(fd, buf+nread, to_read);
+        usleep((10000000/baudrate)*to_read);
+        n = read(fd, buf+nread, to_read);
         if(n<0) {
           if(errno == EAGAIN)
               continue;
@@ -257,7 +274,6 @@ ssize_t RS232_PollComport(unsigned char *buf, int size)
         nread += n;
         to_read -= n;
     }
-
     return nread;
 }
 

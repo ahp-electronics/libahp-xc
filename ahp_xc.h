@@ -47,7 +47,7 @@ extern "C" {
 /*@{*/
 
 ///AHP_XC_VERSION This library version
-#define AHP_XC_VERSION 0x010013
+#define AHP_XC_VERSION 0x010014
 
 ///AHP_XC_LIVE_AUTOCORRELATOR indicates if the correlator can do live spectrum analysis
 #define AHP_XC_LIVE_AUTOCORRELATOR (1<<0)
@@ -313,7 +313,7 @@ DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int *interrupt, double *percent);
+DLL_EXPORT void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int start, unsigned int len, int *interrupt, double *percent);
 
 /**
 * \brief Scan all available delay channels and get crosscorrelations of each input with others

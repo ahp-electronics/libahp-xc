@@ -188,6 +188,16 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
     }
 }
 
+static int ahp_xc_read_packet(unsigned char *buf)
+{
+    int size = ahp_xc_get_packetsize();
+    usleep(ahp_xc_get_packettime());
+    ssize_t nread = RS232_PollComport(buf, (int)size);
+    if(nread < size)
+        return 0;
+    return 1;
+}
+
 void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelations, int *interrupt, double *percent)
 {
     int i = 0, x, y;
@@ -196,10 +206,8 @@ void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **cross
     if(index1==index2)
         return;
     ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)(ahp_xc_get_delaysize()*2-1), (unsigned int)ahp_xc_get_crosscorrelator_jittersize());
-    unsigned int size = (unsigned int)(ahp_xc_get_packetsize()*8);
-    unsigned char* buf = (unsigned char*)malloc(size);
+    unsigned char* buf = (unsigned char*)malloc((unsigned int)(ahp_xc_get_packetsize()));
     ahp_xc_enable_capture(0);
-    RS232_flushRX();
     ahp_xc_set_lag_cross(index1, 0);
     ahp_xc_set_lag_cross(index2, 0);
     ahp_xc_set_lag_auto(index1, 0);
@@ -215,51 +223,43 @@ void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **cross
     while(i-- > 0) {
         if((*interrupt) == 1 || i < 0)
             break;
-        usleep(ahp_xc_get_packettime()*8);
-        ssize_t nread = RS232_PollComport(buf, (int)size);
-        if(nread < size)
+        if(!ahp_xc_read_packet(buf));
             break;
         char *packet = (char*)buf;
-        for(x = 0; x < 8; x++) {
-            if((*interrupt) == 1 || i < 0)
-                break;
-            if(packet == NULL)
-                continue;
-            char *offset = strchr(packet, 0x0d);
-            if(offset != NULL)
-                offset++;
-            if(offset == NULL)
-                continue;
-            offset += 16;
-            for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
-                memcpy(sample, &offset[n*index1], (unsigned int)n);
-                correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
-                memcpy(sample, &offset[n*index2], (unsigned int)n);
-                correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
-                offset += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
-                int idx1 = (index1 < index2 ? index1 : index2);
-                int idx2 = (index1 > index2 ? index1 : index2);
-                offset += n*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
-                memcpy(sample, offset, (unsigned int)n);
-                correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+        if((*interrupt) == 1 || i < 0)
+            break;
+        if(packet == NULL)
+            continue;
+        char *offset = packet;
+        if(offset != NULL)
+            offset++;
+        if(offset == NULL)
+            continue;
+        offset += 16;
+        for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
+            memcpy(sample, &offset[n*index1], (unsigned int)n);
+            correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
+            memcpy(sample, &offset[n*index2], (unsigned int)n);
+            correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
+            correlations[i].correlations[y].counts /= 2;
+            offset += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
+            int idx1 = (index1 < index2 ? index1 : index2);
+            int idx2 = (index1 > index2 ? index1 : index2);
+            offset += n*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
+            memcpy(sample, offset, (unsigned int)n);
+            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+            if(correlations[i].correlations[y].correlations <= correlations[i].correlations[y].counts)
                 correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
-                if(correlations[i].correlations[y].counts == 0 || correlations[i].correlations[y].correlations == 0 || correlations[i].correlations[y].coherence == 1.0) {
-                    if(i>0) {
-                        correlations[i].correlations[y].counts = correlations[i-1].correlations[y].counts;
-                        correlations[i].correlations[y].correlations = correlations[i-1].correlations[y].counts;
-                        correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
-                    }
-                }
-                (*percent) += 50.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
-            }
-            packet = offset;
-            i--;
+            else
+                correlations[i].correlations[y].coherence = correlations[i+1].correlations[y].coherence;
+            (*percent) += 50.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
         }
+        packet = offset;
+        i--;
     }
     ahp_xc_enable_capture(0);
     ahp_xc_clear_test(index1, SCAN_CROSS);
     ahp_xc_enable_capture(0);
-    RS232_flushRX();
     ahp_xc_set_lag_cross(index1, 0);
     ahp_xc_set_lag_cross(index2, 0);
     ahp_xc_set_lag_auto(index1, 0);
@@ -272,46 +272,39 @@ void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **cross
     while(i < ahp_xc_get_delaysize()*2-1) {
         if((*interrupt) == 1 || i >= ahp_xc_get_delaysize()*2-1)
             break;
-        usleep(ahp_xc_get_packettime()*8);
-        ssize_t nread = RS232_PollComport(buf, (int)size);
-        if(nread < size)
+        if(!ahp_xc_read_packet(buf));
             break;
         char *packet = (char*)buf;
-        for(x = 0; x < 8; x++) {
-            if((*interrupt) == 1 || i >= ahp_xc_get_delaysize()*2-1)
-                break;
-            if(packet == NULL)
-                continue;
-            char *offset = strchr(packet, 0x0d);
-            if(offset != NULL)
-                offset++;
-            if(offset == NULL)
-                continue;
-            offset += 16;
-            for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
-                memcpy(sample, &offset[n*index1], (unsigned int)n);
-                correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
-                memcpy(sample, &offset[n*index2], (unsigned int)n);
-                correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
-                offset += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
-                int idx1 = (index1 < index2 ? index1 : index2);
-                int idx2 = (index1 > index2 ? index1 : index2);
-                offset += n*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
-                memcpy(sample, offset, (unsigned int)n);
-                correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+        if((*interrupt) == 1 || i >= ahp_xc_get_delaysize()*2-1)
+            break;
+        if(packet == NULL)
+            continue;
+        char *offset = packet;
+        if(offset != NULL)
+            offset++;
+        if(offset == NULL)
+            continue;
+        offset += 16;
+        for(y = 0; y < ahp_xc_get_crosscorrelator_jittersize()*2-1; y++) {
+            memcpy(sample, &offset[n*index1], (unsigned int)n);
+            correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
+            memcpy(sample, &offset[n*index2], (unsigned int)n);
+            correlations[i].correlations[y].counts += strtoul(sample, NULL, 16);
+            correlations[i].correlations[y].counts /= 2;
+            offset += (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*ahp_xc_get_nlines())*n;
+            int idx1 = (index1 < index2 ? index1 : index2);
+            int idx2 = (index1 > index2 ? index1 : index2);
+            offset += n*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
+            memcpy(sample, offset, (unsigned int)n);
+            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+            if(correlations[i].correlations[y].correlations <= correlations[i].correlations[y].counts)
                 correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
-                if(correlations[i].correlations[y].counts == 0 || correlations[i].correlations[y].correlations == 0 || correlations[i].correlations[y].coherence == 1.0) {
-                    if(i>0) {
-                        correlations[i].correlations[y].counts = correlations[i-1].correlations[y].counts;
-                        correlations[i].correlations[y].correlations = correlations[i-1].correlations[y].counts;
-                        correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
-                    }
-                }
-                (*percent) += 50.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
-            }
-            packet = offset;
-            i++;
+            else
+                correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
+            (*percent) += 50.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
         }
+        packet = offset;
+        i++;
     }
     ahp_xc_enable_capture(0);
     ahp_xc_clear_test(index1, SCAN_CROSS);
@@ -321,60 +314,54 @@ void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **cross
     *crosscorrelations = correlations;
 }
 
-void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int *interrupt, double *percent)
+void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int start, unsigned int len, int *interrupt, double *percent)
 {
     int i = 0, x, y;
     int n = ahp_xc_get_bps()/4;
     *autocorrelations = NULL;
     ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)ahp_xc_get_delaysize(), (unsigned int)ahp_xc_get_autocorrelator_jittersize());
-    unsigned int size = (unsigned int)(ahp_xc_get_packetsize()*8);
-    unsigned char* buf = (unsigned char*)malloc(size);
-    ahp_xc_set_lag_auto(index, 0);
+    unsigned char* buf = (unsigned char*)malloc((unsigned int)(ahp_xc_get_packetsize()));
+    ahp_xc_set_lag_auto(index, start);
     ahp_xc_set_lag_cross(index, 0);
-    RS232_flushRX();
     ahp_xc_set_test(index, SCAN_AUTO);
     ahp_xc_enable_capture(1);
+    start = (start < ahp_xc_get_delaysize()-2 ? start : ahp_xc_get_delaysize()-2);
+    len = (start+len < ahp_xc_get_delaysize() ? len : ahp_xc_get_delaysize()-start);
     i = 0;
     char* sample = (char*)malloc((unsigned int)n+1);
     sample[n] = 0;
     (*percent) = 0;
-    while(i < ahp_xc_get_delaysize()) {
+    while(i < len) {
         if((*interrupt) == 1 || i >= ahp_xc_get_delaysize())
             break;
-        usleep(ahp_xc_get_packettime()*8);
-        ssize_t nread = RS232_PollComport(buf, (int)size);
-        if(nread < size)
+        if(!ahp_xc_read_packet(buf));
             break;
         char *packet = (char*)buf;
-        for(x = 0; x < 8; x++) {
-            if((*interrupt) == 1 || i >= ahp_xc_get_delaysize())
-                break;
-            if(packet == NULL)
-                continue;
-            char *offset = strchr(packet, 0x0d);
-            if(offset != NULL)
-                offset++;
-            else
-                continue;
-            offset += 16;
-            for(y = 0; y < ahp_xc_get_autocorrelator_jittersize(); y++) {
-                memcpy(sample, &offset[n*index], (unsigned int)n);
-                correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
-                memcpy(sample, &offset[(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*index)*n], (unsigned int)n);
-                correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+        if((*interrupt) == 1 || i >= ahp_xc_get_delaysize())
+            break;
+        if(packet == NULL)
+            continue;
+        char *offset = packet;
+        if(offset != NULL)
+            offset++;
+        else
+            continue;
+        offset += 16;
+        for(y = 0; y < ahp_xc_get_autocorrelator_jittersize(); y++) {
+            memcpy(sample, &offset[n*index], (unsigned int)n);
+            correlations[i].correlations[y].counts = strtoul(sample, NULL, 16);
+            memcpy(sample, &offset[(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_jittersize()*index)*n], (unsigned int)n);
+            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
+            if(correlations[i].correlations[y].correlations<=correlations[i].correlations[y].counts)
                 correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
-                if(correlations[i].correlations[y].counts == 0 || correlations[i].correlations[y].correlations == 0 || correlations[i].correlations[y].coherence == 1.0) {
-                    if(i>0) {
-                        correlations[i].correlations[y].counts = correlations[i-1].correlations[y].counts;
-                        correlations[i].correlations[y].correlations = correlations[i-1].correlations[y].counts;
-                        correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
-                    }
-                }
-                (*percent) += 100.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
-            }
-            packet = offset;
-            i++;
+            else if(i>0)
+                correlations[i].correlations[y].coherence = correlations[i-1].correlations[y].coherence;
+            else
+                correlations[i].correlations[y].coherence = 0.0;
+            (*percent) += 100.0 / ahp_xc_get_delaysize() / ahp_xc_get_autocorrelator_jittersize();
         }
+        packet = offset;
+        i++;
     }
     free(buf);
     free(sample);
@@ -387,13 +374,12 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
 {
     int ret = 1;
     int x = 0, y = 0, z = 0;
-    char *data = (char*)malloc((unsigned int)ahp_xc_get_packetsize()*3);
+    char *data = (char*)malloc((unsigned int)ahp_xc_get_packetsize()+1);
     int n = ahp_xc_get_bps()/4;
     char *sample = (char*)malloc((unsigned int)n+1);
-    memset(data, '0', (unsigned int)ahp_xc_get_packetsize()*3);
+    memset(data, '0', (unsigned int)ahp_xc_get_packetsize());
     ahp_xc_enable_capture(1);
-    int n_read = RS232_PollComport((unsigned char*)data, ahp_xc_get_packetsize()*3);
-    if(n_read != ahp_xc_get_packetsize()*3) {
+    if(!ahp_xc_read_packet((unsigned char*)data)) {
         ret = -EIO;
         goto err_end;
     }
@@ -401,14 +387,11 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         ret = -ENODATA;
         goto err_end;
     }
-    unsigned char *buf = strchr(data, 0x0d)+1;
-    unsigned char *end = strchr(buf, 0x0d);
-    *end = 0;
+    unsigned char *buf = data;
     if(strlen(buf) < ahp_xc_get_packetsize()-1) {
         ret = -EBUSY;
         goto err_end;
     }
-    ahp_xc_enable_capture(0);
     if(packet == NULL) {
         ret = -EINVAL;
         goto end;
@@ -467,7 +450,7 @@ end:
 
 int ahp_xc_get_properties()
 {
-    unsigned char data[32];
+    unsigned char data[33];
     ssize_t n_read;
     int ntries = 3;
     unsigned char *buf;
@@ -477,8 +460,8 @@ retry:
     n_read = RS232_PollComport((unsigned char*)data, 32);
     if(n_read <= 0)
         return -EIO;
-    data[31] = 0;
-    buf = strchr(data, 0x0d)+1;
+    data[32] = 0;
+    buf = data;
     ahp_xc_enable_capture(0);
     if((int)(buf-data) >= 16 && ntries-- > 0)
         goto retry;
@@ -502,7 +485,6 @@ retry:
 void ahp_xc_enable_capture(int enable)
 {
     ahp_xc_send_command(ENABLE_CAPTURE, 0);
-    usleep(ahp_xc_get_packettime()*4);
     RS232_flushRX();
     ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)enable);
 }
@@ -589,6 +571,7 @@ void ahp_xc_clear_test(int index, xc_test value)
 
  ssize_t ahp_xc_send_command(xc_cmd c, unsigned char value)
 {
+    RS232_flushTX();
     usleep(1000);
     return send_char((unsigned char)((unsigned char)c|(((unsigned char)(value<<4))|((unsigned char)(value>>4)&~c))));
 }
