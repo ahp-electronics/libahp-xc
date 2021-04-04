@@ -163,7 +163,7 @@ DLL_EXPORT int ahp_xc_connect(const char *port);
 * \brief Connect to a serial port or other stream with the given file descriptor
 * \param fd The file descriptor of the stream
 */
-DLL_EXPORT void ahp_xc_connect_fd(int fd);
+DLL_EXPORT int ahp_xc_connect_fd(int fd);
 
 /**
 * \brief Disconnect from the serial port opened with ahp_xc_connect()
@@ -195,6 +195,12 @@ DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate);
 * \return Returns 0 on success, -1 if any error was encountered
 */
 DLL_EXPORT int ahp_xc_get_properties(void);
+
+/**
+* \brief Obtain the correlator header
+* \return Returns a string containing the header and device identifier
+*/
+DLL_EXPORT char* ahp_xc_get_header();
 
 /**
 * \brief Obtain the correlator bits per sample
@@ -313,7 +319,7 @@ DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int start, unsigned int len, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int start, unsigned int len, int *interrupt, double *percent);
 
 /**
 * \brief Scan all available delay channels and get crosscorrelations of each input with others
@@ -325,7 +331,7 @@ DLL_EXPORT void ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorr
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelation, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelation, int *interrupt, double *percent);
 
 /*@}*/
 /**
@@ -337,7 +343,7 @@ DLL_EXPORT void ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sam
 * \brief Enable capture by starting serial transmission from the correlator
 * \param enable 1 to enable capture, 0 to stop capturing.
 */
-DLL_EXPORT void ahp_xc_enable_capture(int enable);
+DLL_EXPORT int ahp_xc_enable_capture(int enable);
 
 /**
 * \brief Switch on or off the led lines of the correlator

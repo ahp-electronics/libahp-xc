@@ -5,6 +5,9 @@ project(ahp_xc C CXX)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 include(GNUInstallDirs)
 
+find_package(Threads REQUIRED)
+
+
 set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(AHPXC_VERSION "1.0.14")
 set(AHPXC_SOVERSION "1")
@@ -18,6 +21,8 @@ link_directories(${CMAKE_LIBRARY_PATH})
 
 add_library(ahp_xc SHARED ${SOURCES})
 set_target_properties(ahp_xc PROPERTIES VERSION ${AHPXC_VERSION} SOVERSION ${AHPXC_SOVERSION})
+
+target_link_libraries(ahp_xc ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS ahp_xc LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 install(FILES ahp_xc.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)

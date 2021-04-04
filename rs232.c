@@ -238,9 +238,10 @@ int RS232_OpenComport(const char* devname)
       fprintf(stderr, "Another process has locked the comport.\n");
       return(1);
     }
+    return 0;
 }
 
-ssize_t RS232_AlignFrame(int sof)
+int RS232_AlignFrame(int sof)
 {
     int n;
     int c = 0;
@@ -251,20 +252,21 @@ ssize_t RS232_AlignFrame(int sof)
           if(errno == EAGAIN)
               continue;
           else
-              return -1;
+              return 1;
         }
     }
+    return 0;
 }
 
 ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
     ssize_t nread = 0;
-    ssize_t ntries = size*2;
+    ssize_t ntries = size;
     size_t to_read = size;
     int n;
     while(to_read > 0  && ntries-- > 0) {
-        usleep((10000000/baudrate)*to_read);
-        n = read(fd, buf+nread, to_read);
+        usleep((10000000/baudrate)*1);
+        n = read(fd, buf+nread, 1);
         if(n<0) {
           if(errno == EAGAIN)
               continue;
