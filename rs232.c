@@ -261,15 +261,15 @@ int RS232_AlignFrame(int sof)
 ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
     ssize_t nread = 0;
-    ssize_t ntries = size;
+    int ntries = size;
     size_t to_read = size;
     int n;
-    while(to_read > 0  && ntries-- > 0) {
-        usleep((10000000/baudrate)*1);
+    while(to_read > 0 && ntries-->0) {
+        usleep(10000000/baudrate);
         n = read(fd, buf+nread, 1);
         if(n<0) {
           if(errno == EAGAIN)
-              continue;
+              return nread;
           else
               return n;
         }
@@ -282,17 +282,11 @@ ssize_t RS232_PollComport(unsigned char *buf, int size)
 
 ssize_t RS232_SendByte(unsigned char byte)
 {
+  usleep(500000000/baudrate);
   ssize_t n = write(fd, &byte, (size_t)1);
-  if(n < 0)
+  if(n < 1)
   {
-    if(errno == EAGAIN)
-    {
-      return 0;
-    }
-    else
-    {
       return 1;
-    }
   }
 
   return(0);
