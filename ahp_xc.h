@@ -172,6 +172,14 @@ DLL_EXPORT int ahp_xc_connect_fd(int fd);
 DLL_EXPORT void ahp_xc_disconnect(void);
 
 /**
+* \brief Report connection status
+* \sa ahp_xc_connect
+* \sa ahp_xc_connect_fd
+* \sa ahp_xc_disconnect
+*/
+DLL_EXPORT int ahp_xc_is_connected();
+
+/**
 * \brief Obtain the current baud rate
 * \return Returns the baud rate
 */
@@ -311,6 +319,19 @@ DLL_EXPORT void ahp_xc_free_samples(unsigned long nlines, ahp_xc_sample *samples
 DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 
 /**
+* \brief Initiate an autocorrelation scan
+* \param index The line index.
+* \param start the starting channel for this scan.
+*/
+DLL_EXPORT void ahp_xc_start_autocorrelation_scan(int index, int start);
+
+/**
+* \brief End an autocorrelation scan
+* \param index The line index.
+*/
+DLL_EXPORT void ahp_xc_end_autocorrelation_scan(int index);
+
+/**
 * \brief Scan all available delay channels and get autocorrelations of each input
 * \param index the index of the input chosen for autocorrelation.
 * \param autocorrelations An ahp_xc_sample array pointer that this function will allocate, will be filled with the autocorrelated values and will be of size ahp_xc_delaysize.
@@ -322,6 +343,19 @@ DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 DLL_EXPORT int ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int start, unsigned int len, int *interrupt, double *percent);
 
 /**
+* \brief Initiate a crosscorrelation scan
+* \param index The line index.
+* \param start the starting channel for this scan.
+*/
+DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(int index, int start);
+
+/**
+* \brief End a crosscorrelation scan
+* \param index The line index.
+*/
+DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(int index);
+
+/**
 * \brief Scan all available delay channels and get crosscorrelations of each input with others
 * \param index1 the index of the first input in this baseline.
 * \param index2 the index of the second input in this baseline.
@@ -331,7 +365,7 @@ DLL_EXPORT int ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorre
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelation, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelations, unsigned int start1, unsigned int start2, unsigned int size, int *interrupt, double *percent);
 
 /*@}*/
 /**
