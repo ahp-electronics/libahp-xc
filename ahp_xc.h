@@ -47,8 +47,12 @@ extern "C" {
 /*@{*/
 
 ///AHP_XC_VERSION This library version
-#define AHP_XC_VERSION 0x010014
+#define AHP_XC_VERSION 0x010015
 
+///AHP_XC_LIVE_AUTOCORRELATOR indicates if the correlator can do live spectrum analysis
+#define AHP_XC_LIVE_AUTOCORRELATOR (1<<0)
+///AHP_XC_LIVE_CROSSCORRELATOR indicates if the correlator can do live cross-correlation
+#define AHP_XC_LIVE_CROSSCORRELATOR (1<<1)
 ///AHP_XC_HAS_LED_FLAGS indicates if the correlator has led lines available to drive
 #define AHP_XC_HAS_LED_FLAGS (1<<2)
 ///AHP_XC_HAS_CROSSCORRELATOR indicates if the correlator can cross-correlate or can autocorrelate only
