@@ -49,14 +49,12 @@ extern "C" {
 ///AHP_XC_VERSION This library version
 #define AHP_XC_VERSION 0x010014
 
-///AHP_XC_LIVE_AUTOCORRELATOR indicates if the correlator can do live spectrum analysis
-#define AHP_XC_LIVE_AUTOCORRELATOR (1<<0)
-///AHP_XC_LIVE_CROSSCORRELATOR indicates if the correlator can do live cross-correlation
-#define AHP_XC_LIVE_CROSSCORRELATOR (1<<1)
 ///AHP_XC_HAS_LED_FLAGS indicates if the correlator has led lines available to drive
 #define AHP_XC_HAS_LED_FLAGS (1<<2)
 ///AHP_XC_HAS_CROSSCORRELATOR indicates if the correlator can cross-correlate or can autocorrelate only
 #define AHP_XC_HAS_CROSSCORRELATOR (1<<3)
+///AHP_XC_LIVE_CORRELATION indicates if the correlator can do live correlation
+#define AHP_XC_LIVE_CORRELATION (1<<4)
 
 /**
  * \defgroup DSP_Defines DSP API defines
@@ -98,14 +96,23 @@ typedef enum {
 } xc_cmd;
 
 /**
+* \brief The XC capture flags
+*/
+typedef enum {
+    CAP_ENABLE = 0, /// Enable capture
+    CAP_EXT_CLK = 1, /// Enable external clock
+} xc_capture_flags;
+
+/**
 * \brief The XC firmare commands
 */
 typedef enum {
-    TEST_NONE = 0,
-    TEST_SIGNAL = 1,
-    SCAN_AUTO = 2,
-    SCAN_CROSS = 4,
-    TEST_ALL = 0xf,
+    TEST_NONE = 0, /// No extra signals or functions
+    TEST_SIGNAL = 1, /// PLL clock on voltage led
+    SCAN_AUTO = 2, /// Autocorrelator continuum scan
+    SCAN_CROSS = 4, /// Crosscorrelator continuum scan
+    TEST_BCM = 8, /// BCM modulation on voltage led
+    TEST_ALL = 0xf, /// All tests enabled
 } xc_test;
 
 /**
@@ -374,10 +381,16 @@ DLL_EXPORT int ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_samp
 /*@{*/
 
 /**
-* \brief Enable capture by starting serial transmission from the correlator
-* \param enable 1 to enable capture, 0 to stop capturing.
+* \brief Set integration flags
+* \param flag the flag to be set.
 */
-DLL_EXPORT int ahp_xc_enable_capture(int enable);
+DLL_EXPORT int ahp_xc_set_capture_flag(xc_capture_flags flag);
+
+/**
+* \brief Clear integration flags
+* \param flag the flag to be clear.
+*/
+DLL_EXPORT int ahp_xc_clear_capture_flag(xc_capture_flags flag);
 
 /**
 * \brief Switch on or off the led lines of the correlator

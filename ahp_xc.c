@@ -49,7 +49,7 @@ static int write_idx = 0;
 static int tail = 0;
 static unsigned char* grab_next_valid_packet();
 static int packet_error(unsigned char* packet);
-
+static unsigned char ahp_xc_capture_flags = 0;
 static void clear_tail()
 {
     int err = 0;
@@ -393,8 +393,8 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
 
 void ahp_xc_start_crosscorrelation_scan(int index, int start)
 {
-    ahp_xc_enable_capture(0);
-    ahp_xc_enable_capture(1);
+    ahp_xc_set_capture_flag(CAP_ENABLE);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_set_lag_cross(index, start-1<0?0:start-1);
     ahp_xc_set_test(index, SCAN_CROSS);
 }
@@ -403,7 +403,7 @@ void ahp_xc_end_crosscorrelation_scan(int index)
 {
     ahp_xc_clear_test(index, SCAN_CROSS);
     grab_last_packet();
-    ahp_xc_enable_capture(0);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
 }
 
 int ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crosscorrelations, unsigned int start1, unsigned int start2, unsigned int size, int *interrupt, double *percent)
@@ -484,7 +484,7 @@ int ahp_xc_scan_crosscorrelations(int index1, int index2, ahp_xc_sample **crossc
         free(packet);
     }
 cross_fail:
-    ahp_xc_enable_capture(0);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_clear_test(index1, SCAN_CROSS);
     ahp_xc_clear_test(index2, SCAN_CROSS);
     free(sample);
@@ -494,8 +494,8 @@ cross_fail:
 
 void ahp_xc_start_autocorrelation_scan(int index, int start)
 {
-    ahp_xc_enable_capture(0);
-    ahp_xc_enable_capture(1);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
+    ahp_xc_set_capture_flag(CAP_ENABLE);
     ahp_xc_set_lag_auto(index, start-1<0?0:start-1);
     ahp_xc_set_test(index, SCAN_AUTO);
 }
@@ -504,7 +504,7 @@ void ahp_xc_end_autocorrelation_scan(int index)
 {
     ahp_xc_clear_test(index, SCAN_AUTO);
     grab_last_packet();
-    ahp_xc_enable_capture(0);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
 }
 
 int ahp_xc_scan_autocorrelations(int index, ahp_xc_sample **autocorrelations, int start, unsigned int len, int *interrupt, double *percent)
@@ -621,14 +621,14 @@ int ahp_xc_get_properties()
     ssize_t n_read;
     int ntries = 4096;
     int i;
-    ahp_xc_enable_capture(0);
-    ahp_xc_enable_capture(1);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
+    ahp_xc_set_capture_flag(CAP_ENABLE);
     while(ntries-- > 0) {
         data = grab_next_valid_packet();
         if(data)
             break;
     }
-    ahp_xc_enable_capture(0);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
     if(ntries < 0 || data == NULL)
         return -EBUSY;
     int _bps, _nlines, _delaysize, _jittersize, _flags, _tau;
@@ -648,10 +648,21 @@ int ahp_xc_get_properties()
     return 0;
 }
 
-int ahp_xc_enable_capture(int enable)
+int ahp_xc_set_capture_flag(xc_capture_flags flag)
 {
-    int ret = ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)enable);
-    run_stop_threads(enable);
+    ahp_xc_capture_flags |= (1 << flag);
+    int ret = ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)ahp_xc_capture_flags);
+    if(flag == CAP_ENABLE)
+        run_stop_threads(1);
+    return ret;
+}
+
+int ahp_xc_clear_capture_flag(xc_capture_flags flag)
+{
+    ahp_xc_capture_flags &= ~(1 << flag);
+    int ret = ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)ahp_xc_capture_flags);
+    if(flag == CAP_ENABLE)
+        run_stop_threads(0);
     return ret;
 }
 
