@@ -252,12 +252,12 @@ int ahp_xc_get_delaysize()
 
 int ahp_xc_get_autocorrelator_jittersize()
 {
-    return (ahp_xc_flags & AHP_XC_LIVE_AUTOCORRELATOR) ? ahp_xc_jittersize : 1;
+    return ahp_xc_jittersize;
 }
 
 int ahp_xc_get_crosscorrelator_jittersize()
 {
-    return (ahp_xc_flags & AHP_XC_LIVE_CROSSCORRELATOR) ? ahp_xc_jittersize : 1;
+    return ahp_xc_jittersize;
 }
 
 int ahp_xc_get_frequency()
