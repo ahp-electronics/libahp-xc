@@ -245,6 +245,7 @@ int RS232_AlignFrame(int sof)
 {
     int n;
     int c = 0;
+    RS232_flushRX();
     while(c != sof) {
         usleep((10000000/baudrate));
         n = read(fd, &c, 1);
@@ -266,7 +267,7 @@ ssize_t RS232_PollComport(unsigned char *buf, int size)
     int n;
     while(to_read > 0 && ntries-->0) {
         usleep(10000000/baudrate);
-        n = read(fd, buf+nread, 1);
+        n = read(fd, buf+nread, to_read);
         if(n<0) {
           if(errno == EAGAIN)
               return nread;

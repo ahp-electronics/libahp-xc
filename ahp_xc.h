@@ -47,18 +47,14 @@ extern "C" {
 /*@{*/
 
 ///AHP_XC_VERSION This library version
-#define AHP_XC_VERSION 0x010015
+#define AHP_XC_VERSION 0x010016
 
-///AHP_XC_LIVE_AUTOCORRELATOR indicates if the correlator can do live spectrum analysis
-#define AHP_XC_LIVE_AUTOCORRELATOR (1<<0)
-///AHP_XC_LIVE_CROSSCORRELATOR indicates if the correlator can do live cross-correlation
-#define AHP_XC_LIVE_CROSSCORRELATOR (1<<1)
+///AHP_XC_HAS_PSU indicates if the correlator has an internal PSU PWM driver on 2nd flag bit
+#define AHP_XC_HAS_PSU (1<<2)
 ///AHP_XC_HAS_LED_FLAGS indicates if the correlator has led lines available to drive
-#define AHP_XC_HAS_LED_FLAGS (1<<2)
+#define AHP_XC_HAS_LED_FLAGS (1<<1)
 ///AHP_XC_HAS_CROSSCORRELATOR indicates if the correlator can cross-correlate or can autocorrelate only
-#define AHP_XC_HAS_CROSSCORRELATOR (1<<3)
-///AHP_XC_LIVE_CORRELATION indicates if the correlator can do live correlation
-#define AHP_XC_LIVE_CORRELATION (1<<4)
+#define AHP_XC_HAS_CROSSCORRELATOR (1<<0)
 
 /**
  * \defgroup DSP_Defines DSP API defines
@@ -67,6 +63,7 @@ extern "C" {
 
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
+#define XC_PLL_FREQUENCY 400000000
 
 /*@}*/
 
@@ -105,6 +102,7 @@ typedef enum {
 typedef enum {
     CAP_ENABLE = 0, /// Enable capture
     CAP_EXT_CLK = 1, /// Enable external clock
+    CAP_HORIZ = 2, /// Enable external clock
 } xc_capture_flags;
 
 /**
@@ -132,8 +130,8 @@ typedef struct {
 * \brief Sample structure
 */
 typedef struct {
-    unsigned long jitter_size; ///Maximum lag in a single shot
-    ahp_xc_correlation *correlations; ///Correlations array, of size jitter_size in an ahp_xc_packet
+    unsigned long lag_size; ///Maximum lag in a single shot
+    ahp_xc_correlation *correlations; ///Correlations array, of size lag_size in an ahp_xc_packet
 } ahp_xc_sample;
 
 /**
@@ -246,22 +244,23 @@ DLL_EXPORT int ahp_xc_get_nbaselines(void);
 DLL_EXPORT int ahp_xc_get_delaysize(void);
 
 /**
-* \brief Obtain the correlator jitter buffer size for autocorrelations
-* \return Returns the jitter size
+* \brief Obtain the correlator lag buffer size for autocorrelations
+* \return Returns the lag size
 */
-DLL_EXPORT int ahp_xc_get_autocorrelator_jittersize(void);
+DLL_EXPORT int ahp_xc_get_autocorrelator_lagsize(void);
 
 /**
-* \brief Obtain the correlator jitter buffer size for crosscorrelations
-* \return Returns the jitter size
+* \brief Obtain the correlator lag buffer size for crosscorrelations
+* \return Returns the lag size
 */
-DLL_EXPORT int ahp_xc_get_crosscorrelator_jittersize(void);
+DLL_EXPORT int ahp_xc_get_crosscorrelator_lagsize(void);
 
 /**
 * \brief Obtain the correlator maximum readout frequency
+* \param index The line index.
 * \return Returns the maximum readout frequency
 */
-DLL_EXPORT int ahp_xc_get_frequency(void);
+DLL_EXPORT int ahp_xc_get_frequency();
 
 /**
 * \brief Obtain the correlator maximum readout frequency
@@ -280,6 +279,24 @@ DLL_EXPORT unsigned int ahp_xc_get_packettime(void);
 * \return Returns the packet size
 */
 DLL_EXPORT int ahp_xc_get_packetsize(void);
+
+/**
+* \brief Returns the cross-correlation capability of the device
+* \return Returns 1 if crosscorrelation is possible
+*/
+DLL_EXPORT int ahp_xc_has_crosscorrelator(void);
+
+/**
+* \brief Returns if the device offers internal PSU line
+* \return Returns 1 if PSU is available
+*/
+DLL_EXPORT int ahp_xc_has_psu(void);
+
+/**
+* \brief Returns if the device has led lines to drive
+* \return Returns 1 if leds are available
+*/
+DLL_EXPORT int ahp_xc_has_led_flags(void);
 /*@}*/
 /**
  * \defgroup Data and streaming
@@ -301,7 +318,7 @@ DLL_EXPORT void ahp_xc_free_packet(ahp_xc_packet *packet);
 /**
 * \brief Allocate and return a samples array
 * \param nlines The Number of samples to be allocated.
-* \param len The jitter_size and correlations field size of each sample.
+* \param len The lag_size and correlations field size of each sample.
 * \return Returns the samples array
 * \sa ahp_xc_free_samples
 * \sa ahp_xc_sample
@@ -443,6 +460,18 @@ DLL_EXPORT void ahp_xc_set_test(int index, xc_test value);
 * \param value The test type
 */
 DLL_EXPORT void ahp_xc_clear_test(int index, xc_test value);
+
+/**
+* \brief Get the current status of the test features
+* \param index The line index starting from 0
+*/
+DLL_EXPORT unsigned char ahp_xc_get_test(int index);
+
+/**
+* \brief Get the current status of the leds on line
+* \param index The line index starting from 0
+*/
+DLL_EXPORT unsigned char ahp_xc_get_leds(int index);
 
 /**
 * \brief Send an arbitrary command to the AHP xc device
