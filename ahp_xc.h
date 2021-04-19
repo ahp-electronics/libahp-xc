@@ -63,7 +63,9 @@ extern "C" {
 
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
-#define XC_PLL_FREQUENCY 400000000
+
+///AHP_XC_PLL_FREQUENCY is the PLL frequency of the XC cross-correlators
+#define AHP_XC_PLL_FREQUENCY 400000000
 
 /*@}*/
 
