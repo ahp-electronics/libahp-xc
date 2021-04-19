@@ -215,7 +215,6 @@ int ahp_xc_connect(const char *port)
     }
     return ret;
 }
-
 void ahp_xc_disconnect()
 {
     if(ahp_xc_connected) {

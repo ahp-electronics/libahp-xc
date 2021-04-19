@@ -175,7 +175,7 @@ DLL_EXPORT int ahp_xc_connect(const char *port);
 DLL_EXPORT int ahp_xc_connect_fd(int fd);
 
 /**
-* \brief Disconnect from the serial port opened with ahp_xc_connect()
+* \brief Disconnect from the serial port opened with ahp_xc_connect
 * \sa ahp_xc_connect
 */
 DLL_EXPORT void ahp_xc_disconnect(void);
@@ -186,7 +186,7 @@ DLL_EXPORT void ahp_xc_disconnect(void);
 * \sa ahp_xc_connect_fd
 * \sa ahp_xc_disconnect
 */
-DLL_EXPORT unsigned int ahp_xc_is_connected();
+DLL_EXPORT unsigned int ahp_xc_is_connected(void);
 
 /**
 * \brief Obtain the current baud rate
@@ -217,7 +217,7 @@ DLL_EXPORT int ahp_xc_get_properties(void);
 * \brief Obtain the correlator header
 * \return Returns a string containing the header and device identifier
 */
-DLL_EXPORT char* ahp_xc_get_header();
+DLL_EXPORT char* ahp_xc_get_header(void);
 
 /**
 * \brief Obtain the correlator bits per sample
@@ -260,7 +260,7 @@ DLL_EXPORT size_t ahp_xc_get_crosscorrelator_lagsize(void);
 * \param index The line index.
 * \return Returns the maximum readout frequency
 */
-DLL_EXPORT unsigned int ahp_xc_get_frequency();
+DLL_EXPORT unsigned int ahp_xc_get_frequency(void);
 
 /**
 * \brief Obtain the correlator maximum readout frequency
@@ -307,7 +307,7 @@ DLL_EXPORT int ahp_xc_has_led_flags(void);
 * \brief Allocate and return a packet structure
 * \return Returns the packet structure
 */
-DLL_EXPORT ahp_xc_packet *ahp_xc_alloc_packet();
+DLL_EXPORT ahp_xc_packet *ahp_xc_alloc_packet(void);
 
 /**
 * \brief Free a previously allocated packet structure
@@ -483,7 +483,7 @@ DLL_EXPORT ssize_t ahp_xc_send_command(xc_cmd cmd, unsigned char value);
 /**
 * \brief Obtain the current libahp-xc version
 */
-DLL_EXPORT inline unsigned int ahp_xc_get_version() { return AHP_XC_VERSION; }
+DLL_EXPORT inline unsigned int ahp_xc_get_version(void) { return AHP_XC_VERSION; }
 
 /*@}*/
 /*@}*/
