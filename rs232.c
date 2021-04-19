@@ -243,12 +243,12 @@ int RS232_OpenComport(const char* devname)
 
 int RS232_AlignFrame(int sof)
 {
-    int n;
+    ssize_t n;
     int c = 0;
     RS232_flushRX();
     while(c != sof) {
-        usleep((10000000/baudrate));
-        n = read(fd, &c, 1);
+        usleep((10000000/(unsigned)baudrate));
+        n = read(fd, (unsigned*)&c, 1);
         if(n<0) {
           if(errno == EAGAIN)
               continue;
@@ -259,15 +259,15 @@ int RS232_AlignFrame(int sof)
     return 0;
 }
 
-ssize_t RS232_PollComport(unsigned char *buf, int size)
+ssize_t RS232_PollComport(char *buf, size_t size)
 {
     ssize_t nread = 0;
-    int ntries = size;
-    size_t to_read = size;
-    int n;
+    unsigned long ntries = size;
+    ssize_t to_read = (unsigned)size;
+    ssize_t n;
     while(to_read > 0 && ntries-->0) {
-        usleep(10000000/baudrate);
-        n = read(fd, buf+nread, to_read);
+        usleep(10000000/(unsigned)baudrate);
+        n = read(fd, buf+nread, (size_t)to_read);
         if(n<0) {
           if(errno == EAGAIN)
               return nread;
@@ -283,7 +283,7 @@ ssize_t RS232_PollComport(unsigned char *buf, int size)
 
 ssize_t RS232_SendByte(unsigned char byte)
 {
-  usleep(500000000/baudrate);
+  usleep(500000000/(unsigned)baudrate);
   ssize_t n = write(fd, &byte, (size_t)1);
   if(n < 1)
   {
