@@ -51,20 +51,18 @@ static int grab_next_packet(char* buf)
     if(nread < 0) {
         err = -ETIMEDOUT;
     } else {
-        if(strlen(ahp_xc_get_header())==16) {
-            off_t len = (off_t)(strchr(buf, '\r')-buf);
-            if(len < size-1) {
-                if(len>=16 && strncmp(ahp_xc_get_header(), buf, 16)) {
-                    err = -EINVAL;
-                } else {
-                    err = -EPIPE;
-                }
-                RS232_AlignFrame('\r');
+        off_t len = (off_t)(strchr(buf, '\r')-buf);
+        if(len < size-1) {
+            if(len>=16 && strncmp(ahp_xc_get_header(), buf, 16)) {
+                err = -EINVAL;
+            } else {
+                err = -EPIPE;
             }
+            RS232_AlignFrame('\r');
         }
-        if(strlen(buf) < size) {
-            err = -ENODATA;
-        }
+    }
+    if(strlen(buf) < size) {
+        err = -ENODATA;
     }
     return err;
 }
