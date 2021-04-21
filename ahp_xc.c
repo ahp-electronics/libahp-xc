@@ -294,18 +294,24 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
 {
     int r = -1, y;
     unsigned int n = ahp_xc_get_bps()/4;
+    unsigned int idx1 = (index1 < index2 ? index1 : index2);
+    unsigned int idx2 = (index1 > index2 ? index1 : index2);
     *crosscorrelations = NULL;
-    ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)ahp_xc_get_delaysize(), (unsigned int)ahp_xc_get_autocorrelator_lagsize());
+    if(index1 == index2)
+        return r;
     char* sample = (char*)malloc((unsigned int)n+1);
     sample[n] = 0;
-    (*percent) = 0;
-    r++;
-    start1 = (start1 > ahp_xc_get_delaysize()-2 ? start1 : (off_t)ahp_xc_get_delaysize()-2);
-    start2 = (start2 > ahp_xc_get_delaysize()-2 ? start2 : (off_t)ahp_xc_get_delaysize()-2);
+    *percent = 0;
     size = (size < 5 ? 5 : size);
+    ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)size, (unsigned int)ahp_xc_get_crosscorrelator_lagsize());
+    r++;
+    start1 = (start1 < ahp_xc_get_delaysize()-2 ? start1 : (off_t)ahp_xc_get_delaysize()-2);
+    start2 = (start2 < ahp_xc_get_delaysize()-2 ? start2 : (off_t)ahp_xc_get_delaysize()-2);
+    ahp_xc_set_capture_flag(CAP_ENABLE);
     ahp_xc_set_lag_cross(index2, (int)start2);
     ahp_xc_set_lag_auto(index1, 0);
     ahp_xc_set_lag_auto(index2, 0);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_start_crosscorrelation_scan(index1, start1);
     size_t i = size/2;
     while(i > 0) {
@@ -316,14 +322,12 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
             continue;
         char *packet = data;
         packet += 16;
-        memcpy(sample, &packet[n*index1], (unsigned int)n);
+        memcpy(sample, &packet[n*idx1], (unsigned int)n);
         unsigned long counts = strtoul(sample, NULL, 16);
-        memcpy(sample, &packet[n*index2], (unsigned int)n);
+        memcpy(sample, &packet[n*idx2], (unsigned int)n);
         counts += strtoul(sample, NULL, 16);
         counts /= 2;
         packet += n*(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines());
-        unsigned int idx1 = (index1 < index2 ? index1 : index2);
-        unsigned int idx2 = (index1 > index2 ? index1 : index2);
         packet += n*ahp_xc_get_crosscorrelator_lagsize()*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
         for(y = 0; y < ahp_xc_get_crosscorrelator_lagsize()*2-1; y++) {
             memcpy(sample, packet, (unsigned int)n);
@@ -332,15 +336,17 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
             correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
             packet += n;
         }
-        (*percent) += 50.0 / size;
-        i++;
+        (*percent) += 100.0 / size;
+        i--;
         r++;
         free(data);
     }
     ahp_xc_end_crosscorrelation_scan(index1);
+    ahp_xc_set_capture_flag(CAP_ENABLE);
     ahp_xc_set_lag_cross(index1, (int)start1);
     ahp_xc_set_lag_auto(index1, 0);
     ahp_xc_set_lag_auto(index2, 0);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_start_crosscorrelation_scan(index2, start2);
     i = size/2;
     while(i < size) {
@@ -351,14 +357,12 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
             continue;
         char *packet = data;
         packet += 16;
-        memcpy(sample, &packet[n*index1], (unsigned int)n);
+        memcpy(sample, &packet[n*idx1], (unsigned int)n);
         unsigned long counts = strtoul(sample, NULL, 16);
-        memcpy(sample, &packet[n*index2], (unsigned int)n);
+        memcpy(sample, &packet[n*idx2], (unsigned int)n);
         counts += strtoul(sample, NULL, 16);
         counts /= 2;
         packet += n*(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines());
-        unsigned int idx1 = (index1 < index2 ? index1 : index2);
-        unsigned int idx2 = (index1 > index2 ? index1 : index2);
         packet += n*ahp_xc_get_crosscorrelator_lagsize()*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
         for(y = 0; y < ahp_xc_get_crosscorrelator_lagsize()*2-1; y++) {
             memcpy(sample, packet, (unsigned int)n);
@@ -367,7 +371,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
             correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
             packet += n;
         }
-        (*percent) += 50.0 / size;
+        (*percent) += 100.0 / size;
         i++;
         r++;
         free(data);
@@ -405,7 +409,9 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     r++;
     start = (start < ahp_xc_get_delaysize()-2 ? start : (off_t)ahp_xc_get_delaysize()-2);
     off_t end = (start+(off_t)len < ahp_xc_get_delaysize() ? start+(off_t)len : (off_t)ahp_xc_get_delaysize()-1);
+    ahp_xc_set_capture_flag(CAP_ENABLE);
     ahp_xc_set_lag_cross(index, 0);
+    ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_start_autocorrelation_scan(index, start);
     while(i < len) {
         if((*interrupt) || start >= end)
