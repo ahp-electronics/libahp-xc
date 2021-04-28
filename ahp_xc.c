@@ -34,7 +34,7 @@ static unsigned int ahp_xc_frequency = 1;
 static unsigned int ahp_xc_frequency_divider = 0;
 static unsigned int ahp_xc_voltage = 0;
 static unsigned int ahp_xc_connected = 0;
-static size_t ahp_xc_packetsize = 4096;
+static unsigned int ahp_xc_packetsize = 4096;
 static baud_rate ahp_xc_rate = R_57600;
 static char ahp_xc_comport[128];
 static char ahp_xc_header[16] = { 0 };
@@ -43,11 +43,11 @@ static unsigned char ahp_xc_capture_flags = 0;
 static int grab_next_packet(char* buf)
 {
     int err = 0;
-    size_t size = ahp_xc_get_packetsize();
+    unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
     if(size == 16)
-        RS232_AlignFrame('\r');
-    ssize_t nread = RS232_PollComport(buf, size);
+        RS232_AlignFrame('\r', 4096);
+    int nread = RS232_PollComport(buf, (int)size);
     if(nread < 0) {
         err = -ETIMEDOUT;
     } else {
@@ -58,7 +58,7 @@ static int grab_next_packet(char* buf)
             } else {
                 err = -EPIPE;
             }
-            RS232_AlignFrame('\r');
+            RS232_AlignFrame('\r', (int)size);
         }
     }
     if(strlen(buf) < size) {
@@ -77,7 +77,7 @@ static char* grab_next_valid_packet()
         if(!err)
             break;
     }
-    if(err || max_errored < 0)
+    if(err)
         return NULL;
     return buf;
 }
@@ -140,17 +140,17 @@ unsigned int ahp_xc_get_nbaselines()
     return ahp_xc_nbaselines;
 }
 
-size_t ahp_xc_get_delaysize()
+unsigned int ahp_xc_get_delaysize()
 {
     return ahp_xc_delaysize;
 }
 
-size_t ahp_xc_get_autocorrelator_lagsize()
+unsigned int ahp_xc_get_autocorrelator_lagsize()
 {
     return ahp_xc_auto_lagsize;
 }
 
-size_t ahp_xc_get_crosscorrelator_lagsize()
+unsigned int ahp_xc_get_crosscorrelator_lagsize()
 {
     return ahp_xc_cross_lagsize;
 }
@@ -170,7 +170,7 @@ unsigned int ahp_xc_get_packettime()
     return (unsigned int)10000000 * (unsigned int)ahp_xc_get_packetsize() / (unsigned int)ahp_xc_get_baudrate();
 }
 
-size_t ahp_xc_get_packetsize()
+unsigned int ahp_xc_get_packetsize()
 {
     return ahp_xc_packetsize;
 }
@@ -206,8 +206,9 @@ int ahp_xc_connect(const char *port)
     ahp_xc_packetsize = 16;
     ahp_xc_rate = R_57600;
     strncpy(ahp_xc_comport, port, strlen(port));
-    if(!RS232_OpenComport(ahp_xc_comport))
+    if(!RS232_OpenComport(ahp_xc_comport)) {
         ret = RS232_SetupPort(XC_BASE_RATE, "8N2", 0);
+    }
     if(!ret) {
         ahp_xc_connected = 1;
     }
@@ -290,7 +291,7 @@ void ahp_xc_end_crosscorrelation_scan(unsigned int index)
     ahp_xc_clear_capture_flag(CAP_ENABLE);
 }
 
-int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, size_t size, int *interrupt, double *percent)
+int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, unsigned int size, int *interrupt, double *percent)
 {
     int r = -1, y;
     unsigned int n = ahp_xc_get_bps()/4;
@@ -313,7 +314,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     ahp_xc_set_lag_auto(index2, 0);
     ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_start_crosscorrelation_scan(index1, start1);
-    size_t i = size/2;
+    unsigned int i = size/2;
     while(i > 0) {
         if((*interrupt) == 1)
             break;
@@ -396,7 +397,7 @@ void ahp_xc_end_autocorrelation_scan(unsigned int index)
     ahp_xc_clear_capture_flag(CAP_ENABLE);
 }
 
-int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrelations, off_t start, size_t len, int *interrupt, double *percent)
+int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrelations, off_t start, unsigned int len, int *interrupt, double *percent)
 {
     int r = -1, y;
     unsigned int n = ahp_xc_get_bps()/4;
@@ -513,7 +514,7 @@ end:
 int ahp_xc_get_properties()
 {
     char *data = NULL;
-    ssize_t n_read;
+    int n_read;
     int ntries = 4096;
     ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_set_capture_flag(CAP_ENABLE);
@@ -658,7 +659,7 @@ void ahp_xc_clear_test(unsigned int index, xc_test value)
     ahp_xc_send_command(ENABLE_TEST, ahp_xc_test[index]);
 }
 
- ssize_t ahp_xc_send_command(xc_cmd c, unsigned char value)
+ int ahp_xc_send_command(xc_cmd c, unsigned char value)
 {
     RS232_flushTX();
     return RS232_SendByte((unsigned char)(c|(((value<<4)|(value>>4))&0xf3)));

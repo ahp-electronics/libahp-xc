@@ -33,13 +33,11 @@
 #include "rs232.h"
 #include <pthread.h>
 
+
 #if defined(__linux__) || defined(__FreeBSD__)   /* Linux & FreeBSD */
 
-#define RS232_PORTNR  38
-
-
-static int fd = -1,
-    error = 0, baudrate = 57600;
+static int error = 0, baudrate = 57600;
+static int fd = -1;
 
 static struct termios new_port_settings, old_port_settings;
 
@@ -241,14 +239,14 @@ int RS232_OpenComport(const char* devname)
     return 0;
 }
 
-int RS232_AlignFrame(int sof)
+
+int RS232_AlignFrame(int sof, int maxtries)
 {
-    ssize_t n;
+    int n;
     int c = 0;
     RS232_flushRX();
-    while(c != sof) {
-        usleep((10000000/(unsigned)baudrate));
-        n = read(fd, (unsigned*)&c, 1);
+    while(c != sof && maxtries-- > 0) {
+        n = RS232_PollComport((char*)&c, 1);
         if(n<0) {
           if(errno == EAGAIN)
               continue;
@@ -259,11 +257,11 @@ int RS232_AlignFrame(int sof)
     return 0;
 }
 
-ssize_t RS232_PollComport(char *buf, size_t size)
+int RS232_PollComport(char *buf, int size)
 {
-    ssize_t nread = 0;
-    unsigned long ntries = size;
-    ssize_t to_read = (unsigned)size;
+    int nread = 0;
+    int ntries = size;
+    int to_read = size;
     ssize_t n;
     while(to_read > 0 && ntries-->0) {
         usleep(10000000/(unsigned)baudrate);
@@ -272,7 +270,7 @@ ssize_t RS232_PollComport(char *buf, size_t size)
           if(errno == EAGAIN)
               return nread;
           else
-              return n;
+              return (int)n;
         }
         nread += n;
         to_read -= n;
@@ -281,10 +279,9 @@ ssize_t RS232_PollComport(char *buf, size_t size)
 }
 
 
-ssize_t RS232_SendByte(unsigned char byte)
+int RS232_SendByte(unsigned char byte)
 {
-  usleep(500000000/(unsigned)baudrate);
-  ssize_t n = write(fd, &byte, (size_t)1);
+  ssize_t n = write(fd, &byte, (int)1);
   if(n < 1)
   {
       return 1;
@@ -294,7 +291,7 @@ ssize_t RS232_SendByte(unsigned char byte)
 }
 
 
-ssize_t RS232_SendBuf(unsigned char *buf, int size)
+int RS232_SendBuf(unsigned char *buf, int size)
 {
   ssize_t n = write(fd, buf, (size_t)size);
   if(n < 0)
@@ -309,7 +306,7 @@ ssize_t RS232_SendBuf(unsigned char *buf, int size)
     }
   }
 
-  return(n);
+  return((int)n);
 }
 
 
@@ -514,9 +511,10 @@ int RS232_OpenComport(const char *dev_name)
     return(0);
 }
 
-int RS232_SetupPort(int baudrate, const char *mode, int flowctrl)
+int RS232_SetupPort(int bauds, const char *mode, int flowctrl)
 {
-  switch(baudrate)
+    baudrate = bauds;
+   switch(baudrate)
   {
     case     110 : strcpy(mode_str, "baud=110");
                    break;
@@ -665,8 +663,24 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winbase/ns-winbase-_dcb
   return(0);
 }
 
+int RS232_AlignFrame(int sof, int maxtries)
+{
+    int n;
+    int c = 0;
+    RS232_flushRX();
+    while(c != sof && maxtries-- > 0) {
+        n = RS232_PollComport(&c, 1);
+        if(n<0) {
+          if(errno == EAGAIN)
+              continue;
+          else
+              return 1;
+        }
+    }
+    return 0;
+}
 
-int RS232_PollComport(unsigned char *buf, int size)
+int RS232_PollComport(char *buf, int size)
 {
   int n;
 

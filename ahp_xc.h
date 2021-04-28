@@ -64,6 +64,9 @@ extern "C" {
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
 
+///XC_BASE_RATE is the base baud rate of the XC cross-correlators
+#define XC_HIGH_RATE ((int)500000)
+
 ///AHP_XC_PLL_FREQUENCY is the PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 
@@ -243,19 +246,19 @@ DLL_EXPORT unsigned int ahp_xc_get_nbaselines(void);
 * \brief Obtain the correlator maximum delay value
 * \return Returns the delay size
 */
-DLL_EXPORT size_t ahp_xc_get_delaysize(void);
+DLL_EXPORT unsigned int ahp_xc_get_delaysize(void);
 
 /**
 * \brief Obtain the correlator lag buffer size for autocorrelations
 * \return Returns the lag size
 */
-DLL_EXPORT size_t ahp_xc_get_autocorrelator_lagsize(void);
+DLL_EXPORT unsigned int ahp_xc_get_autocorrelator_lagsize(void);
 
 /**
 * \brief Obtain the correlator lag buffer size for crosscorrelations
 * \return Returns the lag size
 */
-DLL_EXPORT size_t ahp_xc_get_crosscorrelator_lagsize(void);
+DLL_EXPORT unsigned int ahp_xc_get_crosscorrelator_lagsize(void);
 
 /**
 * \brief Obtain the correlator maximum readout frequency
@@ -280,7 +283,7 @@ DLL_EXPORT unsigned int ahp_xc_get_packettime(void);
 * \brief Obtain the serial packet size
 * \return Returns the packet size
 */
-DLL_EXPORT size_t ahp_xc_get_packetsize(void);
+DLL_EXPORT unsigned int ahp_xc_get_packetsize(void);
 
 /**
 * \brief Returns the cross-correlation capability of the device
@@ -370,7 +373,7 @@ DLL_EXPORT void ahp_xc_end_autocorrelation_scan(unsigned int index);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrelations, off_t start, size_t len, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrelations, off_t start, unsigned int len, int *interrupt, double *percent);
 
 /**
 * \brief Initiate a crosscorrelation scan
@@ -395,7 +398,7 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(unsigned int index);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, size_t size, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, unsigned int size, int *interrupt, double *percent);
 
 /*@}*/
 /**
@@ -480,7 +483,7 @@ DLL_EXPORT unsigned char ahp_xc_get_leds(unsigned int index);
 * \param cmd The command
 * \param value The command parameter
 */
-DLL_EXPORT ssize_t ahp_xc_send_command(xc_cmd cmd, unsigned char value);
+DLL_EXPORT int ahp_xc_send_command(xc_cmd cmd, unsigned char value);
 
 /**
 * \brief Obtain the current libahp-xc version
