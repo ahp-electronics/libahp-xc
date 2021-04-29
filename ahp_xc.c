@@ -206,9 +206,8 @@ int ahp_xc_connect(const char *port)
     ahp_xc_packetsize = 16;
     ahp_xc_rate = R_57600;
     strncpy(ahp_xc_comport, port, strlen(port));
-    if(!RS232_OpenComport(ahp_xc_comport)) {
-        ret = RS232_SetupPort(XC_BASE_RATE, "8N2", 0);
-    }
+    if(!RS232_OpenComport(ahp_xc_comport))
+        ret = RS232_SetupPort(XC_BASE_RATE, "8N1", 0);
     if(!ret) {
         ahp_xc_connected = 1;
     }

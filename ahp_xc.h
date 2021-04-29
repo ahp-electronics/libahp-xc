@@ -47,7 +47,7 @@ extern "C" {
 /*@{*/
 
 ///AHP_XC_VERSION This library version
-#define AHP_XC_VERSION 0x010016
+#define AHP_XC_VERSION 0x010017
 
 ///AHP_XC_HAS_PSU indicates if the correlator has an internal PSU PWM driver on 2nd flag bit
 #define AHP_XC_HAS_PSU (1<<2)
