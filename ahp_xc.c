@@ -17,10 +17,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include "rs232.h"
 #include "ahp_xc.h"
+#ifndef AIRY
+#define AIRY 1.21966
+#endif
 static unsigned char *ahp_xc_test = NULL;
 static unsigned char *ahp_xc_leds = NULL;
 static unsigned int ahp_xc_bps = 0;
@@ -51,14 +55,16 @@ static int grab_next_packet(char* buf)
     if(nread < 0) {
         err = -ETIMEDOUT;
     } else {
-        off_t len = (off_t)(strchr(buf, '\r')-buf);
-        if(len < size-1) {
-            if(len>=16 && strncmp(ahp_xc_get_header(), buf, 16)) {
-                err = -EINVAL;
-            } else {
-                err = -EPIPE;
+        if(size > 16) {
+            off_t len = (off_t)(strchr(buf, '\r')-buf);
+            if(len < size-1) {
+                if(len>=16 && strncmp(ahp_xc_get_header(), buf, 16)) {
+                    err = -EINVAL;
+                } else {
+                    err = -EPIPE;
+                }
+                RS232_AlignFrame('\r', (int)size);
             }
-            RS232_AlignFrame('\r', (int)size);
         }
     }
     if(strlen(buf) < size) {
@@ -662,4 +668,15 @@ void ahp_xc_clear_test(unsigned int index, xc_test value)
 {
     RS232_flushTX();
     return RS232_SendByte((unsigned char)(c|(((value<<4)|(value>>4))&0xf3)));
+}
+
+double* ahp_xc_get_2d_projection(double alt, double az, double *baseline)
+{
+    double* uv = (double*)malloc(sizeof(double)*3);
+    memset(uv, 0, sizeof(double)*3);
+    az *= M_PI / 180.0;
+    alt *= M_PI / 180.0;
+    uv[0] = (baseline[0] * sin(az) + baseline[1] * cos(az));
+    uv[1] = (baseline[1] * sin(alt) * sin(az) - baseline[0] * sin(alt) * cos(az) + baseline[2] * cos(alt));
+    uv[2] = cos(az) * baseline[1] * cos(alt) - baseline[0] * sin(az) * cos(alt) + sin(alt) * baseline[2];
 }

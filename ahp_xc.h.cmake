@@ -47,7 +47,7 @@ extern "C" {
 /*@{*/
 
 ///AHP_XC_VERSION This library version
-#define AHP_XC_VERSION 0x010017
+#define AHP_XC_VERSION @AHP_XC_VERSION@
 
 ///AHP_XC_HAS_PSU indicates if the correlator has an internal PSU PWM driver on 2nd flag bit
 #define AHP_XC_HAS_PSU (1<<2)
@@ -160,6 +160,22 @@ typedef struct {
  * \defgroup XC Correlators API
 */
 /*@{*/
+
+/**
+ * \defgroup Utility functions
+*/
+/*@{*/
+
+/**
+* \brief Get 2d projection in interferometer configuration
+* \param alt The altitude coordinate
+* \param az The azimuth coordinate
+* \param baseline The reference baseline in meters
+* \return Returns a 3-element double vector containing the 2d perspective coordinates and the z-offset
+*/
+DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *baseline);
+
+/*@}*/
 /**
  * \defgroup Communication
 */
