@@ -64,15 +64,9 @@ extern "C" {
 
  ///AHP_XC_VERSION This library version
 #define AHP_XC_VERSION @AHP_XC_VERSION@
-///AHP_XC_HAS_PSU indicates if the correlator has an internal PSU PWM driver on 2nd flag bit
-#define AHP_XC_HAS_PSU (1<<2)
-///AHP_XC_HAS_LED_FLAGS indicates if the correlator has led lines available to drive
-#define AHP_XC_HAS_LED_FLAGS (1<<1)
-///AHP_XC_HAS_CROSSCORRELATOR indicates if the correlator can cross-correlate or can autocorrelate only
-#define AHP_XC_HAS_CROSSCORRELATOR (1<<0)
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
-///XC_BASE_RATE is the base baud rate of the XC cross-correlators
+///XC_HIGH_RATE is the base baud rate for big packet XC cross-correlators
 #define XC_HIGH_RATE ((int)500000)
 ///AHP_XC_PLL_FREQUENCY is the PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
@@ -82,6 +76,16 @@ extern "C" {
  * \defgroup Enumerations
  */
  /**@{*/
+
+ /**
+ * \brief AHP XC header flags
+ */
+typedef enum {
+    HAS_CROSSCORRELATOR = 1, ///AHP_XC_HAS_CROSSCORRELATOR indicates if the correlator can cross-correlate or can autocorrelate only
+    HAS_LEDS = 2, ///AHP_XC_HAS_LEDS indicates if the correlator has led lines available to drive
+    HAS_PSU = 4, ///AHP_XC_HAS_PSU indicates if the correlator has an internal PSU PWM driver on 2nd flag bit
+    HAS_CUMULATIVE_ONLY = 8 ///HAS_CUMULATIVE_ONLY indicates if the correlator has cumulative readout available only
+} xc_header_flags;
 
 /**
 * \brief These are the baud rates supported
@@ -97,36 +101,35 @@ typedef enum {
 * \brief The XC firmare commands
 */
 typedef enum {
-    CLEAR = 0,
-    SET_INDEX = 1,
-    SET_LEDS = 2,
-    SET_BAUD_RATE = 3,
-    SET_DELAY = 4,
-    SET_FREQ_DIV = 8,
-    SET_VOLTAGE = 9,
-    ENABLE_TEST = 12,
-    ENABLE_CAPTURE = 13
+    CLEAR = 0, ///Clear autocorrelation and crosscorrelation delays
+    SET_INDEX = 1, ///Set the current input line index for following commands
+    SET_LEDS = 2, /// witch on or off current line leds requires HAS_LEDS
+    SET_BAUD_RATE = 3, ///Set the readout and command baud rate
+    SET_DELAY = 4, ///Set the autocorrelator or crosscorrelator delay
+    SET_FREQ_DIV = 8, ///Set the frequency divider in powers of two
+    SET_VOLTAGE = 9, ///Set the indexed input voltage, requires HAS_PSU in header
+    ENABLE_TEST = 12, ///Enables tests on currently indexed input
+    ENABLE_CAPTURE = 13 ///Enable capture flags
 } xc_cmd;
 
 /**
 * \brief The XC capture flags
 */
 typedef enum {
-    CAP_ENABLE = 0, /// Enable capture
-    CAP_EXT_CLK = 1, /// Enable external clock
-    CAP_HORIZ = 2, /// Enable external clock
+    CAP_ENABLE = 0, ///Enable capture
+    CAP_EXT_CLK = 1, ///Enable external clock
 } xc_capture_flags;
 
 /**
 * \brief The XC firmare commands
 */
 typedef enum {
-    TEST_NONE = 0, /// No extra signals or functions
-    TEST_SIGNAL = 1, /// PLL clock on voltage led
-    SCAN_AUTO = 2, /// Autocorrelator continuum scan
-    SCAN_CROSS = 4, /// Crosscorrelator continuum scan
-    TEST_BCM = 8, /// BCM modulation on voltage led
-    TEST_ALL = 0xf, /// All tests enabled
+    TEST_NONE = 0, ///No extra signals or functions
+    TEST_SIGNAL = 1, ///Apply PLL clock on voltage led
+    SCAN_AUTO = 2, ///Autocorrelator continuum scan
+    SCAN_CROSS = 4, ///Crosscorrelator continuum scan
+    TEST_BCM = 8, ///BCM modulation on voltage led
+    TEST_ALL = 0xf, ///All tests enabled
 } xc_test;
 
 /**
@@ -318,7 +321,14 @@ DLL_EXPORT int ahp_xc_has_psu(void);
 * \brief Returns if the device has led lines to drive
 * \return Returns 1 if leds are available
 */
-DLL_EXPORT int ahp_xc_has_led_flags(void);
+DLL_EXPORT int ahp_xc_has_leds(void);
+
+/**
+* \brief Returns if the device has cumulative readout only
+* \return Returns 1 if edge readout is not available
+*/
+DLL_EXPORT int ahp_xc_has_cumulative_only();
+
 /**@}*/
 /**
  * \defgroup Data Data and streaming

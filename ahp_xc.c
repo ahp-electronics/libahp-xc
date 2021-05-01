@@ -108,17 +108,22 @@ static void ahp_xc_select_input(unsigned int index)
 
 int ahp_xc_has_crosscorrelator()
 {
-    return (ahp_xc_flags & AHP_XC_HAS_CROSSCORRELATOR ? 1 : 0);
+    return (ahp_xc_flags & HAS_CROSSCORRELATOR ? 1 : 0);
 }
 
 int ahp_xc_has_psu()
 {
-    return (ahp_xc_flags & AHP_XC_HAS_PSU ? 1 : 0);
+    return (ahp_xc_flags & HAS_PSU ? 1 : 0);
 }
 
-int ahp_xc_has_led_flags()
+int ahp_xc_has_leds()
 {
-    return (ahp_xc_flags & AHP_XC_HAS_LED_FLAGS ? 1 : 0);
+    return (ahp_xc_flags & HAS_LEDS ? 1 : 0);
+}
+
+int ahp_xc_has_cumulative_only()
+{
+    return (ahp_xc_flags & HAS_CUMULATIVE_ONLY ? 1 : 0);
 }
 
 char* ahp_xc_get_header()
