@@ -15,17 +15,22 @@ set(AHP_XC_VERSION_MINOR 1)
 set(AHP_XC_VERSION_RELEASE 0)
 set(AHPXC_VERSION "${AHP_XC_VERSION_MAJOR}.${AHP_XC_VERSION_MINOR}.${AHP_XC_VERSION_RELEASE}")
 set(AHP_XC_VERSION 0x${AHP_XC_VERSION_MAJOR}${AHP_XC_VERSION_MINOR}${AHP_XC_VERSION_RELEASE})
-set(AHPXC_SOVERSION "1")
+set(AHPXC_SOVERSION ${AHP_XC_VERSION_MAJOR})
+
+add_definitions(-Wall -O3 -g -fstack-protector -Wno-unused-parameter)
+
 set(SOURCES
     ${CMAKE_SOURCE_DIR}/rs232.c
     ${CMAKE_SOURCE_DIR}/ahp_xc.c
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h )
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
 
 include_directories( ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
 link_directories(${CMAKE_LIBRARY_PATH})
+execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(ahp_xc SHARED ${SOURCES})
 set_target_properties(ahp_xc PROPERTIES VERSION ${AHPXC_VERSION} SOVERSION ${AHPXC_SOVERSION})

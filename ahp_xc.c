@@ -211,7 +211,7 @@ int ahp_xc_connect(const char *port)
     ahp_xc_frequency = 0;
     ahp_xc_packetsize = 16;
     ahp_xc_rate = R_57600;
-    strncpy(ahp_xc_comport, port, strlen(port));
+    strcpy(ahp_xc_comport, port);
     if(!RS232_OpenComport(ahp_xc_comport))
         ret = RS232_SetupPort(XC_BASE_RATE, "8N1", 0);
     if(!ret) {
@@ -679,4 +679,5 @@ double* ahp_xc_get_2d_projection(double alt, double az, double *baseline)
     uv[0] = (baseline[0] * sin(az) + baseline[1] * cos(az));
     uv[1] = (baseline[1] * sin(alt) * sin(az) - baseline[0] * sin(alt) * cos(az) + baseline[2] * cos(alt));
     uv[2] = cos(az) * baseline[1] * cos(alt) - baseline[0] * sin(az) * cos(alt) + sin(alt) * baseline[2];
+    return uv;
 }

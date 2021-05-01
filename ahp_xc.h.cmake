@@ -34,48 +34,55 @@ extern "C" {
 #include <string.h>
 
 /**
- * \defgroup AHP XC correlators driving library
+* \mainpage AHP® XC Crosscorrelators driver library
+* \section Introduction
 *
-* The AHP XC correlators series permit intensity cross-correlation and auto-correlation
-* counting from pulse detectors ranging from radio to photon counters to geiger-mode detectors
-* or noise-regime or light scattering counters.
-* This software is meant to work with the XC series cross-correlator FPGA, programmed with the
-* Verilog firmware available online at https://github.com/ahp-electronics/xc-firmware
+* The AHP XC correlators are devices that permit cross-correlation and auto-correlation
+* counting from quantum detectors, ranging from radio to photon counters to geiger-mode detectors
+* or noise-regime, light scattering counters, the XC series offer a scientific grade solution for
+* laboratory testing and measurement in quantum resoluting detection environments.
+*
+* This software is meant to work with the XC series cross-correlators
+* visit http://www.iliaplatone.com/xc for more informations and purchase options.
 *
 * \author Ilia Platone
 */
-/*@{*/
 
-///AHP_XC_VERSION This library version
+/**
+ * \defgroup XC_API AHP® XC Correlators API
+ *
+ * This library contains functions for direct low-level usage of the AHP cross-correlators.<br>
+ * This documentation describes utility, applicative and hardware control functions included into the library.<br>
+ * Each section and component is documented for general usage.
+*/
+/**@{*/
+
+/**
+ * \defgroup Defs Defines
+ */
+ /**@{*/
+
+ ///AHP_XC_VERSION This library version
 #define AHP_XC_VERSION @AHP_XC_VERSION@
-
 ///AHP_XC_HAS_PSU indicates if the correlator has an internal PSU PWM driver on 2nd flag bit
 #define AHP_XC_HAS_PSU (1<<2)
 ///AHP_XC_HAS_LED_FLAGS indicates if the correlator has led lines available to drive
 #define AHP_XC_HAS_LED_FLAGS (1<<1)
 ///AHP_XC_HAS_CROSSCORRELATOR indicates if the correlator can cross-correlate or can autocorrelate only
 #define AHP_XC_HAS_CROSSCORRELATOR (1<<0)
-
-/**
- * \defgroup DSP_Defines DSP API defines
-*/
-/*@{*/
-
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
-
 ///XC_BASE_RATE is the base baud rate of the XC cross-correlators
 #define XC_HIGH_RATE ((int)500000)
-
 ///AHP_XC_PLL_FREQUENCY is the PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 
-/*@}*/
-
+/**@}*/
 /**
  * \defgroup Enumerations
-*/
-/*@{*/
+ */
+ /**@{*/
+
 /**
 * \brief These are the baud rates supported
 */
@@ -154,20 +161,14 @@ typedef struct {
     ahp_xc_sample* crosscorrelations; ///Crosscorrelations in the current shot
 } ahp_xc_packet;
 
-/*@}*/
-
+/**@}*/
 /**
- * \defgroup XC Correlators API
+ * \defgroup Utilities Utility functions
 */
-/*@{*/
+/**@{*/
 
 /**
- * \defgroup Utility functions
-*/
-/*@{*/
-
-/**
-* \brief Get 2d projection in interferometer configuration
+* \brief Get 2d projection for intensity interferometry
 * \param alt The altitude coordinate
 * \param az The azimuth coordinate
 * \param baseline The reference baseline in meters
@@ -175,11 +176,11 @@ typedef struct {
 */
 DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *baseline);
 
-/*@}*/
+/**@}*/
 /**
- * \defgroup Communication
+ * \defgroup Comm Communication
 */
-/*@{*/
+/**@{*/
 
 /**
 * \brief Connect to a serial port
@@ -222,11 +223,11 @@ DLL_EXPORT int ahp_xc_get_baudrate(void);
 */
 DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate);
 
-/*@}*/
+/**@}*/
 /**
- * \defgroup Features of the correlator
+ * \defgroup Feat Features of the correlator
 */
-/*@{*/
+/**@{*/
 
 /**
 * \brief Obtain the current baud rate
@@ -318,11 +319,11 @@ DLL_EXPORT int ahp_xc_has_psu(void);
 * \return Returns 1 if leds are available
 */
 DLL_EXPORT int ahp_xc_has_led_flags(void);
-/*@}*/
+/**@}*/
 /**
- * \defgroup Data and streaming
+ * \defgroup Data Data and streaming
 */
-/*@{*/
+/**@{*/
 
 /**
 * \brief Allocate and return a packet structure
@@ -416,11 +417,11 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(unsigned int index);
 */
 DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, unsigned int size, int *interrupt, double *percent);
 
-/*@}*/
+/**@}*/
 /**
- * \defgroup Commands and setup of the correlator
+ * \defgroup Cmds Commands and setup of the correlator
 */
-/*@{*/
+/**@{*/
 
 /**
 * \brief Set integration flags
@@ -506,9 +507,8 @@ DLL_EXPORT int ahp_xc_send_command(xc_cmd cmd, unsigned char value);
 */
 DLL_EXPORT inline unsigned int ahp_xc_get_version(void) { return AHP_XC_VERSION; }
 
-/*@}*/
-/*@}*/
-/*@}*/
+/**@}*/
+/**@}*/
 #ifdef __cplusplus
 } // extern "C"
 #endif
