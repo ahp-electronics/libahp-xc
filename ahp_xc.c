@@ -41,7 +41,7 @@ static unsigned int ahp_xc_connected = 0;
 static unsigned int ahp_xc_packetsize = 4096;
 static baud_rate ahp_xc_rate = R_57600;
 static char ahp_xc_comport[128];
-static char ahp_xc_header[16] = { 0 };
+static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 
 static int grab_next_packet(char* buf)
@@ -50,7 +50,9 @@ static int grab_next_packet(char* buf)
     unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
     if(size == 16)
-        RS232_AlignFrame('\r', 4096);
+        err = RS232_AlignFrame('\r', 4096);
+    if(err)
+        return -ENODATA;
     int nread = RS232_PollComport(buf, (int)size);
     if(nread < 0) {
         err = -ETIMEDOUT;
@@ -58,7 +60,7 @@ static int grab_next_packet(char* buf)
         if(size > 16) {
             off_t len = (off_t)(strchr(buf, '\r')-buf);
             if(len < size-1) {
-                if(len>=16 && strncmp(ahp_xc_get_header(), buf, 16)) {
+                if(strncmp(ahp_xc_get_header(), buf, 16)) {
                     err = -EINVAL;
                 } else {
                     err = -EPIPE;
@@ -208,6 +210,7 @@ int ahp_xc_connect(const char *port)
     if(ahp_xc_connected)
         return 1;
     ahp_xc_header[0] = 0;
+    ahp_xc_header[16] = 0;
     int ret = 1;
     ahp_xc_bps = 0;
     ahp_xc_nlines = 0;
@@ -218,10 +221,9 @@ int ahp_xc_connect(const char *port)
     ahp_xc_rate = R_57600;
     strcpy(ahp_xc_comport, port);
     if(!RS232_OpenComport(ahp_xc_comport))
-        ret = RS232_SetupPort(XC_BASE_RATE, "8N1", 0);
-    if(!ret) {
+        ret = RS232_SetupPort(XC_BASE_RATE, "8N2", 0);
+    if(!ret)
         ahp_xc_connected = 1;
-    }
     return ret;
 }
 void ahp_xc_disconnect()
@@ -463,7 +465,7 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     if(packet == NULL) {
         return -EINVAL;
     }
-    char* data = grab_last_packet();
+    char* data = grab_next_valid_packet();
     if(!data){
         ret = -ENOENT;
         goto err_end;
@@ -525,7 +527,7 @@ int ahp_xc_get_properties()
 {
     char *data = NULL;
     int n_read;
-    int ntries = 4096;
+    int ntries = 3;
     ahp_xc_clear_capture_flag(CAP_ENABLE);
     ahp_xc_set_capture_flag(CAP_ENABLE);
     while(ntries-- > 0) {
