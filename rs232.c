@@ -264,7 +264,7 @@ int RS232_PollComport(char *buf, int size)
     int to_read = size;
     ssize_t n;
     while(to_read > 0 && ntries-->0) {
-        usleep(10000000/(unsigned)baudrate);
+        usleep(10000000*to_read/(unsigned)baudrate);
         n = read(fd, buf+nread, (size_t)to_read);
         if(n<0) {
           if(errno == EAGAIN)
