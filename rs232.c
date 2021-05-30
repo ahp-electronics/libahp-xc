@@ -31,7 +31,6 @@
 
 
 #include "rs232.h"
-#include <pthread.h>
 
 
 #if defined(__linux__) || defined(__FreeBSD__)   /* Linux & FreeBSD */

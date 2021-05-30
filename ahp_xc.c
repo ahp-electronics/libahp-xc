@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <pthread.h>
 #include <sys/time.h>
 #include "rs232.h"
 #include "ahp_xc.h"
@@ -39,7 +38,8 @@ static unsigned int ahp_xc_frequency_divider = 0;
 static unsigned int ahp_xc_voltage = 0;
 static unsigned int ahp_xc_connected = 0;
 static unsigned int ahp_xc_packetsize = 4096;
-static baud_rate ahp_xc_rate = R_57600;
+static int ahp_xc_baserate = XC_BASE_RATE;
+static baud_rate ahp_xc_rate = R_BASE;
 static char ahp_xc_comport[128];
 static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
@@ -196,7 +196,7 @@ int ahp_xc_connect_fd(int fd)
     ahp_xc_delaysize = 0;
     ahp_xc_frequency = 0;
     ahp_xc_packetsize = 16;
-    ahp_xc_rate = R_57600;
+    ahp_xc_rate = R_BASE;
     if(fd > -1) {
         ahp_xc_connected = 1;
         RS232_SetFD(fd);
@@ -205,7 +205,7 @@ int ahp_xc_connect_fd(int fd)
     return 0;
 }
 
-int ahp_xc_connect(const char *port)
+int ahp_xc_connect(const char *port, int high_rate)
 {
     if(ahp_xc_connected)
         return 1;
@@ -218,10 +218,11 @@ int ahp_xc_connect(const char *port)
     ahp_xc_delaysize = 0;
     ahp_xc_frequency = 0;
     ahp_xc_packetsize = 16;
-    ahp_xc_rate = R_57600;
+    ahp_xc_baserate = (high_rate ? XC_HIGH_RATE : XC_BASE_RATE);
+    ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
     if(!RS232_OpenComport(ahp_xc_comport))
-        ret = RS232_SetupPort(XC_BASE_RATE, "8N2", 0);
+        ret = RS232_SetupPort(ahp_xc_baserate, "8N2", 0);
     if(!ret)
         ahp_xc_connected = 1;
     return ret;
@@ -230,7 +231,7 @@ void ahp_xc_disconnect()
 {
     if(ahp_xc_connected) {
         ahp_xc_connected = 0;
-        ahp_xc_set_baudrate(R_57600);
+        ahp_xc_set_baudrate(ahp_xc_baserate);
         RS232_CloseComport();
     }
 }
@@ -299,7 +300,7 @@ void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start)
 void ahp_xc_end_crosscorrelation_scan(unsigned int index)
 {
     ahp_xc_clear_test(index, SCAN_CROSS);
-    grab_last_packet();
+    grab_next_valid_packet();
     ahp_xc_clear_capture_flag(CAP_ENABLE);
 }
 
@@ -405,7 +406,7 @@ void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start)
 void ahp_xc_end_autocorrelation_scan(unsigned int index)
 {
     ahp_xc_clear_test(index, SCAN_AUTO);
-    grab_last_packet();
+    grab_next_valid_packet();
     ahp_xc_clear_capture_flag(CAP_ENABLE);
 }
 
@@ -583,7 +584,7 @@ void ahp_xc_set_baudrate(baud_rate rate)
     ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
     RS232_CloseComport();
     RS232_OpenComport(ahp_xc_comport);
-    RS232_SetupPort(XC_BASE_RATE<<((int)ahp_xc_rate), "8N2", 0);
+    RS232_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N2", 0);
 }
 
 unsigned char ahp_xc_get_test(unsigned int index)
