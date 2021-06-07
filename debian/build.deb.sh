@@ -9,6 +9,7 @@
 	cat files.${deb} | while read line; do
 		src=$(echo ${line} | cut -d ',' -f 1)
 		dst=$(echo ${line} | cut -d ',' -f 2)
+		mkdir -p $(dirname ${deb}/${dst})
 		rsync -a ../build-${arch}/${src} ${deb}/${dst}
 	done
 
