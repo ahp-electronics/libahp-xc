@@ -23,8 +23,6 @@ set(SOURCES
     ${CMAKE_SOURCE_DIR}/ahp_xc.c
    )
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/files.libahp-xc.cmake ${CMAKE_CURRENT_BINARY_DIR}/files.libahp-xc )
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/files.libahp-xc-dev.cmake ${CMAKE_CURRENT_BINARY_DIR}/files.libahp-xc-dev )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
 
