@@ -153,6 +153,7 @@ typedef struct {
 * \brief Packet structure
 */
 typedef struct {
+    unsigned long timestamp; ///Timestamp of the packet
     unsigned long n_lines; ///Number of lines in this correlator
     unsigned long n_baselines; ///Total number of baselines obtainable
     unsigned long tau; ///Bandwidth inverse frequency

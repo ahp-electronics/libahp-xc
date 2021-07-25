@@ -514,12 +514,16 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
             }
         }
     }
-    free(data);
+    if(1<sscanf(sample, "%lX",  &packet->timestamp)) {
+        ret = -ENOENT;
+        goto end;
+    }
     ret = 0;
     goto end;
 err_end:
     fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
 end:
+    free(data);
     free(sample);
     return ret;
 }

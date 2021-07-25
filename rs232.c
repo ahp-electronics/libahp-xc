@@ -281,6 +281,7 @@ int RS232_PollComport(char *buf, int size)
 int RS232_SendByte(unsigned char byte)
 {
   ssize_t n = write(fd, &byte, (int)1);
+  usleep(10000000/(unsigned)baudrate);
   if(n < 1)
   {
       return 1;
