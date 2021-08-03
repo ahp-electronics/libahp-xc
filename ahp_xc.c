@@ -514,6 +514,8 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
             }
         }
     }
+    sample = (char*)realloc(sample, 16);
+    memcpy(sample, buf, 16);
     if(1<sscanf(sample, "%lX",  &packet->timestamp)) {
         ret = -ENOENT;
         goto end;
@@ -556,7 +558,7 @@ int ahp_xc_get_properties()
     ahp_xc_auto_lagsize = _auto_lagsize+1;
     ahp_xc_cross_lagsize = _cross_lagsize+1;
     ahp_xc_flags = _flags;
-    ahp_xc_packetsize = (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()+(ahp_xc_get_crosscorrelator_lagsize()*2-1)*ahp_xc_get_nbaselines())*ahp_xc_get_bps()/4+16+1;
+    ahp_xc_packetsize = (ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()+(ahp_xc_get_crosscorrelator_lagsize()*2-1)*ahp_xc_get_nbaselines())*ahp_xc_get_bps()/4+16+16+1;
     ahp_xc_frequency = (unsigned int)((long)1000000000000/(long)(!_tau?1:_tau));
     if(ahp_xc_test)
         free(ahp_xc_test);

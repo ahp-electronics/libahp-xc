@@ -118,6 +118,7 @@ typedef enum {
 typedef enum {
     CAP_ENABLE = 0, ///Enable capture
     CAP_EXT_CLK = 1, ///Enable external clock
+    CAP_RESET_TIMESTAMP = 2, ///Reset timestamp
 } xc_capture_flags;
 
 /**
