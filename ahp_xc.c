@@ -515,9 +515,7 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
             }
         }
     }
-    sample = (char*)realloc(sample, 16);
-    memcpy(sample, buf, 16);
-    if(1<sscanf(sample, "%lX",  &packet->timestamp)) {
+    if(1<sscanf(buf, "%lX",  &packet->timestamp)) {
         ret = -ENOENT;
         goto end;
     }
