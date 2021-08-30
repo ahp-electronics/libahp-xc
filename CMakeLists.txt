@@ -16,7 +16,7 @@ set(AHPXC_VERSION "${AHP_XC_VERSION_MAJOR}.${AHP_XC_VERSION_MINOR}.${AHP_XC_VERS
 set(AHP_XC_VERSION 0x${AHP_XC_VERSION_MAJOR}${AHP_XC_VERSION_MINOR}${AHP_XC_VERSION_RELEASE})
 set(AHPXC_SOVERSION ${AHP_XC_VERSION_MAJOR})
 
-add_definitions(-Wall -O3 -g -fstack-protector -Wno-unused-parameter)
+add_definitions(-Wall -O3 -g -Wno-unused-parameter)
 
 set(SOURCES
     ${CMAKE_SOURCE_DIR}/rs232.c
