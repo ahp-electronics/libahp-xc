@@ -73,7 +73,6 @@ static int grab_next_packet(char* buf)
     if(strlen(buf) < size) {
         err = -ENODATA;
     }
-    fprintf(stderr, "last packet: %s\n", buf);
     return err;
 }
 
