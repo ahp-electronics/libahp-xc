@@ -38,20 +38,18 @@ extern "C" {
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 
-
-
-#if defined(__linux__) || defined(__FreeBSD__)
+#ifndef _WIN32
 
 #include <termios.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <sys/file.h>
-#include <errno.h>
 
 #else
 
@@ -68,14 +66,6 @@ int RS232_SendByte(unsigned char byte);
 int RS232_SendBuf(unsigned char *buf, int size);
 void RS232_CloseComport(void);
 void RS232_cputs(const char *text);
-int RS232_IsDCDEnabled(void);
-int RS232_IsRINGEnabled(void);
-int RS232_IsCTSEnabled(void);
-int RS232_IsDSREnabled(void);
-void RS232_enableDTR(void);
-void RS232_disableDTR(void);
-void RS232_enableRTS(void);
-void RS232_disableRTS(void);
 void RS232_flushRX(void);
 void RS232_flushTX(void);
 void RS232_flushRXTX(void);
