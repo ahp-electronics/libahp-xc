@@ -75,5 +75,3 @@ void RS232_flushRXTX(void);
 #endif
 
 #endif
-
-
