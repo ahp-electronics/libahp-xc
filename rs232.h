@@ -54,18 +54,19 @@ extern "C" {
 #else
 
 #include <windows.h>
-
+#undef UNICODE
+#undef _UNICODE
 #endif
 
 int RS232_SetupPort(int baudrate, const char *mode, int flowctrl);
 int RS232_OpenComport(const char *comport);
 void RS232_SetFD(int f);
 int RS232_AlignFrame(int sof, int maxtries);
-int RS232_PollComport(char *buf, int size);
+int RS232_RecvByte();
+int RS232_RecvBuf(unsigned char *buf, int size);
 int RS232_SendByte(unsigned char byte);
 int RS232_SendBuf(unsigned char *buf, int size);
 void RS232_CloseComport(void);
-void RS232_cputs(const char *text);
 void RS232_flushRX(void);
 void RS232_flushTX(void);
 void RS232_flushRXTX(void);

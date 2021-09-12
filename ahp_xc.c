@@ -45,23 +45,32 @@ static char ahp_xc_comport[128];
 static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 
-static int grab_next_packet(char* buf)
+static int grab_next_packet(unsigned char* buf)
 {
     int err = 0;
-    unsigned int size = ahp_xc_get_packetsize();
+    unsigned int size = ahp_xc_get_packetsize()-1;
     memset(buf, 0, (unsigned int)size);
     if(size == 16)
         err = RS232_AlignFrame('\r', 4096);
     if(err)
         return -ENODATA;
-    int nread = RS232_PollComport(buf, (int)size);
+    int c = 0;
+    int nread = 0;
+    while(c != '\r' && nread < size) {
+        c = RS232_RecvByte();
+        if(c < 0)
+            return c;
+        else
+            buf[nread++] = c;
+    }
+    buf[nread] = 0;
     if(nread < 0) {
         err = -ETIMEDOUT;
     } else {
         if(size > 16) {
-            off_t len = (off_t)(strchr(buf, '\r')-buf);
+            off_t len = (off_t)(strchr((char*)buf, '\r')-(char*)buf);
             if(len < size-1) {
-                if(strncmp(ahp_xc_get_header(), buf, 16)) {
+                if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
                     err = -EINVAL;
                 } else {
                     err = -EPIPE;
@@ -70,15 +79,16 @@ static int grab_next_packet(char* buf)
             }
         }
     }
-    if(strlen(buf) < size) {
+    if(strlen((char*)buf) < size) {
         err = -ENODATA;
     }
+    fprintf(stderr, "last packet: %s\n", buf);
     return err;
 }
 
-static char* grab_next_valid_packet()
+static unsigned char* grab_next_valid_packet()
 {
-    char *buf = (char*)malloc(ahp_xc_get_packetsize());
+    unsigned char *buf = (unsigned char*)malloc(ahp_xc_get_packetsize());
     int err = 0;
     int max_errored = 8;
     while (err != -ETIMEDOUT && max_errored-- > 0) {
@@ -91,7 +101,7 @@ static char* grab_next_valid_packet()
     return buf;
 }
 
-static char* grab_last_packet()
+static unsigned char* grab_last_packet()
 {
     RS232_flushRX();
     return grab_next_valid_packet();
@@ -201,9 +211,9 @@ int ahp_xc_connect_fd(int fd)
     if(fd > -1) {
         ahp_xc_connected = 1;
         RS232_SetFD(fd);
-        return -1;
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 int ahp_xc_connect(const char *port, int high_rate)
@@ -332,10 +342,10 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     while(i > 0) {
         if((*interrupt) == 1)
             break;
-        char* data = grab_next_valid_packet();
+        unsigned char* data = grab_next_valid_packet();
         if(!data)
             continue;
-        char *packet = data;
+        char *packet = (char*)data;
         packet += 16;
         memcpy(sample, &packet[n*idx1], (unsigned int)n);
         unsigned long counts = strtoul(sample, NULL, 16);
@@ -367,10 +377,10 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     while(i < size) {
         if((*interrupt) == 1)
             break;
-        char* data = grab_next_valid_packet();
+        unsigned char* data = grab_next_valid_packet();
         if(!data)
             continue;
-        char *packet = data;
+        char *packet = (char*)data;
         packet += 16;
         memcpy(sample, &packet[n*idx1], (unsigned int)n);
         unsigned long counts = strtoul(sample, NULL, 16);
@@ -431,10 +441,10 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     while(i < len) {
         if((*interrupt) || start >= end)
             break;
-        char* data = grab_next_valid_packet();
+        unsigned char* data = grab_next_valid_packet();
         if(!data)
             continue;
-        char *packet = data;
+        char *packet = (char*)data;
         packet += 16;
         memcpy(sample, &packet[index*n], (unsigned int)n);
         unsigned long counts = strtoul(sample, NULL, 16)|1;
@@ -467,12 +477,12 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     if(packet == NULL) {
         return -EINVAL;
     }
-    char* data = grab_next_valid_packet();
+    unsigned char* data = grab_next_valid_packet();
     if(!data){
         ret = -ENOENT;
         goto err_end;
     }
-    char *buf = data;
+    char *buf = (char*)data;
     buf += 16;
     for(x = 0; x < ahp_xc_get_nlines(); x++) {
         sample[n] = 0;
@@ -533,7 +543,7 @@ end:
 
 int ahp_xc_get_properties()
 {
-    char *data = NULL;
+    unsigned char *data = NULL;
     int n_read;
     int ntries = 3;
     ahp_xc_clear_capture_flag(CAP_ENABLE);
@@ -550,7 +560,7 @@ int ahp_xc_get_properties()
     n_read = sscanf((char*)data, "%02X%02X%03X%02X%02X%01X%04X", &_bps, &_nlines, &_delaysize, &_auto_lagsize, &_cross_lagsize, &_flags, &_tau);
     if(n_read != 7)
         return -EINVAL;
-    strncpy(ahp_xc_header, data, 16);
+    strncpy(ahp_xc_header, (char*)data, 16);
     free(data);
     ahp_xc_bps = _bps;
     ahp_xc_nlines = _nlines+1;
