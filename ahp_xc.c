@@ -48,22 +48,13 @@ static unsigned char ahp_xc_capture_flags = 0;
 static int grab_next_packet(unsigned char* buf)
 {
     int err = 0;
-    unsigned int size = ahp_xc_get_packetsize()-1;
+    unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
     if(size == 16)
         err = RS232_AlignFrame('\r', 4096);
     if(err)
-        return -ENODATA;
-    int c = 0;
-    int nread = 0;
-    while(c != '\r' && nread < size) {
-        c = RS232_RecvByte();
-        if(c < 0)
-            return c;
-        else
-            buf[nread++] = c;
-    }
-    buf[nread] = 0;
+        return -ENODEV;
+    int nread = RS232_RecvBuf(buf, size);
     if(nread < 0) {
         err = -ETIMEDOUT;
     } else {
@@ -82,7 +73,6 @@ static int grab_next_packet(unsigned char* buf)
     if(strlen((char*)buf) < size) {
         err = -ENODATA;
     }
-    fprintf(stderr, "last packet: %s\n", buf);
     return err;
 }
 
@@ -409,6 +399,8 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
 
 void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start)
 {
+    ahp_xc_set_capture_flag(CAP_RESET_TIMESTAMP);
+    ahp_xc_capture_flags &= ~(1<<CAP_RESET_TIMESTAMP);
     ahp_xc_set_capture_flag(CAP_ENABLE);
     ahp_xc_set_lag_auto(index, start);
     ahp_xc_set_test(index, SCAN_AUTO);
@@ -425,7 +417,7 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
 {
     int r = -1, y;
     unsigned int n = ahp_xc_get_bps()/4;
-    int i = 0;
+    int i = 0, x = 0, last = 0;
     *autocorrelations = NULL;
     ahp_xc_sample *correlations = ahp_xc_alloc_samples(len, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
     char* sample = (char*)malloc((unsigned int)n+1);
@@ -445,6 +437,10 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
         if(!data)
             continue;
         char *packet = (char*)data;
+        char *timestamp = &data[ahp_xc_get_packetsize()-17];
+        i = strtoul(timestamp, NULL, 16)/ahp_xc_get_packettime()/10;
+        if (i >= len)
+            break;
         packet += 16;
         memcpy(sample, &packet[index*n], (unsigned int)n);
         unsigned long counts = strtoul(sample, NULL, 16)|1;
@@ -457,15 +453,25 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
             correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)counts;
             packet += n;
         }
-        (*percent) += 100.0 / len;
-        i++;
+        if(i - last > 1)
+        for(x = last; x < i; x++) {
+            for(y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
+                memcpy(sample, packet, (unsigned int)n);
+                correlations[x].correlations[y].counts = correlations[last].correlations[y].counts;
+                correlations[x].correlations[y].correlations = correlations[last].correlations[y].correlations;
+                correlations[x].correlations[y].coherence = correlations[last].correlations[y].coherence;
+                packet += n;
+            }
+        }
+        (*percent) = i * 100.0 / len;
+        last=i;
         r++;
         free(data);
     }
     ahp_xc_end_autocorrelation_scan(index);
     free(sample);
     *autocorrelations = correlations;
-    return r;
+    return i;
 }
 
 int ahp_xc_get_packet(ahp_xc_packet *packet)

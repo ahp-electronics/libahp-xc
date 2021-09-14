@@ -33,9 +33,10 @@
 #include "rs232.h"
 #include <pthread.h>
 
-static pthread_mutexattr_t mutex_attr = 0;
-static pthread_mutex_t read_mutex = NULL;
-static pthread_mutex_t send_mutex = NULL;
+static pthread_mutexattr_t mutex_attr;
+static pthread_mutex_t read_mutex;
+static pthread_mutex_t send_mutex;
+static int mutexes_initialized = 0;
 static int baudrate = -1;
 static char mode[4] = { 0, 0, 0, 0 };
 static int flowctrl = -1;
@@ -46,7 +47,7 @@ static int error = 0;
 
 static struct termios new_port_settings, old_port_settings;
 
-int RS232_SetupPort(int bauds, const char *mode, int flowctrl)
+int RS232_SetupPort(int bauds, const char *m, int fc)
 {
     if(baudrate == bauds && !strcmp(mode, m) && fc == flowctrl)
         return 0;
@@ -373,17 +374,18 @@ int RS232_OpenComport(const char* devname)
     sprintf(dev_name, "%s", devname);
 #endif
     if(fd == -1)
-        fd = open(dev_name, O_RDWR|O_TEXT);
+        fd = open(dev_name, O_RDWR);
 
     if(fd==-1) {
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
         return 1;
     }
-    if(mutex_attr == 0) {
+    if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
         pthread_mutex_init(&read_mutex, &mutex_attr);
         pthread_mutex_init(&send_mutex, &mutex_attr);
+        mutexes_initialized = 1;
     }
     return 0;
 }
@@ -392,15 +394,14 @@ void RS232_CloseComport()
 {
     if(fd != -1)
         close(fd);
-    if(mutex_attr != 0) {
+    if(mutexes_initialized) {
         pthread_mutex_unlock(&read_mutex);
         pthread_mutex_destroy(&read_mutex);
-        read_mutex = NULL;
         pthread_mutex_unlock(&send_mutex);
         pthread_mutex_destroy(&send_mutex);
-        send_mutex = NULL;
         pthread_mutexattr_destroy(&mutex_attr);
-        mutex_attr = 0;
+        mutexes_initialized = 0;
+
     }
     strcpy(mode, "   ");
     flowctrl = -1;
@@ -414,10 +415,11 @@ int RS232_RecvBuf(unsigned char *buf, int size)
     int nread = 0;
     int ntries = size;
     int to_read = size;
-    if(read_mutex != NULL) {
+    if(mutexes_initialized) {
         while(pthread_mutex_trylock(&read_mutex))
             usleep(10000000/baudrate);
         while(to_read > 0 && ntries-->0) {
+            usleep(10000000/baudrate);
             n = read(fd, buf+nread, (size_t)to_read);
             if(n<1) {
                 if(errno == EAGAIN)
@@ -441,11 +443,12 @@ int RS232_SendBuf(unsigned char *buf, int size)
     int nsent = 0;
     int ntries = size;
     int to_send = size;
-    if(send_mutex != NULL) {
+    if(mutexes_initialized) {
         while(pthread_mutex_trylock(&send_mutex))
             usleep(10000000/baudrate);
         while(to_send > 0 && ntries-->0) {
             n = write(fd, buf+nsent, (size_t)to_send);
+            usleep(10000000/baudrate);
             if(n<1) {
                 if(errno == EAGAIN)
                     continue;
@@ -501,11 +504,12 @@ int RS232_SendByte(unsigned char byte)
 
 void RS232_SetFD(int f)
 {
-    if(mutex_attr == 0) {
+    if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
         pthread_mutex_init(&read_mutex, &mutex_attr);
         pthread_mutex_init(&send_mutex, &mutex_attr);
+        mutexes_initialized = 1;
     }
     fd = f;
 }
