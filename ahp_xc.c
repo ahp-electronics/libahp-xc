@@ -70,9 +70,6 @@ static int grab_next_packet(unsigned char* buf)
             }
         }
     }
-    if(strlen((char*)buf) < size) {
-        err = -ENODATA;
-    }
     return err;
 }
 

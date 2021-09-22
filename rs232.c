@@ -267,16 +267,8 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
         return 1;
     }
 
-    DCB port_settings;
-    memset(&port_settings, 0, sizeof(DCB));
-    port_settings.DCBlength = sizeof(DCB);
-
-    if(!GetCommState(pHandle, &port_settings))
-    {
-        printf("unable to get comport cfg settings\n");
-        return 1;
-    }
-    port_settings.DCBlength = sizeof(DCB);
+    DCB port_settings = { 0 };
+    port_settings.DCBlength = sizeof(port_settings);
     port_settings.BaudRate = baudrate;
     port_settings.XonChar = 0x13;
     port_settings.XoffChar = 0x19;
@@ -286,9 +278,10 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     port_settings.fOutX = 0;
     port_settings.fInX = 0;
     port_settings.fErrorChar = 0;
-    port_settings.fBinary = 0;
+    port_settings.fBinary = 1;
+    port_settings.fParity = 0;
     port_settings.fNull = 0;
-    port_settings.fAbortOnError = 0;
+    port_settings.fAbortOnError = 1;
     port_settings.XonLim = 0;
     port_settings.XoffLim = 0;
     port_settings.fTXContinueOnXoff = 1;
