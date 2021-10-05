@@ -257,9 +257,9 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
 
     Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
     Cptimeouts.ReadTotalTimeoutMultiplier  = 0;
-    Cptimeouts.ReadTotalTimeoutConstant    = 50;
+    Cptimeouts.ReadTotalTimeoutConstant    = 10000000/bauds;
     Cptimeouts.WriteTotalTimeoutMultiplier = 0;
-    Cptimeouts.WriteTotalTimeoutConstant   = 50;
+    Cptimeouts.WriteTotalTimeoutConstant   = 10000000/bauds;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
@@ -278,7 +278,7 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     port_settings.fOutX = 0;
     port_settings.fInX = 0;
     port_settings.fErrorChar = 0;
-    port_settings.fBinary = 1;
+    port_settings.fBinary = 0;
     port_settings.fParity = 0;
     port_settings.fNull = 0;
     port_settings.fAbortOnError = 1;
