@@ -1,17 +1,26 @@
 /*
+    MIT License
+
     libahp_xc library to drive the AHP XC correlators
     Copyright (C) 2020  Ilia Platone
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
 */
 
 #include <stdio.h>
@@ -44,6 +53,15 @@ static baud_rate ahp_xc_rate = R_BASE;
 static char ahp_xc_comport[128];
 static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
+
+static void complex_phase_magnitude(ahp_xc_correlation *sample)
+{
+    sample->magnitude = (double)sqrt(pow(sample->real, 2)+pow((double)sample->imaginary, 2));
+    double rad = acos (sample->imaginary / sample->magnitude);
+    if(sample->real < 0 && rad != 0.0)
+        rad = M_PI*2-rad;
+    sample->phase = rad;
+}
 
 static int grab_next_packet(char* buf)
 {
@@ -314,7 +332,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     *crosscorrelations = NULL;
     if(index1 == index2)
         return r;
-    char* sample = (char*)malloc((unsigned int)n+1);
+    char* sample = (char*)malloc((unsigned int)n*2+1);
     sample[n] = 0;
     *percent = 0;
     size = (size < 5 ? 5 : size);
@@ -344,12 +362,17 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         counts /= 2;
         packet += n*(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines());
         packet += n*ahp_xc_get_crosscorrelator_lagsize()*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
-        for(y = 0; y < ahp_xc_get_crosscorrelator_lagsize()*2-1; y++) {
-            memcpy(sample, packet, (unsigned int)n);
+        for(y = 0; y < ahp_xc_get_crosscorrelator_lagsize()*2-1; ) {
             correlations[i].correlations[y].counts = counts;
-            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
-            correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+            memcpy(sample, packet, (unsigned int)n);
+            correlations[i].correlations[y].real = strtol(sample, NULL, 16);
             packet += n;
+            y++;
+            memcpy(sample, packet, (unsigned int)n);
+            correlations[i].correlations[y].imaginary = strtol(sample, NULL, 16);
+            complex_phase_magnitude(&correlations[i].correlations[y]);
+            packet += n;
+            y++;
         }
         (*percent) += 100.0 / size;
         i--;
@@ -379,12 +402,17 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         counts /= 2;
         packet += n*(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines());
         packet += n*ahp_xc_get_crosscorrelator_lagsize()*((idx1*(ahp_xc_get_nlines()*2-idx1-1))/2+idx2-idx1-1);
-        for(y = 0; y < ahp_xc_get_crosscorrelator_lagsize()*2-1; y++) {
-            memcpy(sample, packet, (unsigned int)n);
+        for(y = 0; y < ahp_xc_get_crosscorrelator_lagsize()*2-1; ) {
             correlations[i].correlations[y].counts = counts;
-            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
-            correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)correlations[i].correlations[y].counts;
+            memcpy(sample, packet, (unsigned int)n);
+            correlations[i].correlations[y].real = strtol(sample, NULL, 16);
             packet += n;
+            y++;
+            memcpy(sample, packet, (unsigned int)n);
+            correlations[i].correlations[y].imaginary = strtol(sample, NULL, 16);
+            complex_phase_magnitude(&correlations[i].correlations[y]);
+            packet += n;
+            y++;
         }
         (*percent) += 100.0 / size;
         i++;
@@ -440,12 +468,17 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
         unsigned long counts = strtoul(sample, NULL, 16)|1;
         packet += n*ahp_xc_get_nlines();
         packet += n*index*ahp_xc_get_autocorrelator_lagsize();
-        for(y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
-            memcpy(sample, packet, (unsigned int)n);
+        for(y = 0; y < ahp_xc_get_autocorrelator_lagsize(); ) {
             correlations[i].correlations[y].counts = counts;
-            correlations[i].correlations[y].correlations = strtoul(sample, NULL, 16);
-            correlations[i].correlations[y].coherence = (double)correlations[i].correlations[y].correlations / (double)counts;
+            memcpy(sample, packet, (unsigned int)n);
+            correlations[i].correlations[y].real = strtol(sample, NULL, 16);
             packet += n;
+            y++;
+            memcpy(sample, packet, (unsigned int)n);
+            correlations[i].correlations[y].imaginary = strtol(sample, NULL, 16);
+            complex_phase_magnitude(&correlations[i].correlations[y]);
+            packet += n;
+            y++;
         }
         (*percent) += 100.0 / len;
         i++;
@@ -489,12 +522,16 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         for(y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
             sample[n] = 0;
             memcpy(sample, buf, (unsigned int)n);
-            if(1<sscanf(sample, "%lX",  &packet->autocorrelations[x].correlations[y].correlations)) {
+            if(1<sscanf(sample, "%lX",  &packet->autocorrelations[x].correlations[y].real)) {
+                ret = -ENOENT;
+                goto end;
+            }
+            if(1<sscanf(sample, "%lX",  &packet->autocorrelations[x].correlations[y].imaginary)) {
                 ret = -ENOENT;
                 goto end;
             }
             packet->autocorrelations[x].correlations[y].counts = packet->counts[x];
-            packet->autocorrelations[x].correlations[y].coherence = (double)packet->autocorrelations[x].correlations[y].correlations/(double)packet->autocorrelations[x].correlations[y].counts;
+            complex_phase_magnitude(&packet->autocorrelations[x].correlations[y]);
             buf += n;
         }
     }
@@ -504,13 +541,16 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
             for(z = 0; z < (int)packet->crosscorrelations[idx].lag_size; z++) {
                 sample[n] = 0;
                 memcpy(sample, buf, (unsigned int)n);
-                if(1<sscanf(sample, "%lX",  &packet->crosscorrelations[x].correlations[z].correlations)) {
+                if(1<sscanf(sample, "%lX",  &packet->crosscorrelations[idx].correlations[y].real)) {
                     ret = -ENOENT;
                     goto end;
                 }
-                packet->crosscorrelations[idx].correlations[z].counts = (packet->counts[x]+packet->counts[y])/2;
-                packet->crosscorrelations[idx].correlations[z].coherence = (double)packet->crosscorrelations[idx].correlations[z].correlations/(double)packet->crosscorrelations[idx].correlations[z].counts;
-                idx ++;
+                if(1<sscanf(sample, "%lX",  &packet->crosscorrelations[idx].correlations[y].imaginary)) {
+                    ret = -ENOENT;
+                    goto end;
+                }
+                packet->crosscorrelations[idx].correlations[y].counts = packet->counts[x];
+                complex_phase_magnitude(&packet->crosscorrelations[idx].correlations[y]);
                 buf += n;
             }
         }
