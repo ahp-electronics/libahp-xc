@@ -56,10 +56,10 @@ static unsigned char ahp_xc_capture_flags = 0;
 
 static void complex_phase_magnitude(ahp_xc_correlation *sample)
 {
-    sample->magnitude = (double)sqrt(pow(sample->real, 2)+pow((double)sample->imaginary, 2));
+    sample->magnitude = (double)sqrt(pow(sample->real, 2)+pow(sample->imaginary, 2));
     double rad = 0.0;
     if(sample->magnitude > 0.0) {
-        double rad = acos (sample->imaginary);
+        rad = acos (sample->imaginary / sample->magnitude);
         if(sample->real < 0 && rad != 0.0)
             rad = M_PI*2-rad;
     }
@@ -470,9 +470,9 @@ void ahp_xc_end_autocorrelation_scan(unsigned int index)
 
 int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrelations, off_t start, unsigned int len, int *interrupt, double *percent)
 {
-    int r = -1, y;
+    int r = -1;
     unsigned int n = ahp_xc_get_bps()/4;
-    int i = 0;
+    unsigned int i = 0, y = 0;
     *autocorrelations = NULL;
     ahp_xc_sample *correlations = ahp_xc_alloc_samples(len, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
     char* sample = (char*)malloc((unsigned int)n+1);
@@ -505,10 +505,14 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
         for(y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
             correlations[i].correlations[y].counts = counts;
             memcpy(sample, packet, (unsigned int)n);
-            correlations[i].correlations[y].real = strtol(sample, NULL, 16);
+            sscanf(sample, "%lX",  &correlations[i].correlations[y].real);
+            if(correlations[i].correlations[y].real & (1<<(ahp_xc_get_bps()-1)))
+                correlations[i].correlations[y].real |= ~((1<<ahp_xc_get_bps())-1);
             packet += n;
             memcpy(sample, packet, (unsigned int)n);
-            correlations[i].correlations[y].imaginary = strtol(sample, NULL, 16);
+            sscanf(sample, "%lX",  &correlations[i].correlations[y].imaginary);
+            if(correlations[i].correlations[y].imaginary & (1<<(ahp_xc_get_bps()-1)))
+                correlations[i].correlations[y].imaginary |= ~((1<<ahp_xc_get_bps())-1);
             packet += n;
             complex_phase_magnitude(&correlations[i].correlations[y]);
         }
@@ -557,12 +561,16 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
                 ret = -ENOENT;
                 goto end;
             }
+            if(packet->autocorrelations[x].correlations[y].real & (1<<(ahp_xc_get_bps()-1)))
+                packet->autocorrelations[x].correlations[y].real |= ~((1<<ahp_xc_get_bps())-1);
             buf += n;
             memcpy(sample, buf, (unsigned int)n);
             if(1<sscanf(sample, "%lX",  &packet->autocorrelations[x].correlations[y].imaginary)) {
                 ret = -ENOENT;
                 goto end;
             }
+            if(packet->autocorrelations[x].correlations[y].imaginary & (1<<(ahp_xc_get_bps()-1)))
+                packet->autocorrelations[x].correlations[y].imaginary |= ~((1<<ahp_xc_get_bps())-1);
             buf += n;
             packet->autocorrelations[x].correlations[y].counts = packet->counts[x];
             complex_phase_magnitude(&packet->autocorrelations[x].correlations[y]);
@@ -579,12 +587,16 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
                         ret = -ENOENT;
                         goto end;
                     }
+                    if(packet->crosscorrelations[x].correlations[y].real & (1<<(ahp_xc_get_bps()-1)))
+                        packet->crosscorrelations[x].correlations[y].real |= ~((1<<ahp_xc_get_bps())-1);
                     buf += n;
                     memcpy(sample, buf, (unsigned int)n);
                     if(1<sscanf(sample, "%lX",  &packet->crosscorrelations[idx].correlations[y].imaginary)) {
                         ret = -ENOENT;
                         goto end;
                     }
+                    if(packet->crosscorrelations[x].correlations[y].imaginary & (1<<(ahp_xc_get_bps()-1)))
+                        packet->crosscorrelations[x].correlations[y].imaginary |= ~((1<<ahp_xc_get_bps())-1);
                     buf += n;
                     packet->crosscorrelations[idx].correlations[y].counts = packet->counts[x];
                     complex_phase_magnitude(&packet->crosscorrelations[idx].correlations[y]);
