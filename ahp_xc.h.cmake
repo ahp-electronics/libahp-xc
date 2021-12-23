@@ -122,9 +122,11 @@ typedef enum {
 * \brief The XC capture flags
 */
 typedef enum {
-    CAP_ENABLE = 0, ///Enable capture
-    CAP_EXT_CLK = 1, ///Enable external clock
-    CAP_RESET_TIMESTAMP = 2, ///Reset timestamp
+    CAP_NONE = 0, ///No extra signals or functions
+    CAP_ENABLE = 1, ///Enable capture
+    CAP_EXT_CLK = 2, ///Enable external clock
+    CAP_RESET_TIMESTAMP = 4, ///Reset timestamp
+    CAP_ALL = 0xf, ///All tests enabled
 } xc_capture_flags;
 
 /**
@@ -137,12 +139,13 @@ typedef enum {
     SCAN_CROSS = 4, ///Crosscorrelator continuum scan
     TEST_BCM = 8, ///BCM modulation on voltage led
     TEST_ALL = 0xf, ///All tests enabled
-} xc_test;
+} xc_test_flags;
 
 /**
 * \brief Correlations structure
 */
 typedef struct {
+    double lag; ///Time lag offset
     long real; ///I samples count
     long imaginary; ///Q samples count
     unsigned long counts; ///Pulses count
@@ -154,6 +157,7 @@ typedef struct {
 * \brief Sample structure
 */
 typedef struct {
+    double lag; ///Lag offset from sample time
     unsigned long lag_size; ///Maximum lag in a single shot
     ahp_xc_correlation *correlations; ///Correlations array, of size lag_size in an ahp_xc_packet
 } ahp_xc_sample;
@@ -172,6 +176,7 @@ typedef struct {
     unsigned long* counts; ///Counts in the current shot
     ahp_xc_sample* autocorrelations; ///Autocorrelations in the current shot
     ahp_xc_sample* crosscorrelations; ///Crosscorrelations in the current shot
+    const char* buf; ///Packet buffer string
 } ahp_xc_packet;
 
 /**@}*/
@@ -222,6 +227,14 @@ DLL_EXPORT void ahp_xc_disconnect(void);
 * \sa ahp_xc_disconnect
 */
 DLL_EXPORT unsigned int ahp_xc_is_connected(void);
+
+/**
+* \brief Report if a correlator was detected
+* \sa ahp_xc_connect
+* \sa ahp_xc_connect_fd
+* \sa ahp_xc_disconnect
+*/
+DLL_EXPORT unsigned int ahp_xc_is_detected(void);
 
 /**
 * \brief Obtain the current baud rate
@@ -302,6 +315,12 @@ DLL_EXPORT unsigned int ahp_xc_get_frequency(void);
 * \return Returns the maximum readout frequency
 */
 DLL_EXPORT unsigned int ahp_xc_get_frequency_divider(void);
+
+/**
+* \brief Obtain the sampling time
+* \return Returns the sampling time
+*/
+DLL_EXPORT double ahp_xc_get_sampletime();
 
 /**
 * \brief Obtain the serial packet transmission time in microseconds
@@ -447,13 +466,13 @@ DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int i
 * \brief Set integration flags
 * \param flag the flag to be set.
 */
-DLL_EXPORT int ahp_xc_set_capture_flag(xc_capture_flags flag);
+DLL_EXPORT int ahp_xc_set_capture_flags(xc_capture_flags flags);
 
 /**
-* \brief Clear integration flags
-* \param flag the flag to be clear.
+* \brief Get integration flags
+* \return current capture flags.
 */
-DLL_EXPORT int ahp_xc_clear_capture_flag(xc_capture_flags flag);
+DLL_EXPORT xc_capture_flags ahp_xc_get_capture_flags();
 
 /**
 * \brief Switch on or off the led lines of the correlator
@@ -494,26 +513,31 @@ DLL_EXPORT void ahp_xc_set_voltage(unsigned int index, unsigned char value);
 * \param index The input line index starting from 0
 * \param value The test type
 */
-DLL_EXPORT void ahp_xc_set_test(unsigned int index, xc_test value);
-
-/**
-* \brief Disable tests on the current line
-* \param index The input line index starting from 0
-* \param value The test type
-*/
-DLL_EXPORT void ahp_xc_clear_test(unsigned int index, xc_test value);
+DLL_EXPORT void ahp_xc_set_test_flags(unsigned int index, xc_test_flags value);
 
 /**
 * \brief Get the current status of the test features
 * \param index The line index starting from 0
 */
-DLL_EXPORT unsigned char ahp_xc_get_test(unsigned int index);
+DLL_EXPORT unsigned char ahp_xc_get_test_flags(unsigned int index);
 
 /**
 * \brief Get the current status of the leds on line
 * \param index The line index starting from 0
 */
 DLL_EXPORT unsigned char ahp_xc_get_leds(unsigned int index);
+
+/**
+* \brief Select the input on which to issue next command
+* \param index The input index
+*/
+DLL_EXPORT void ahp_xc_select_input(unsigned int index);
+
+/**
+* \brief Returns the currently selected input on which next command will be issued
+* \return The input index
+*/
+DLL_EXPORT unsigned int ahp_xc_current_input();
 
 /**
 * \brief Send an arbitrary command to the AHP xc device

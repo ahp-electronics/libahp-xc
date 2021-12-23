@@ -428,9 +428,10 @@ int RS232_RecvBuf(unsigned char *buf, int size)
                     nread = -errno;
                     break;
                 }
+            } else {
+                nread += n;
+                to_read -= n;
             }
-            nread += n;
-            to_read -= n;
         }
         pthread_mutex_unlock(&read_mutex);
     }
@@ -455,9 +456,10 @@ int RS232_SendBuf(unsigned char *buf, int size)
                     n = -errno;
                     break;
                 }
+            } else {
+                nsent += n;
+                to_send -= n;
             }
-            nsent += n;
-            to_send -= n;
         }
         pthread_mutex_unlock(&send_mutex);
     }
