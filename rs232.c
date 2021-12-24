@@ -37,7 +37,7 @@ static pthread_mutexattr_t mutex_attr;
 static pthread_mutex_t read_mutex;
 static pthread_mutex_t send_mutex;
 static int mutexes_initialized = 0;
-static int baudrate = -1;
+static int baudrate = 1000;
 static char mode[4] = { 0, 0, 0, 0 };
 static int flowctrl = -1;
 static int fd = -1;
@@ -191,10 +191,8 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     new_port_settings.c_lflag = 0;
     new_port_settings.c_cc[VMIN] = 0;      /* block untill n bytes are received */
     new_port_settings.c_cc[VTIME] = 0;     /* block untill a timer expires (n * 100 mSec.) */
-
     cfsetispeed(&new_port_settings, (speed_t)baudr);
     cfsetospeed(&new_port_settings, (speed_t)baudr);
-
     error = tcsetattr(fd, TCSANOW, &new_port_settings);
     if(error==-1)
     {
@@ -394,11 +392,10 @@ void RS232_CloseComport()
         pthread_mutex_destroy(&send_mutex);
         pthread_mutexattr_destroy(&mutex_attr);
         mutexes_initialized = 0;
-
     }
     strcpy(mode, "   ");
     flowctrl = -1;
-    baudrate = -1;
+    baudrate = 57600;
     fd = -1;
 }
 
@@ -410,24 +407,25 @@ int RS232_RecvBuf(unsigned char *buf, int size)
     int to_read = size;
     if(mutexes_initialized) {
         while(pthread_mutex_trylock(&read_mutex))
-            usleep(10000000/baudrate);
+            usleep(100);
         while(to_read > 0 && ntries-->0) {
-            usleep(10000000/baudrate);
+            usleep(100);
             n = read(fd, buf+nread, (size_t)to_read);
             if(n<1) {
                 if(errno == EAGAIN)
                     continue;
-                else {
-                    n = -errno;
+                else if(n<0) {
+                    nread = -errno;
                     break;
                 }
+            } else {
+                nread += n;
+                to_read -= n;
             }
-            nread += n;
-            to_read -= n;
         }
         pthread_mutex_unlock(&read_mutex);
     }
-    return n;
+    return nread;
 }
 
 int RS232_SendBuf(unsigned char *buf, int size)
@@ -438,24 +436,24 @@ int RS232_SendBuf(unsigned char *buf, int size)
     int to_send = size;
     if(mutexes_initialized) {
         while(pthread_mutex_trylock(&send_mutex))
-            usleep(10000000/baudrate);
+            usleep(100);
         while(to_send > 0 && ntries-->0) {
             n = write(fd, buf+nsent, (size_t)to_send);
-            usleep(10000000/baudrate);
             if(n<1) {
                 if(errno == EAGAIN)
                     continue;
-                else {
+                else if(n<0) {
                     n = -errno;
                     break;
                 }
+            } else {
+                nsent += n;
+                to_send -= n;
             }
-            nsent += n;
-            to_send -= n;
         }
         pthread_mutex_unlock(&send_mutex);
     }
-    return n;
+    return nsent;
 }
 
 int RS232_AlignFrame(int sof, int maxtries)
@@ -495,7 +493,7 @@ int RS232_SendByte(unsigned char byte)
     return 0;
 }
 
-void RS232_SetFD(int f)
+void RS232_SetFD(int f, int bauds)
 {
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
@@ -505,4 +503,10 @@ void RS232_SetFD(int f)
         mutexes_initialized = 1;
     }
     fd = f;
+    baudrate = bauds;
+}
+
+int RS232_GetFD()
+{
+    return fd;
 }
