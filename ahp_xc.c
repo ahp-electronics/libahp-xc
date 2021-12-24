@@ -73,7 +73,7 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
 
 int calc_checksum(char *data)
 {
-    if(!ahp_xc_connected) return 0;
+    if(!ahp_xc_connected) return -ENOENT;
     int x;
     unsigned int checksum = 0x00;
     unsigned int calculated_checksum = 0;
@@ -94,7 +94,7 @@ int calc_checksum(char *data)
 
 static int grab_next_packet(unsigned char* buf)
 {
-    if(!ahp_xc_connected) return 0;
+    if(!ahp_xc_connected) return -ENOENT;
     int err = 0;
     unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
@@ -128,7 +128,7 @@ static int grab_next_packet(unsigned char* buf)
 
 static char* grab_packet()
 {
-    if(!ahp_xc_connected) return 0;
+    if(!ahp_xc_connected) return NULL;
     char *buf = (char*)malloc(ahp_xc_get_packetsize());
     int err = 0;
     int max_errored = 8;
@@ -675,7 +675,7 @@ end:
 
 int ahp_xc_get_properties()
 {
-    if(!ahp_xc_connected) return 0;
+    if(!ahp_xc_connected) return -ENOENT;
     char *data = NULL;
     int n_read;
     int ntries = 3;
@@ -720,7 +720,7 @@ int ahp_xc_get_properties()
 
 int ahp_xc_set_capture_flags(xc_capture_flags flags)
 {
-    if(!ahp_xc_connected) return 0;
+    if(!ahp_xc_connected) return -ENOENT;
     ahp_xc_capture_flags = flags;
     RS232_flushRX();
     return (int)ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)ahp_xc_capture_flags);
@@ -830,7 +830,7 @@ void ahp_xc_set_test_flags(unsigned int index, xc_test_flags value)
 
  int ahp_xc_send_command(xc_cmd c, unsigned char value)
 {
-    if(!ahp_xc_connected) return 0;
+    if(!ahp_xc_connected) return -ENOENT;
     return RS232_SendByte((unsigned char)(c|(((value<<4)|(value>>4))&0xf3)));
 }
 

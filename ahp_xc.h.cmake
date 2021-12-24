@@ -3,7 +3,7 @@
 *    MIT License
 *
 *    libahp_xc library to drive the AHP XC correlators
-*    Copyright (C) 2020  Ilia Platone
+*    Copyright (C) 2021  Ilia Platone
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a copy
 *    of this software and associated documentation files (the "Software"), to deal
@@ -53,49 +53,55 @@ extern "C" {
 * visit https://www.iliaplatone.com/xc for more informations and purchase options.
 *
 * \author Ilia Platone
+* \version @AHPXC_VERSION@
+* \date 2017-2021
+* \copyright MIT License.
 */
 
 /**
- * \defgroup XC_API AHP® XC Correlators API
+ * \defgroup XC_API AHP® XC Correlators API Documentation
  *
  * This library contains functions for direct low-level usage of the AHP cross-correlators.<br>
+ *
  * This documentation describes utility, applicative and hardware control functions included into the library.<br>
  * Each section and component is documented for general usage.
 */
-/**@{*/
+/**\{*/
 
 /**
  * \defgroup Defs Defines
  */
- /**@{*/
+ /**\{*/
 
- ///AHP_XC_VERSION This library version
+///This library version
 #define AHP_XC_VERSION @AHP_XC_VERSION@
-///XC_BASE_RATE is the base baud rate of the XC cross-correlators
+///The base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
-///XC_HIGH_RATE is the base baud rate for big packet XC cross-correlators
+///The base baud rate for big packet XC cross-correlators
 #define XC_HIGH_RATE ((int)500000)
-///AHP_XC_PLL_FREQUENCY is the PLL frequency of the XC cross-correlators
+///The PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 
-/**@}*/
+/**\}*/
 /**
  * \defgroup Enumerations
  */
- /**@{*/
+ /**\{*/
 
- /**
- * \brief AHP XC header flags
- */
+///AHP XC header flags
 typedef enum {
-    HAS_CROSSCORRELATOR = 1, ///AHP_XC_HAS_CROSSCORRELATOR indicates if the correlator can cross-correlate or can autocorrelate only
-    HAS_LEDS = 2, ///AHP_XC_HAS_LEDS indicates if the correlator has led lines available to drive
-    HAS_PSU = 4, ///AHP_XC_HAS_PSU indicates if the correlator has an internal PSU PWM driver on 2nd flag bit
-    HAS_DIFFERENTIAL_ONLY = 8 ///HAS_DIFFERENTIAL_ONLY indicates if the correlator has differential correlators only
+///Indicates that the correlator can cross-correlate its inputs
+HAS_CROSSCORRELATOR = 1,
+///Indicates if the correlator has led lines available to drive
+HAS_LEDS = 2,
+///Indicates that the correlator has an internal PSU PWM driver on 2nd flag bit
+HAS_PSU = 4,
+///Indicates that the correlator has differential correlators only
+HAS_DIFFERENTIAL_ONLY = 8
 } xc_header_flags;
 
 /**
-* \brief These are the baud rates supported
+* \brief Baud rate multipliers
 */
 typedef enum {
     R_BASE = 0,
@@ -108,83 +114,123 @@ typedef enum {
 * \brief The XC firmare commands
 */
 typedef enum {
-    CLEAR = 0, ///Clear autocorrelation and crosscorrelation delays
-    SET_INDEX = 1, ///Set the current input line index for following commands
-    SET_LEDS = 2, /// witch on or off current line leds requires HAS_LEDS
-    SET_BAUD_RATE = 3, ///Set the readout and command baud rate
-    SET_DELAY = 4, ///Set the autocorrelator or crosscorrelator delay
-    SET_FREQ_DIV = 8, ///Set the frequency divider in powers of two
-    SET_VOLTAGE = 9, ///Set the indexed input voltage, requires HAS_PSU in header
-    ENABLE_TEST = 12, ///Enables tests on currently indexed input
-    ENABLE_CAPTURE = 13 ///Enable capture flags
+///Clear autocorrelation and crosscorrelation delays
+CLEAR = 0,
+///Set the current input line index for following commands
+SET_INDEX = 1,
+///Set on or off current line leds, requires HAS_LEDS
+SET_LEDS = 2,
+///Set the readout and command baud rate
+SET_BAUD_RATE = 3,
+///Set the autocorrelator or crosscorrelator delay
+SET_DELAY = 4,
+///Set the frequency divider in powers of two
+SET_FREQ_DIV = 8,
+///Set the indexed input voltage, requires HAS_PSU in header
+SET_VOLTAGE = 9,
+///Enables tests on current input
+ENABLE_TEST = 12,
+///Enable capture flags
+ENABLE_CAPTURE = 13
 } xc_cmd;
 
 /**
 * \brief The XC capture flags
 */
 typedef enum {
-    CAP_NONE = 0, ///No extra signals or functions
-    CAP_ENABLE = 1, ///Enable capture
-    CAP_EXT_CLK = 2, ///Enable external clock
-    CAP_RESET_TIMESTAMP = 4, ///Reset timestamp
-    CAP_ALL = 0xf, ///All tests enabled
+///No extra signals or functions
+CAP_NONE = 0,
+///Enable capture
+CAP_ENABLE = 1,
+///Enable external clock
+CAP_EXT_CLK = 2,
+///Reset timestamp
+CAP_RESET_TIMESTAMP = 4,
+///All flags enabled
+CAP_ALL = 0xf,
 } xc_capture_flags;
 
 /**
 * \brief The XC firmare commands
 */
 typedef enum {
-    TEST_NONE = 0, ///No extra signals or functions
-    TEST_SIGNAL = 1, ///Apply PLL clock on voltage led
-    SCAN_AUTO = 2, ///Autocorrelator continuum scan
-    SCAN_CROSS = 4, ///Crosscorrelator continuum scan
-    TEST_BCM = 8, ///BCM modulation on voltage led
-    TEST_ALL = 0xf, ///All tests enabled
+///No extra signals or functions
+TEST_NONE = 0,
+///Apply PLL clock on voltage led
+TEST_SIGNAL = 1,
+///Autocorrelator continuum scan
+SCAN_AUTO = 2,
+///Crosscorrelator continuum scan
+SCAN_CROSS = 4,
+///BCM modulation on voltage led
+TEST_BCM = 8,
+///All tests enabled
+TEST_ALL = 0xf,
 } xc_test_flags;
 
 /**
 * \brief Correlations structure
 */
 typedef struct {
-    double lag; ///Time lag offset
-    long real; ///I samples count
-    long imaginary; ///Q samples count
-    unsigned long counts; ///Pulses count
-    double magnitude; ///Magnitude of this sample
-    double phase; ///Phase of this sample
+///Time lag offset
+double lag;
+///I samples count
+long real;
+///Q samples count
+long imaginary;
+///Pulses count
+unsigned long counts;
+///Magnitude of this sample
+double magnitude;
+///Phase of this sample
+double phase;
 } ahp_xc_correlation;
 
 /**
 * \brief Sample structure
 */
 typedef struct {
-    double lag; ///Lag offset from sample time
-    unsigned long lag_size; ///Maximum lag in a single shot
-    ahp_xc_correlation *correlations; ///Correlations array, of size lag_size in an ahp_xc_packet
+///Lag offset from sample time
+double lag;
+///Maximum lag in a single shot
+unsigned long lag_size;
+///Correlations array, of size lag_size in an ahp_xc_packet
+ahp_xc_correlation *correlations;
 } ahp_xc_sample;
 
 /**
 * \brief Packet structure
 */
 typedef struct {
-    unsigned long timestamp; ///Timestamp of the packet
-    unsigned long n_lines; ///Number of lines in this correlator
-    unsigned long n_baselines; ///Total number of baselines obtainable
-    unsigned long tau; ///Bandwidth inverse frequency
-    unsigned long bps; ///Bits capacity in each sample
-    unsigned long cross_lag; ///Maximum crosscorrelation lag in a single shot
-    unsigned long auto_lag; ///Maximum autocorrelation lag in a single shot
-    unsigned long* counts; ///Counts in the current shot
-    ahp_xc_sample* autocorrelations; ///Autocorrelations in the current shot
-    ahp_xc_sample* crosscorrelations; ///Crosscorrelations in the current shot
-    const char* buf; ///Packet buffer string
+///Timestamp of the packet
+unsigned long timestamp;
+///Number of lines in this correlator
+unsigned long n_lines;
+///Total number of baselines obtainable
+unsigned long n_baselines;
+///Bandwidth inverse frequency
+unsigned long tau;
+///Bits capacity in each sample
+unsigned long bps;
+///Crosscorrelators channels per packet
+unsigned long cross_lag;
+///Autocorrelators channels per packet
+unsigned long auto_lag;
+///Counts in the current packet
+unsigned long* counts;
+///Autocorrelations in the current packet
+ahp_xc_sample* autocorrelations;
+///Crosscorrelations in the current packet
+ahp_xc_sample* crosscorrelations;
+///Packet buffer string
+const char* buf;
 } ahp_xc_packet;
 
-/**@}*/
+/**\}*/
 /**
  * \defgroup Utilities Utility functions
 */
-/**@{*/
+/**\{*/
 
 /**
 * \brief Get 2d projection for intensity interferometry
@@ -195,11 +241,11 @@ typedef struct {
 */
 DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *baseline);
 
-/**@}*/
+/**\}*/
 /**
  * \defgroup Comm Communication
 */
-/**@{*/
+/**\{*/
 
 /**
 * \brief Connect to a serial port
@@ -253,11 +299,11 @@ DLL_EXPORT int ahp_xc_get_baudrate(void);
 */
 DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate);
 
-/**@}*/
+/**\}*/
 /**
  * \defgroup Feat Features of the correlator
 */
-/**@{*/
+/**\{*/
 
 /**
 * \brief Probe for a correlator and take its properties
@@ -361,11 +407,11 @@ DLL_EXPORT int ahp_xc_has_leds(void);
 */
 DLL_EXPORT int ahp_xc_has_differential_only();
 
-/**@}*/
+/**\}*/
 /**
  * \defgroup Data Data and streaming
 */
-/**@{*/
+/**\{*/
 
 /**
 * \brief Allocate and return a packet structure
@@ -468,11 +514,11 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(unsigned int index);
 */
 DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, unsigned int size, int *interrupt, double *percent);
 
-/**@}*/
+/**\}*/
 /**
  * \defgroup Cmds Commands and setup of the correlator
 */
-/**@{*/
+/**\{*/
 
 /**
 * \brief Set integration flags
@@ -567,8 +613,8 @@ DLL_EXPORT int ahp_xc_send_command(xc_cmd cmd, unsigned char value);
 */
 DLL_EXPORT inline unsigned int ahp_xc_get_version(void) { return AHP_XC_VERSION; }
 
-/**@}*/
-/**@}*/
+/**\}*/
+/**\}*/
 #ifdef __cplusplus
 } // extern "C"
 #endif
