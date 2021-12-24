@@ -58,5 +58,5 @@ var searchData=
   ['auto_5flag_55',['auto_lag',['../structahp__xc__packet.html#adf5e65b85f6f99beabfda376b530261c',1,'ahp_xc_packet']]],
   ['autocorrelations_56',['autocorrelations',['../structahp__xc__packet.html#aa77d70c06492ea82e22dc2b7fb1c0d39',1,'ahp_xc_packet']]],
   ['ahp®_20xc_20crosscorrelators_20driver_20library_57',['AHP® XC Crosscorrelators driver library',['../index.html',1,'']]],
-  ['ahp®_20xc_20correlators_20api_58',['AHP® XC Correlators API',['../group___x_c___a_p_i.html',1,'']]]
+  ['ahp®_20xc_20correlators_20api_20documentation_58',['AHP® XC Correlators API Documentation',['../group___x_c___a_p_i.html',1,'']]]
 ];

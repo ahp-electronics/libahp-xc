@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['features_20of_20the_20correlator_207',['Features of the correlator',['../group___feat.html',1,'']]]
+  ['types_219',['Types',['../group___types.html',1,'']]]
 ];
