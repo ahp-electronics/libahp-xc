@@ -82,11 +82,9 @@ extern "C" {
 ///The PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 
-/**\}*/
-/**
- * \defgroup Enumerations
- */
- /**\{*/
+/**\}
+ * \defgroup Types
+ *\{*/
 
 ///AHP XC header flags
 typedef enum {
