@@ -382,13 +382,12 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
     }
 }
 
-void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start)
+void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
+    ahp_xc_set_channel_cross(index, start, size);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_CROSS);
-    ahp_xc_set_channel_cross(index, start);
-    ahp_xc_set_channel_auto(index, 0);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_ENABLE)&~CAP_RESET_TIMESTAMP);
 }
 
@@ -396,6 +395,7 @@ void ahp_xc_end_crosscorrelation_scan(unsigned int index)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_CROSS);
+    ahp_xc_set_channel_cross(index, 0, 0);
     grab_packet();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
 }
@@ -462,7 +462,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     char* sample = (char*)malloc((unsigned int)n+1);
     sample[n] = 0;
     (*percent) = 0;
-    ahp_xc_start_crosscorrelation_scan(index1, start1);
+    ahp_xc_start_crosscorrelation_scan(index1, start1, size/2);
     int i = size/2;
     while(i > 0) {
         if(*interrupt)
@@ -477,7 +477,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         r++;
     }
     ahp_xc_end_crosscorrelation_scan(index1);
-    ahp_xc_start_crosscorrelation_scan(index2, start2);
+    ahp_xc_start_crosscorrelation_scan(index2, start2, size/2);
     i = size/2;
     while(i < (int)size) {
         if(*interrupt)
@@ -511,13 +511,12 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     return r+f;
 }
 
-void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start)
+void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
+    ahp_xc_set_channel_auto(index, start, size);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
-    ahp_xc_set_channel_cross(index, 0);
-    ahp_xc_set_channel_auto(index, start);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_ENABLE)&~CAP_RESET_TIMESTAMP);
 }
 
@@ -525,6 +524,7 @@ void ahp_xc_end_autocorrelation_scan(unsigned int index)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
+    ahp_xc_set_channel_auto(index, 0, 0);
     grab_packet();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
 }
@@ -573,7 +573,7 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     if(!ahp_xc_detected) return 0;
     int r = -1;
     unsigned int n = ahp_xc_get_bps()/4;
-    int i = 0, x = 0, last = 0;
+    int i = 0;
     *autocorrelations = NULL;
     ahp_xc_sample *correlations = ahp_xc_alloc_samples(len, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
     char* sample = (char*)malloc((unsigned int)n+1);
@@ -584,7 +584,7 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     len = (start+(off_t)len < ahp_xc_get_delaysize() ? (off_t)len : (off_t)ahp_xc_get_delaysize()-1-start);
     char* data = (char*)malloc(ahp_xc_get_packetsize()*len);
     i = 0;
-    ahp_xc_start_autocorrelation_scan(index, start);
+    ahp_xc_start_autocorrelation_scan(index, start, len);
     while(i < (int)len) {
         if(*interrupt)
             break;
@@ -647,11 +647,8 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     }
     int idx = 0;
     for(x = 0; x < ahp_xc_get_nlines(); x++) {
-        ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, packet->buf, 0.0);
-    }
-    if(ahp_xc_has_crosscorrelator()) {
-        idx = 0;
-        for(x = 0; x < ahp_xc_get_nlines(); x++) {
+        ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, data, 0.0);
+        if(ahp_xc_has_crosscorrelator()) {
             for(y = x+1; y < ahp_xc_get_nlines(); y++) {
                 ahp_xc_get_crosscorrelation(&packet->crosscorrelations[idx++], x, y, data, 0.0);
             }
@@ -764,24 +761,31 @@ void ahp_xc_set_leds(unsigned int index, int leds)
     ahp_xc_send_command(SET_LEDS, (unsigned char)(leds&0xf));
 }
 
-void ahp_xc_set_channel_cross(unsigned int index, off_t value)
+void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_select_input(index);
     int idx = 0;
-    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx<<4)|(value&0x7)));
-    idx++;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)));
     value >>= 3;
-    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx<<4)|(value&0x7)));
-    idx++;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)));
     value >>= 3;
-    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx<<4)|(value&0x7)));
-    idx++;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)));
     value >>= 3;
-    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx<<4)|(value&0x7)));
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
+    idx = 0;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(size&0x7)));
+    size >>= 3;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(size&0x7)));
+    size >>= 3;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(size&0x7)));
+    size >>= 3;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(size&0x7)));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
 }
 
-void ahp_xc_set_channel_auto(unsigned int index, off_t value)
+void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_select_input(index);
@@ -793,6 +797,16 @@ void ahp_xc_set_channel_auto(unsigned int index, off_t value)
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|0x8|(value&0x7)));
     value >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|0x8|(value&0x7)));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
+    idx = 0;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|0x8|(size&0x7)));
+    size >>= 3;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|0x8|(size&0x7)));
+    size >>= 3;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|0x8|(size&0x7)));
+    size >>= 3;
+    ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|0x8|(size&0x7)));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
 }
 
 void ahp_xc_set_frequency_divider(unsigned char value)

@@ -144,6 +144,8 @@ CAP_ENABLE = 1,
 CAP_EXT_CLK = 2,
 ///Reset timestamp
 CAP_RESET_TIMESTAMP = 4,
+///Enable extra commands
+CAP_EXTRA_CMD = 8,
 ///All flags enabled
 CAP_ALL = 0xf,
 } xc_capture_flags;
@@ -459,9 +461,10 @@ DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 /**
 * \brief Initiate an autocorrelation scan
 * \param index The line index.
-* \param start the starting channel for this scan.
+* \param start The starting channel for this scan.
+* \param size The number of channels to scan afterwards.
 */
-DLL_EXPORT void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start);
+DLL_EXPORT void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size);
 
 /**
 * \brief End an autocorrelation scan
@@ -488,7 +491,7 @@ DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **
 * \param index The line index.
 * \param start the starting channel for this scan.
 */
-DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start);
+DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size);
 
 /**
 * \brief End a crosscorrelation scan
@@ -541,15 +544,17 @@ DLL_EXPORT void ahp_xc_set_leds(unsigned int index, int leds);
 * \brief Set the channel of the selected input (for cross-correlation)
 * \param index The input line index starting from 0
 * \param value The channel number
+* \param size The number of channels to scan afterwards
 */
-DLL_EXPORT void ahp_xc_set_channel_cross(unsigned int index, off_t value);
+DLL_EXPORT void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size);
 
 /**
 * \brief Set the channel of the selected input (for auto-correlation)
 * \param index The input line index starting from 0
 * \param value The channel number
+* \param size The number of channels to scan afterwards
 */
-DLL_EXPORT void ahp_xc_set_channel_auto(unsigned int index, off_t value);
+DLL_EXPORT void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size);
 
 /**
 * \brief Set the clock divider for autocorrelation and crosscorrelation
