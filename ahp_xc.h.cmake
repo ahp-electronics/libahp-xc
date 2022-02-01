@@ -264,6 +264,12 @@ DLL_EXPORT int ahp_xc_connect(const char *port, int high_rate);
 DLL_EXPORT int ahp_xc_connect_fd(int fd);
 
 /**
+* \brief Obtain the serial port file descriptor
+* \return The file descriptor of the stream
+*/
+DLL_EXPORT int ahp_xc_get_fd();
+
+/**
 * \brief Disconnect from the serial port or descriptor opened with ahp_xc_connect
 * \sa ahp_xc_connect
 */

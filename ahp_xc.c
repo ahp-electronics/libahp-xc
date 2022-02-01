@@ -263,6 +263,11 @@ unsigned int ahp_xc_get_packetsize()
     return ahp_xc_packetsize;
 }
 
+int ahp_xc_get_fd()
+{
+    return RS232_GetFD();
+}
+
 int ahp_xc_connect_fd(int fd)
 {
     ahp_xc_bps = 0;
