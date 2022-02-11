@@ -763,7 +763,10 @@ void ahp_xc_set_leds(unsigned int index, int leds)
     if(!ahp_xc_detected) return;
     ahp_xc_leds[index] = (unsigned char)leds;
     ahp_xc_select_input(index);
-    ahp_xc_send_command(SET_LEDS, (unsigned char)(leds&0xf));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
+    ahp_xc_send_command(SET_LEDS, (unsigned char)((ahp_xc_leds[index]>>4)&0xf));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
+    ahp_xc_send_command(SET_LEDS, (unsigned char)(ahp_xc_leds[index]&0xf));
 }
 
 void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size)
@@ -844,7 +847,10 @@ void ahp_xc_set_test_flags(unsigned int index, xc_test_flags value)
     if(!ahp_xc_detected) return;
     ahp_xc_select_input(index);
     ahp_xc_test[index] = value;
-    ahp_xc_send_command(ENABLE_TEST, ahp_xc_test[index]);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
+    ahp_xc_send_command(ENABLE_TEST, (unsigned char)((ahp_xc_test[index]>>4)&0xf));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
+    ahp_xc_send_command(ENABLE_TEST, (unsigned char)(ahp_xc_test[index]&0xf));
 }
 
  int ahp_xc_send_command(xc_cmd c, unsigned char value)
