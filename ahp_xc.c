@@ -249,13 +249,13 @@ unsigned int ahp_xc_get_frequency_divider()
 
 double ahp_xc_get_sampletime()
 {
-    return pow(2, (double)ahp_xc_get_frequency_divider())*1000000000.0/(double)ahp_xc_get_frequency();
+    return pow(2.0, (double)ahp_xc_get_frequency_divider())/(double)ahp_xc_get_frequency();
 }
 
-unsigned int ahp_xc_get_packettime()
+double ahp_xc_get_packettime()
 {
     if(!ahp_xc_detected) return 0;
-    return (unsigned int)10000000 * (unsigned int)ahp_xc_get_packetsize() / (unsigned int)ahp_xc_get_baudrate();
+    return  10.0  * (double)ahp_xc_get_packetsize() / (double)ahp_xc_get_baudrate();
 }
 
 unsigned int ahp_xc_get_packetsize()
@@ -390,6 +390,7 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
 void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size)
 {
     if(!ahp_xc_detected) return;
+    ahp_xc_end_crosscorrelation_scan(index);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
     ahp_xc_set_channel_cross(index, start, size);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_CROSS);
@@ -411,15 +412,17 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
     int n = ahp_xc_get_bps() / 4;
     const char *packet = data;
     char *subpacket = (char*)malloc(n+1);
-    sample->lag_size = ahp_xc_get_crosscorrelator_lagsize()*2-1;
+    sample->lag_size = ahp_xc_get_autocorrelator_lagsize();
     sample->lag = lag;
     packet += 16;
+    unsigned long counts = 0;
     memcpy(subpacket, &packet[index1*n], (unsigned int)n);
-    unsigned long counts = strtoul(subpacket, NULL, 16)|1;
+    counts += strtoul(subpacket, NULL, 16)|1;
     memcpy(subpacket, &packet[index2*n], (unsigned int)n);
     counts += strtoul(subpacket, NULL, 16)|1;
-    packet += n*(ahp_xc_get_nlines()+ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines());
-    packet += n*ahp_xc_get_crosscorrelator_lagsize()*((index1*(ahp_xc_get_nlines()*2-index1-1))/2+index2-index1-1);
+    packet += n*ahp_xc_get_nlines();
+    packet += n*ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()*2;
+    packet += n*ahp_xc_get_crosscorrelator_lagsize()*((index1*(ahp_xc_get_nlines()*2-index1-1))/2+index2-index1-1)*2;
     for(y = 0; y < sample->lag_size; y++) {
         sample->correlations[y].lag = sample->lag+y*ahp_xc_get_sampletime();
         sample->correlations[y].counts = counts;
@@ -497,17 +500,22 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         f++;
     }
     ahp_xc_end_crosscorrelation_scan(index2);
-    i = 0;
     char timestamp[16];
     double ts = 0.0;
+    i = r;
+    while(i >= 0) {
+        char *packet = (char*)data+i*ahp_xc_get_packetsize();
+        strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
+        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
+        i--;
+    }
+    i = r;
     while(i < r+f) {
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
-        ts = (double)strtoul(timestamp, NULL, 16);
-        ts /= 1000*ahp_xc_get_packettime();
-        ts -= r;
-        ts *= ahp_xc_get_sampletime();
-        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, data, ts);
+        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
         i++;
     }
     free(data);
@@ -609,10 +617,7 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     while(i < r) {
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
-        ts = (double)strtoul(timestamp, NULL, 16);
-        ts /= 1000*ahp_xc_get_packettime();
-        ts += start;
-        ts *= ahp_xc_get_sampletime();
+        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
         ahp_xc_get_autocorrelation(&correlations[i], index, packet, ts);
         i++;
     }

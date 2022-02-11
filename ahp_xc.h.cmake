@@ -202,7 +202,7 @@ ahp_xc_correlation *correlations;
 * \brief Packet structure
 */
 typedef struct {
-///Timestamp of the packet
+///Timestamp of the packet (seconds)
 unsigned long timestamp;
 ///Number of lines in this correlator
 unsigned long n_lines;
@@ -373,15 +373,15 @@ DLL_EXPORT unsigned int ahp_xc_get_frequency_divider(void);
 
 /**
 * \brief Obtain the sampling time
-* \return Returns the sampling time in nanoseconds
+* \return Returns the sampling time in seconds
 */
 DLL_EXPORT double ahp_xc_get_sampletime(void);
 
 /**
 * \brief Obtain the serial packet transmission time
-* \return Returns the packet transmission time in microseconds
+* \return Returns the packet transmission time in seconds
 */
-DLL_EXPORT unsigned int ahp_xc_get_packettime(void);
+DLL_EXPORT double ahp_xc_get_packettime(void);
 
 /**
 * \brief Obtain the serial packet size
