@@ -412,7 +412,7 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
     int n = ahp_xc_get_bps() / 4;
     const char *packet = data;
     char *subpacket = (char*)malloc(n+1);
-    sample->lag_size = ahp_xc_get_autocorrelator_lagsize();
+    sample->lag_size = (ahp_xc_get_crosscorrelator_lagsize()*2-1);
     sample->lag = lag;
     packet += 16;
     unsigned long counts = 0;
@@ -422,7 +422,7 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
     counts += strtoul(subpacket, NULL, 16)|1;
     packet += n*ahp_xc_get_nlines();
     packet += n*ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()*2;
-    packet += n*ahp_xc_get_crosscorrelator_lagsize()*((index1*(ahp_xc_get_nlines()*2-index1-1))/2+index2-index1-1)*2;
+    packet += n*(ahp_xc_get_crosscorrelator_lagsize()*2-1)*((index1*(ahp_xc_get_nlines()*2-index1-1))/2+index2-index1-1)*2;
     for(y = 0; y < sample->lag_size; y++) {
         sample->correlations[y].lag = sample->lag+y*ahp_xc_get_sampletime();
         sample->correlations[y].counts = counts;
@@ -554,7 +554,7 @@ void ahp_xc_get_autocorrelation(ahp_xc_sample *sample, int index, const char *da
     memcpy(subpacket, &packet[index*n], (unsigned int)n);
     unsigned long counts = strtoul(subpacket, NULL, 16)|1;
     packet += n*ahp_xc_get_nlines();
-    packet += n*index*sample->lag_size*2;
+    packet += n*index*ahp_xc_get_autocorrelator_lagsize()*2;
     for(y = 0; y < sample->lag_size; y++) {
         sample->correlations[y].lag = sample->lag+y*ahp_xc_get_sampletime();
         sample->correlations[y].counts = counts;
@@ -633,14 +633,14 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     int ret = 1;
     unsigned int x = 0, y = 0;
     int n = ahp_xc_get_bps()/4;
-    char *sample = (char*)malloc((unsigned int)n+1);
     if(packet == NULL) {
         return -EINVAL;
     }
+    char *sample = (char*)malloc((unsigned int)n+1);
     char* data = grab_packet();
     if(!data){
         ret = -ENOENT;
-        goto err_end;
+        goto end;
     }
     packet->buf = data;
     const char *buf = packet->buf;
@@ -674,8 +674,8 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     goto end;
 err_end:
     fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
-end:
     free(data);
+end:
     free(sample);
     return ret;
 }
@@ -684,24 +684,26 @@ int ahp_xc_get_properties()
 {
     if(!ahp_xc_connected) return -ENOENT;
     char *data = NULL;
-    int n_read;
-    int ntries = 3;
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
-    while(ntries-- > 0) {
-        data = grab_packet();
-        if(data)
-            break;
-    }
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
-    if(ntries < 0 || data == NULL)
-        return -EBUSY;
+    int n_read = 0;
+    int ntries = 16;
     unsigned int _bps, _nlines, _delaysize, _auto_lagsize, _cross_lagsize, _flags, _tau;
-    n_read = sscanf((char*)data, "%02X%02X%03X%02X%02X%01X%04X", &_bps, &_nlines, &_delaysize, &_auto_lagsize, &_cross_lagsize, &_flags, &_tau);
+    while(ntries-- > 0) {
+        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
+        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
+        data = grab_packet();
+        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
+        if(data == NULL)
+            continue;
+        n_read = sscanf((char*)data, "%02X%02X%03X%02X%02X%01X%04X", &_bps, &_nlines, &_delaysize, &_auto_lagsize, &_cross_lagsize, &_flags, &_tau);
+        if(n_read == 7) {
+            strncpy(ahp_xc_header, (char*)data, 16);
+            free(data);
+            break;
+        }
+        free(data);
+    }
     if(n_read != 7)
-        return -EINVAL;
-    strncpy(ahp_xc_header, (char*)data, 16);
-    free(data);
+        return -ENODEV;
     ahp_xc_bps = _bps;
     ahp_xc_nlines = _nlines+1;
     ahp_xc_nbaselines = ahp_xc_nlines*(ahp_xc_nlines-1)/2;
