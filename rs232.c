@@ -256,10 +256,10 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     COMMTIMEOUTS Cptimeouts;
 
     Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
-    Cptimeouts.ReadTotalTimeoutMultiplier  = 1;
-    Cptimeouts.ReadTotalTimeoutConstant    = 100;
-    Cptimeouts.WriteTotalTimeoutMultiplier = 1;
-    Cptimeouts.WriteTotalTimeoutConstant   = 100;
+    Cptimeouts.ReadTotalTimeoutMultiplier  = 10;
+    Cptimeouts.ReadTotalTimeoutConstant    = 0;
+    Cptimeouts.WriteTotalTimeoutMultiplier = 10;
+    Cptimeouts.WriteTotalTimeoutConstant   = 0;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
