@@ -511,15 +511,16 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(unsigned int index);
 * \param index2 the second input index.
 * \param crosscorrelations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
 * \param start1 Initial channel on index1 input.
+* \param size1 Number of channels to scan on index1 input.
 * \param start2 Initial channel on index2 input.
-* \param size Number of channels to be scanned.
+* \param size2 Number of channels to scan on index2 input.
 * \param interrupt This should point to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
 * \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
 * \return Returns the number of channels scanned
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, unsigned int size, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, int *interrupt, double *percent);
 
 /**\}*/
 /**

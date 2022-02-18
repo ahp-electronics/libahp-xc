@@ -449,7 +449,7 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
     free(subpacket);
 }
 
-int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, off_t start2, unsigned int size, int *interrupt, double *percent)
+int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, int *interrupt, double *percent)
 {
     if(!ahp_xc_detected) return 0;
     int r = -1;
@@ -462,17 +462,17 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         return r;
     r++;
     f++;
-    size = (size < 5 ? 5 : size);
     start1 = (start1 < ahp_xc_get_delaysize()-2 ? start1 : (off_t)ahp_xc_get_delaysize()-2);
     start2 = (start2 < ahp_xc_get_delaysize()-2 ? start2 : (off_t)ahp_xc_get_delaysize()-2);
-    char* data = (char*)malloc(ahp_xc_get_packetsize()*size);
-    ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)size, (unsigned int)ahp_xc_get_crosscorrelator_lagsize());
+    char* data = (char*)malloc(ahp_xc_get_packetsize()*(size1+size2));
+    ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)(size1+size2), (unsigned int)ahp_xc_get_crosscorrelator_lagsize());
     char* sample = (char*)malloc((unsigned int)n+1);
     sample[n] = 0;
     (*percent) = 0;
-    ahp_xc_start_crosscorrelation_scan(index1, start1, size/2);
-    int i = size/2;
-    while(i > 0) {
+    ahp_xc_set_channel_cross(index2, start2, 0);
+    ahp_xc_start_crosscorrelation_scan(index1, start1, size1);
+    int i = size1;
+    while(r < (int)size1) {
         if(*interrupt)
             break;
         char* buf = grab_packet();
@@ -481,13 +481,14 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         memcpy(data+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
         i--;
         free(buf);
-        (*percent) += 100.0 / size;
+        (*percent) += 100.0 / (size1+size2);
         r++;
     }
     ahp_xc_end_crosscorrelation_scan(index1);
-    ahp_xc_start_crosscorrelation_scan(index2, start2, size/2);
-    i = size/2;
-    while(i < (int)size) {
+    ahp_xc_set_channel_cross(index1, start1, 0);
+    ahp_xc_start_crosscorrelation_scan(index2, start2, size2);
+    i = size1;
+    while(f < (int)size2) {
         if(*interrupt)
             break;
         char* buf = grab_packet();
@@ -496,22 +497,26 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         memcpy(data+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
         i++;
         free(buf);
-        (*percent) += 100.0 / size;
+        (*percent) += 100.0 / (size1+size2);
         f++;
     }
     ahp_xc_end_crosscorrelation_scan(index2);
     char timestamp[16];
     double ts = 0.0;
-    i = r;
+    i = size1;
     while(i >= 0) {
+        if(*interrupt)
+            break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
         i--;
     }
-    i = r;
-    while(i < r+f) {
+    i = size1;
+    while(i < (int)(size1+size2)) {
+        if(*interrupt)
+            break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
@@ -521,7 +526,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     free(data);
     free(sample);
     *crosscorrelations = correlations;
-    return r+f;
+    return i;
 }
 
 void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size)
@@ -615,6 +620,8 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     char timestamp[16];
     double ts = 0.0;
     while(i < r) {
+        if(*interrupt)
+            break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
