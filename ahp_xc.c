@@ -503,24 +503,15 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     ahp_xc_end_crosscorrelation_scan(index2);
     char timestamp[16];
     double ts = 0.0;
-    i = size1;
-    while(i >= 0) {
+    double ofs = ahp_xc_get_packettime()*size1;
+    i = 0;
+    while(i < size1+size2) {
         if(*interrupt)
             break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
-        i--;
-    }
-    i = size1;
-    while(i < (int)(size1+size2)) {
-        if(*interrupt)
-            break;
-        char *packet = (char*)data+i*ahp_xc_get_packetsize();
-        strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
-        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts-ofs);
         i++;
     }
     free(data);
