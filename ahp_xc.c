@@ -103,6 +103,10 @@ static char * grab_packet()
     errno = 0;
     unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
+    if(size == 16)
+        errno = RS232_AlignFrame(13, 4096);
+    if (errno)
+        goto err_end;
     int nread = RS232_RecvBuf((unsigned char*)buf, (int)size);
     if(nread < 0) {
         errno = ETIMEDOUT;

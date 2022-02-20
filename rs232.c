@@ -474,7 +474,7 @@ int RS232_AlignFrame(int sof, int maxtries)
           if(errno == EAGAIN)
               continue;
           else
-              return -errno;
+              return errno;
         }
     }
     return 0;
