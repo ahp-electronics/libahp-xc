@@ -151,7 +151,7 @@ CAP_ALL = 0xf,
 } xc_capture_flags;
 
 /**
-* \brief The XC firmare commands
+* \brief The XC firmware commands
 */
 typedef enum {
 ///No extra signals or functions
