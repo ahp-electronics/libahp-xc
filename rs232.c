@@ -1,34 +1,27 @@
 /*
-***************************************************************************
+*    MIT License
 *
-* Author: Teunis van Beelen
+*    rs232 sources serial communication driver
+*    Copyright (C) 2022  Ilia Platone
 *
-* Copyright (C) 2005 - 2020 Teunis van Beelen
+*    Permission is hereby granted, free of charge, to any person obtaining a copy
+*    of this software and associated documentation files (the "Software"), to deal
+*    in the Software without restriction, including without limitation the rights
+*    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+*    copies of the Software, and to permit persons to whom the Software is
+*    furnished to do so, subject to the following conditions:
 *
-* Email: teuniz@protonmail.com
+*    The above copyright notice and this permission notice shall be included in all
+*    copies or substantial portions of the Software.
 *
-***************************************************************************
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*
-***************************************************************************
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+*    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+*    SOFTWARE.
 */
-
-
-/* Last revision: August 6, 2020 */
-/* Solved a problem related to FreeBSD and some baudrates not recognized. */
-/* For more info and how to use this library, visit: http://www.teuniz.net/RS-232/ */
-
 
 #include "rs232.h"
 #include <pthread.h>
@@ -42,6 +35,9 @@ static char mode[4] = { 0, 0, 0, 0 };
 static int flowctrl = -1;
 static int fd = -1;
 
+static fd_set set;
+static struct timeval timeout;
+
 #ifndef _WIN32   /* Linux & FreeBSD */
 static int error = 0;
 
@@ -51,6 +47,8 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
 {
     if(baudrate == bauds && !strcmp(mode, m) && fc == flowctrl)
         return 0;
+    FD_ZERO(&set);
+    FD_SET(fd, &set);
     strcpy(mode, m);
     flowctrl = fc;
     baudrate = bauds;
@@ -371,7 +369,7 @@ int RS232_OpenComport(const char* devname)
     char dev_name[128];
     sprintf(dev_name, "%s", devname);
     if(fd == -1)
-        fd = open(dev_name, 0x01002);
+        fd = open(dev_name, O_RDWR);
 
     if(fd==-1) {
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
@@ -413,12 +411,18 @@ int RS232_RecvBuf(unsigned char *buf, int size)
     int ntries = size*2;
     int bytes_left = size;
     int err = 0;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 10000000/baudrate;
+
     if(mutexes_initialized) {
         while(pthread_mutex_trylock(&read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(10000000/baudrate);
-            n = read(fd, buf+nbytes, bytes_left);
+            if(select(fd + 1, &set, NULL, NULL, &timeout) > 0)
+                n = read(fd, buf+nbytes, bytes_left);
+            else
+                continue;
             if(n<1) {
                 err = -errno;
                 continue;

@@ -60,7 +60,7 @@ static unsigned char ahp_xc_capture_flags = 0;
 
 static void complex_phase_magnitude(ahp_xc_correlation *sample)
 {
-    if(!ahp_xc_connected) return;
+    if(!ahp_xc_detected) return;
     sample->magnitude = (double)sqrt(pow((double)sample->real, 2)+pow((double)sample->imaginary, 2));
     double rad = 0.0;
     if(sample->magnitude > 0.0) {
@@ -87,59 +87,52 @@ int calc_checksum(char *data)
         calculated_checksum &= 0xff;
     }
     if(checksum != calculated_checksum) {
-        return -EINVAL;
+        return EINVAL;
     }
     return 0;
 }
 
-static int grab_next_packet(unsigned char* buf)
+static char * grab_packet()
 {
-    if(!ahp_xc_connected) return -ENOENT;
-    int err = 0;
+    char *buf = (char*)malloc(ahp_xc_get_packetsize());
+    memset(buf, 0, ahp_xc_get_packetsize());
+    if(!ahp_xc_connected){
+        errno = ENOENT;
+        goto err_end;
+    }
+    errno = 0;
     unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
-    if(size == 16)
-        err = RS232_AlignFrame('\r', 4096);
-    if(err)
-        return -ENODATA;
-    int nread = RS232_RecvBuf(buf, (int)size);
+    int nread = RS232_RecvBuf((unsigned char*)buf, (int)size);
     if(nread < 0) {
-        err = -ETIMEDOUT;
+        errno = ETIMEDOUT;
+        goto err_end;
     } else {
         if(size > 16) {
             off_t len = (off_t)(strchr((char*)buf, '\r')-(char*)buf);
             if(len < size-1) {
                 if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
-                    err = -EINVAL;
+                    errno = EINVAL;
                 } else {
-                    err = -EPIPE;
+                    errno = EPIPE;
                 }
                 RS232_AlignFrame('\r', (int)size);
+                goto err_end;
             }
         }
     }
-    if(strlen((char*)buf) < size) {
-        err = -ENODATA;
-    }
-    if(size > 16 && !err)
-        return calc_checksum((char*)buf);
-    return err;
-}
-
-static char* grab_packet()
-{
-    if(!ahp_xc_connected) return NULL;
-    char *buf = (char*)malloc(ahp_xc_get_packetsize());
-    int err = 0;
-    int max_errored = 8;
-    while (err != -ETIMEDOUT && max_errored-- > 0) {
-        err = grab_next_packet((unsigned char*)buf);
-        if(!err)
-            break;
-    }
-    if(err)
-        return NULL;
+    if(strlen((char*)buf) < size)
+        errno = ENODATA;
+    if(errno)
+        goto err_end;
+    if(size > 16)
+        errno = calc_checksum((char*)buf);
+    if(errno)
+        goto err_end;
     return buf;
+err_end:
+    free(buf);
+    return NULL;
 }
 
 unsigned int ahp_xc_current_input()
@@ -393,6 +386,7 @@ void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t 
     ahp_xc_end_crosscorrelation_scan(index);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
     ahp_xc_set_channel_cross(index, start, size);
+    usleep(ahp_xc_get_packettime()*1000000);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_CROSS);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_ENABLE)&~CAP_RESET_TIMESTAMP);
 }
@@ -401,8 +395,7 @@ void ahp_xc_end_crosscorrelation_scan(unsigned int index)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_CROSS);
-    ahp_xc_set_channel_cross(index, 0, 0);
-    grab_packet();
+    ahp_xc_set_channel_cross(index, 0, 1);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
 }
 
@@ -449,72 +442,86 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
     free(subpacket);
 }
 
-int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, int *interrupt, double *percent)
+int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t head_start, size_t head_size, off_t tail_start, size_t tail_size, int *interrupt, double *percent)
 {
     if(!ahp_xc_detected) return 0;
-    int r = -1;
-    int f = -1;
+    size_t k = 0;
+    int i = 0;
+    double ts = 0.0;
+    char timestamp[16];
     unsigned int n = ahp_xc_get_bps()/4;
     *crosscorrelations = NULL;
     unsigned int idx1 = (index1 < index2 ? index1 : index2);
     unsigned int idx2 = (index1 > index2 ? index1 : index2);
+    int size = head_size+tail_size;
     if(index1 == index2)
-        return r;
-    r++;
-    f++;
-    start1 = (start1 < ahp_xc_get_delaysize()-2 ? start1 : (off_t)ahp_xc_get_delaysize()-2);
-    start2 = (start2 < ahp_xc_get_delaysize()-2 ? start2 : (off_t)ahp_xc_get_delaysize()-2);
-    char* data = (char*)malloc(ahp_xc_get_packetsize()*(size1+size2));
-    ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)(size1+size2), (unsigned int)ahp_xc_get_crosscorrelator_lagsize());
+        return -1;
+    head_start = (head_start < ahp_xc_get_delaysize()-2 ? head_start : (off_t)ahp_xc_get_delaysize()-2);
+    tail_start = (tail_start < ahp_xc_get_delaysize()-2 ? tail_start : (off_t)ahp_xc_get_delaysize()-2);
+    char* head = (char*)malloc(ahp_xc_get_packetsize()*head_size);
+    char* tail = (char*)malloc(ahp_xc_get_packetsize()*tail_size);
+    ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)size, (unsigned int)ahp_xc_get_crosscorrelator_lagsize());
     char* sample = (char*)malloc((unsigned int)n+1);
     sample[n] = 0;
     (*percent) = 0;
-    ahp_xc_set_channel_cross(index2, start2, 0);
-    ahp_xc_start_crosscorrelation_scan(index1, start1, size1);
-    int i = size1;
-    while(r < (int)size1) {
+    ahp_xc_end_crosscorrelation_scan(index2);
+    ahp_xc_set_channel_cross(index2, tail_start, 1);
+    ahp_xc_start_crosscorrelation_scan(index1, head_start, head_size);
+    i = 0;
+    while(i < (int)head_size) {
         if(*interrupt)
             break;
+        usleep(ahp_xc_get_packettime()*1000000);
         char* buf = grab_packet();
         if(!buf)
             continue;
-        memcpy(data+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
-        i--;
+        memcpy(head+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
         free(buf);
-        (*percent) += 100.0 / (size1+size2);
-        r++;
+        (*percent) += 100.0 / size;
+        i++;
     }
     ahp_xc_end_crosscorrelation_scan(index1);
-    ahp_xc_set_channel_cross(index1, start1, 0);
-    ahp_xc_start_crosscorrelation_scan(index2, start2, size2);
-    i = size1;
-    while(f < (int)size2) {
+    ahp_xc_set_channel_cross(index1, head_start, 1);
+    ahp_xc_start_crosscorrelation_scan(index2, tail_start, tail_size);
+    i = 0;
+    while(i < (int)tail_size) {
         if(*interrupt)
             break;
+        usleep(ahp_xc_get_packettime()*1000000);
         char* buf = grab_packet();
         if(!buf)
             continue;
-        memcpy(data+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
-        i++;
+        memcpy(tail+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
         free(buf);
-        (*percent) += 100.0 / (size1+size2);
-        f++;
+        (*percent) += 100.0 / size;
+        i++;
     }
     ahp_xc_end_crosscorrelation_scan(index2);
-    char timestamp[16];
-    double ts = 0.0;
-    double ofs = ahp_xc_get_packettime()*size1;
     i = 0;
-    while(i < size1+size2) {
+    k = 0;
+    while(k < head_size) {
         if(*interrupt)
             break;
-        char *packet = (char*)data+i*ahp_xc_get_packetsize();
+        char *packet = (char*)head+k*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts-ofs);
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
         i++;
+        k++;
     }
-    free(data);
+    free(head);
+    k = 0;
+    while(k < tail_size) {
+        if(*interrupt)
+            break;
+        char *packet = (char*)tail+k*ahp_xc_get_packetsize();
+        strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
+        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
+        i++;
+        k++;
+    }
+    free(tail);
     free(sample);
     *crosscorrelations = correlations;
     return i;
@@ -523,8 +530,10 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
 void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size)
 {
     if(!ahp_xc_detected) return;
+    ahp_xc_end_autocorrelation_scan(index);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
     ahp_xc_set_channel_auto(index, start, size);
+    usleep(ahp_xc_get_packettime()*1000000);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_ENABLE)&~CAP_RESET_TIMESTAMP);
 }
@@ -534,7 +543,6 @@ void ahp_xc_end_autocorrelation_scan(unsigned int index)
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
     ahp_xc_set_channel_auto(index, 0, 0);
-    grab_packet();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
 }
 
@@ -597,6 +605,7 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     while(i < (int)len) {
         if(*interrupt)
             break;
+        usleep(ahp_xc_get_packettime()*1000000);
         char* buf = grab_packet();
         if(!buf)
             continue;
