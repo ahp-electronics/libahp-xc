@@ -80,12 +80,12 @@ Functions</h2></td></tr>
 <tr class="memitem:gaac7e4723a8c12f3252da0229fd29c88c"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#gaac7e4723a8c12f3252da0229fd29c88c">ahp_xc_set_leds</a> (unsigned int index, int leds)</td></tr>
 <tr class="memdesc:gaac7e4723a8c12f3252da0229fd29c88c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Switch on or off the led lines of the correlator.  <a href="group___cmds.html#gaac7e4723a8c12f3252da0229fd29c88c">More...</a><br /></td></tr>
 <tr class="separator:gaac7e4723a8c12f3252da0229fd29c88c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga372bde089da6e8318a1b995c955da639"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#ga372bde089da6e8318a1b995c955da639">ahp_xc_set_channel_cross</a> (unsigned int index, off_t value)</td></tr>
-<tr class="memdesc:ga372bde089da6e8318a1b995c955da639"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the channel of the selected input (for cross-correlation)  <a href="group___cmds.html#ga372bde089da6e8318a1b995c955da639">More...</a><br /></td></tr>
-<tr class="separator:ga372bde089da6e8318a1b995c955da639"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8cb04c2d4500341376e4247ac06e3baa"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#ga8cb04c2d4500341376e4247ac06e3baa">ahp_xc_set_channel_auto</a> (unsigned int index, off_t value)</td></tr>
-<tr class="memdesc:ga8cb04c2d4500341376e4247ac06e3baa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the channel of the selected input (for auto-correlation)  <a href="group___cmds.html#ga8cb04c2d4500341376e4247ac06e3baa">More...</a><br /></td></tr>
-<tr class="separator:ga8cb04c2d4500341376e4247ac06e3baa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafca58cfc60b75840898713e2487e0b42"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#gafca58cfc60b75840898713e2487e0b42">ahp_xc_set_channel_cross</a> (unsigned int index, off_t value, size_t size)</td></tr>
+<tr class="memdesc:gafca58cfc60b75840898713e2487e0b42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the channel of the selected input (for cross-correlation)  <a href="group___cmds.html#gafca58cfc60b75840898713e2487e0b42">More...</a><br /></td></tr>
+<tr class="separator:gafca58cfc60b75840898713e2487e0b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae6d1be38f810b9e989811b7f5d342c60"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#gae6d1be38f810b9e989811b7f5d342c60">ahp_xc_set_channel_auto</a> (unsigned int index, off_t value, size_t size)</td></tr>
+<tr class="memdesc:gae6d1be38f810b9e989811b7f5d342c60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the channel of the selected input (for auto-correlation)  <a href="group___cmds.html#gae6d1be38f810b9e989811b7f5d342c60">More...</a><br /></td></tr>
+<tr class="separator:gae6d1be38f810b9e989811b7f5d342c60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gadc495e02d535b7aa2494fb83e7897d4c"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#gadc495e02d535b7aa2494fb83e7897d4c">ahp_xc_set_frequency_divider</a> (unsigned char value)</td></tr>
 <tr class="memdesc:gadc495e02d535b7aa2494fb83e7897d4c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the clock divider for autocorrelation and crosscorrelation.  <a href="group___cmds.html#gadc495e02d535b7aa2494fb83e7897d4c">More...</a><br /></td></tr>
 <tr class="separator:gadc495e02d535b7aa2494fb83e7897d4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -313,8 +313,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga8cb04c2d4500341376e4247ac06e3baa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8cb04c2d4500341376e4247ac06e3baa">&#9670;&nbsp;</a></span>ahp_xc_set_channel_auto()</h2>
+<a id="gae6d1be38f810b9e989811b7f5d342c60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae6d1be38f810b9e989811b7f5d342c60">&#9670;&nbsp;</a></span>ahp_xc_set_channel_auto()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -329,7 +329,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">off_t&#160;</td>
-          <td class="paramname"><em>value</em>&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -342,14 +348,15 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">index</td><td>The input line index starting from 0 </td></tr>
     <tr><td class="paramname">value</td><td>The channel number </td></tr>
+    <tr><td class="paramname">size</td><td>The number of channels to scan afterwards </td></tr>
   </table>
   </dd>
 </dl>
 
 </div>
 </div>
-<a id="ga372bde089da6e8318a1b995c955da639"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga372bde089da6e8318a1b995c955da639">&#9670;&nbsp;</a></span>ahp_xc_set_channel_cross()</h2>
+<a id="gafca58cfc60b75840898713e2487e0b42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafca58cfc60b75840898713e2487e0b42">&#9670;&nbsp;</a></span>ahp_xc_set_channel_cross()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -364,7 +371,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">off_t&#160;</td>
-          <td class="paramname"><em>value</em>&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -377,6 +390,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">index</td><td>The input line index starting from 0 </td></tr>
     <tr><td class="paramname">value</td><td>The channel number </td></tr>
+    <tr><td class="paramname">size</td><td>The number of channels to scan afterwards </td></tr>
   </table>
   </dd>
 </dl>
@@ -515,7 +529,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Fri Dec 24 2021 17:27:12 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Feb 20 2022 16:30:06 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>
