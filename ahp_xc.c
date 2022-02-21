@@ -301,7 +301,7 @@ int ahp_xc_connect(const char *port, int high_rate)
     ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
     if(!RS232_OpenComport(ahp_xc_comport))
-        ret = RS232_SetupPort(ahp_xc_baserate, "8N2", 0);
+        ret = RS232_SetupPort(ahp_xc_baserate, "8N1", 0);
     if(!ret) {
         xc_current_input = 0;
         ahp_xc_connected = 1;
