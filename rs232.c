@@ -369,7 +369,7 @@ int RS232_OpenComport(const char* devname)
     char dev_name[128];
     sprintf(dev_name, "%s", devname);
     if(fd == -1)
-        fd = open(dev_name, O_RDWR|O_NONBLOCK);
+        fd = open(dev_name, O_RDWR);
 
     if(fd==-1) {
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
