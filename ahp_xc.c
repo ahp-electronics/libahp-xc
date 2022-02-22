@@ -29,7 +29,7 @@
 #include <math.h>
 #include <errno.h>
 #include <sys/time.h>
-#include "rs232.h"
+#include "rs232.c"
 #include "ahp_xc.h"
 #ifndef AIRY
 #define AIRY 1.21966
@@ -104,10 +104,10 @@ static char * grab_packet()
     unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
     if(size == 16)
-        errno = RS232_AlignFrame(13, 4096);
+        errno = ahp_serial_AlignFrame(13, 4096);
     if (errno)
         goto err_end;
-    int nread = RS232_RecvBuf((unsigned char*)buf, (int)size);
+    int nread = ahp_serial_RecvBuf((unsigned char*)buf, (int)size);
     if(nread < 0) {
         errno = ETIMEDOUT;
         goto err_end;
@@ -120,7 +120,7 @@ static char * grab_packet()
                 } else {
                     errno = EPIPE;
                 }
-                RS232_AlignFrame('\r', (int)size);
+                ahp_serial_AlignFrame('\r', (int)size);
                 goto err_end;
             }
         }
@@ -262,7 +262,7 @@ unsigned int ahp_xc_get_packetsize()
 
 int ahp_xc_get_fd()
 {
-    return RS232_GetFD();
+    return ahp_serial_GetFD();
 }
 
 int ahp_xc_connect_fd(int fd)
@@ -277,7 +277,7 @@ int ahp_xc_connect_fd(int fd)
     if(fd > -1) {
         ahp_xc_connected = 1;
         ahp_xc_detected = 0;
-        RS232_SetFD(fd, XC_BASE_RATE);
+        ahp_serial_SetFD(fd, XC_BASE_RATE);
         xc_current_input = 0;
         return 0;
     }
@@ -300,8 +300,8 @@ int ahp_xc_connect(const char *port, int high_rate)
     ahp_xc_baserate = (high_rate ? XC_HIGH_RATE : XC_BASE_RATE);
     ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
-    if(!RS232_OpenComport(ahp_xc_comport))
-        ret = RS232_SetupPort(ahp_xc_baserate, "8N1", 0);
+    if(!ahp_serial_OpenComport(ahp_xc_comport))
+        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N1", 0);
     if(!ret) {
         xc_current_input = 0;
         ahp_xc_connected = 1;
@@ -321,7 +321,7 @@ void ahp_xc_disconnect()
         ahp_xc_frequency = 0;
         ahp_xc_packetsize = 16;
         ahp_xc_set_baudrate(ahp_xc_baserate);
-        RS232_CloseComport();
+        ahp_serial_CloseComport();
     }
 }
 
@@ -742,7 +742,7 @@ int ahp_xc_set_capture_flags(xc_capture_flags flags)
 {
     if(!ahp_xc_connected) return -ENOENT;
     ahp_xc_capture_flags = flags;
-    RS232_flushRX();
+    ahp_serial_flushRX();
     return (int)ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)ahp_xc_capture_flags);
 }
 
@@ -757,9 +757,9 @@ void ahp_xc_set_baudrate(baud_rate rate)
     if(!ahp_xc_detected) return;
     ahp_xc_rate = rate;
     ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
-    RS232_CloseComport();
-    RS232_OpenComport(ahp_xc_comport);
-    RS232_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N2", 0);
+    ahp_serial_CloseComport();
+    ahp_serial_OpenComport(ahp_xc_comport);
+    ahp_serial_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N2", 0);
 }
 
 unsigned char ahp_xc_get_test_flags(unsigned int index)
@@ -874,7 +874,7 @@ void ahp_xc_set_test_flags(unsigned int index, xc_test_flags value)
  int ahp_xc_send_command(xc_cmd c, unsigned char value)
 {
     if(!ahp_xc_connected) return -ENOENT;
-    return RS232_SendByte((unsigned char)(c|(((value<<4)|(value>>4))&0xf3)));
+    return ahp_serial_SendByte((unsigned char)(c|(((value<<4)|(value>>4))&0xf3)));
 }
 
 double* ahp_xc_get_2d_projection(double alt, double az, double *baseline)
