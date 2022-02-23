@@ -392,7 +392,7 @@ void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t 
     ahp_xc_set_channel_cross(index, start, size);
     usleep(ahp_xc_get_packettime()*1000000);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_CROSS);
-    ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_ENABLE)&~CAP_RESET_TIMESTAMP);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
 }
 
 void ahp_xc_end_crosscorrelation_scan(unsigned int index)
@@ -400,7 +400,7 @@ void ahp_xc_end_crosscorrelation_scan(unsigned int index)
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_CROSS);
     ahp_xc_set_channel_cross(index, 0, 1);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
 }
 
 void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, const char *data, double lag)
@@ -539,7 +539,7 @@ void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t s
     ahp_xc_set_channel_auto(index, start, size);
     usleep(ahp_xc_get_packettime()*1000000);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
-    ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_ENABLE)&~CAP_RESET_TIMESTAMP);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
 }
 
 void ahp_xc_end_autocorrelation_scan(unsigned int index)
@@ -547,7 +547,7 @@ void ahp_xc_end_autocorrelation_scan(unsigned int index)
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
     ahp_xc_set_channel_auto(index, 0, 0);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
 }
 
 void ahp_xc_get_autocorrelation(ahp_xc_sample *sample, int index, const char *data, double lag)
