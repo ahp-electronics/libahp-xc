@@ -34,6 +34,7 @@
 #ifndef AIRY
 #define AIRY 1.21966
 #endif
+static double last_timestamp;
 static int xc_current_input = 0;
 static long sign = 1;
 static long fill = 0;
@@ -57,6 +58,15 @@ static baud_rate ahp_xc_rate = R_BASE;
 static char ahp_xc_comport[128];
 static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
+
+static int check_timestamp_lag(double timestamp)
+{
+    double diff = timestamp - last_timestamp;
+    last_timestamp = timestamp;
+    if(diff > ahp_xc_get_packettime() * 3)
+        return 1;
+    return 0;
+}
 
 static void complex_phase_magnitude(ahp_xc_correlation *sample)
 {
@@ -509,7 +519,8 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         char *packet = (char*)head+k*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
+        if(!check_timestamp_lag(ts))
+            ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
         i++;
         k++;
     }
@@ -521,7 +532,8 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         char *packet = (char*)tail+k*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
+        if(!check_timestamp_lag(ts))
+            ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
         i++;
         k++;
     }
@@ -629,7 +641,8 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        ahp_xc_get_autocorrelation(&correlations[i], index, packet, ts);
+        if(!check_timestamp_lag(ts))
+            ahp_xc_get_autocorrelation(&correlations[i], index, packet, ts);
         i++;
     }
     free(data);
@@ -661,7 +674,7 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         memcpy(sample, buf, (unsigned int)n);
         if(1<sscanf(sample, "%lX", &packet->counts[x])) {
             ret = -ENOENT;
-            goto end;
+            goto err_end;
         }
         packet->counts[x] = (packet->counts[x] == 0 ? 1 : packet->counts[x]);
         buf += n;
@@ -677,10 +690,8 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     }
     char timestamp[16];
     strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
-    if(1<sscanf(timestamp, "%lX",  &packet->timestamp)) {
-        ret = -ENOENT;
-        goto end;
-    }
+    packet->timestamp = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+    if(check_timestamp_lag(packet->timestamp)) goto err_end;
     ret = 0;
     goto end;
 err_end:

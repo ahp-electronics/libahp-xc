@@ -203,7 +203,7 @@ ahp_xc_correlation *correlations;
 */
 typedef struct {
 ///Timestamp of the packet (seconds)
-unsigned long timestamp;
+double timestamp;
 ///Number of lines in this correlator
 unsigned long n_lines;
 ///Total number of baselines obtainable
