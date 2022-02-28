@@ -3,7 +3,7 @@
 *    MIT License
 *
 *    libahp_xc library to drive the AHP XC correlators
-*    Copyright (C) 2021  Ilia Platone
+*    Copyright (C) 2022  Ilia Platone
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a copy
 *    of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,7 @@ extern "C" {
 *
 * \author Ilia Platone
 * \version @AHPXC_VERSION@
-* \date 2017-2021
+* \date 2017-2022
 * \copyright MIT License.
 */
 

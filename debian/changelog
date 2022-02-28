@@ -1,10 +1,16 @@
+libahp-xc (1.2.2) stable; urgency=low
+
+  * New release
+
+ -- Ilia Platone <info@iliaplatone.com>  Mon, 28 Feb 2022 00:00:00 +0200
+
 libahp-xc (1.2.1) stable; urgency=low
 
   * New release
 
  -- Ilia Platone <info@iliaplatone.com>  Fri, 11 Feb 2021 00:00:00 +0200
 
- libahp-xc (1.1.2) stable; urgency=low
+libahp-xc (1.1.2) stable; urgency=low
 
    * Initial release
 
