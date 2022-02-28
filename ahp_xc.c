@@ -59,11 +59,11 @@ static char ahp_xc_comport[128];
 static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 
-static int check_timestamp_lag(double timestamp)
+static int check_timestamp_lag(double timestamp, int max_packets)
 {
     double diff = timestamp - last_timestamp;
     last_timestamp = timestamp;
-    if(diff > ahp_xc_get_packettime() * 3)
+    if(diff > ahp_xc_get_packettime() * max_packets)
         return 1;
     return 0;
 }
@@ -462,6 +462,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     size_t k = 0;
     int i = 0;
     double ts = 0.0;
+    double ts0 = 0.0;
     char timestamp[16];
     unsigned int n = ahp_xc_get_bps()/4;
     *crosscorrelations = NULL;
@@ -513,26 +514,34 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     ahp_xc_end_crosscorrelation_scan(index2);
     i = 0;
     k = 0;
+    ts0 = 0.0;
     while(k < head_size) {
         if(*interrupt)
             break;
         char *packet = (char*)head+k*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        if(!check_timestamp_lag(ts))
+        if(ts0 == 0.0)
+            ts0 = ts;
+        ts -= ts0;
+        if(!check_timestamp_lag(ts, 10))
             ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
         i++;
         k++;
     }
     free(head);
     k = 0;
+    ts0 = 0.0;
     while(k < tail_size) {
         if(*interrupt)
             break;
         char *packet = (char*)tail+k*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        if(!check_timestamp_lag(ts))
+        if(ts0 == 0.0)
+            ts0 = ts;
+        ts -= ts0;
+        if(!check_timestamp_lag(ts, 10))
             ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
         i++;
         k++;
@@ -635,13 +644,17 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
     i = 0;
     char timestamp[16];
     double ts = 0.0;
+    double ts0 = 0.0;
     while(i < r) {
         if(*interrupt)
             break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
         ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-        if(!check_timestamp_lag(ts))
+        if(ts0 == 0.0)
+            ts0 = ts;
+        ts -= ts0;
+        if(!check_timestamp_lag(ts, 10))
             ahp_xc_get_autocorrelation(&correlations[i], index, packet, ts);
         i++;
     }
@@ -691,7 +704,7 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     char timestamp[16];
     strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
     packet->timestamp = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-    if(check_timestamp_lag(packet->timestamp)) goto err_end;
+    if(check_timestamp_lag(packet->timestamp, 10)) goto err_end;
     ret = 0;
     goto end;
 err_end:
