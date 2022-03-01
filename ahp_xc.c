@@ -60,17 +60,6 @@ static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
 
-static int check_timestamp_lag(double timestamp)
-{
-    double diff = timestamp - last_timestamp;
-    last_timestamp = timestamp;
-    if(diff > ahp_xc_get_packettime() * ahp_xc_max_lost_packets) {
-        ahp_xc_max_lost_packets ++;
-        return 0; ///TODO Better check
-    }
-    return 0;
-}
-
 static void complex_phase_magnitude(ahp_xc_correlation *sample)
 {
     if(!ahp_xc_detected) return;
@@ -527,8 +516,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         if(ts0 == 0.0)
             ts0 = ts;
         ts -= ts0;
-        if(!check_timestamp_lag(ts))
-            ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, -ts);
         i++;
         k++;
     }
@@ -544,8 +532,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         if(ts0 == 0.0)
             ts0 = ts;
         ts -= ts0;
-        if(!check_timestamp_lag(ts))
-            ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
+        ahp_xc_get_crosscorrelation(&correlations[i], idx1, idx2, packet, ts);
         i++;
         k++;
     }
@@ -657,8 +644,7 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
         if(ts0 == 0.0)
             ts0 = ts;
         ts -= ts0;
-        if(!check_timestamp_lag(ts))
-            ahp_xc_get_autocorrelation(&correlations[i], index, packet, ts);
+        ahp_xc_get_autocorrelation(&correlations[i], index, packet, ts);
         i++;
     }
     free(data);
@@ -707,7 +693,6 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     char timestamp[16];
     strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
     packet->timestamp = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
-    if(check_timestamp_lag(packet->timestamp)) goto err_end;
     ret = 0;
     goto end;
 err_end:
