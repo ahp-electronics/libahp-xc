@@ -66,7 +66,7 @@ static int check_timestamp_lag(double timestamp)
     last_timestamp = timestamp;
     if(diff > ahp_xc_get_packettime() * ahp_xc_max_lost_packets) {
         ahp_xc_max_lost_packets ++;
-        return 1;
+        return 0; ///TODO Better check
     }
     return 0;
 }
