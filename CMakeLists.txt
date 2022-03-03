@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 2.6)
 
+set(CMAKE_SYSTEM_NAME "Windows")
+
 project(ahp_xc C CXX)
 
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
+
 include(GNUInstallDirs)
 
 find_package(M REQUIRED)
 find_package(Threads REQUIRED)
-
 
 set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(AHP_XC_VERSION_MAJOR 1)
