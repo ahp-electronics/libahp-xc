@@ -254,7 +254,7 @@ double ahp_xc_get_sampletime()
 double ahp_xc_get_packettime()
 {
     if(!ahp_xc_detected) return 0;
-    return  10.0  * (double)ahp_xc_get_packetsize() / (double)ahp_xc_get_baudrate();
+    return 9.0  * (double)ahp_xc_get_packetsize() / (double)ahp_xc_get_baudrate();
 }
 
 unsigned int ahp_xc_get_packetsize()
