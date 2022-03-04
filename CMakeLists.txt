@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
 
-set(CMAKE_SYSTEM_NAME "Windows")
-
 project(ahp_xc C CXX)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
