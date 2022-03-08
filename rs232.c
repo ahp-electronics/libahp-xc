@@ -440,7 +440,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(8000000/ahp_serial_baudrate);
+            usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
