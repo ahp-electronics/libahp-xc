@@ -12,7 +12,7 @@ More informations at https://www.iliaplatone.com/xc8
 
 The library uses 57600 baud/second UART communication with the correlator
 
-There is a set of commands to start integrations:
+Here below is defined the communication protocol:
 
     0x0d: Set integration parameters: bit 4 => enable capture, bit 5 => use external clock, bit 6 => reset timestamp when enabling capture, bit 7 => enable extra commands
     0x01: select active line: bits [7:6] => indexer, bits [5:4] => value (if extra commands bits [5:4] are routed to 4 extra lines)
