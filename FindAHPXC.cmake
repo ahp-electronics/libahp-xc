@@ -14,28 +14,34 @@
 # Redistribution and use is allowed according to the terms of the BSD license.
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 
-if (AHPXC_LIBRARIES)
+if (AHPXC_INCLUDE_DIR AND AHPXC_LIBRARIES)
 
   # in cache already
   set(AHPXC_FOUND TRUE)
   message(STATUS "Found AHPXC: ${AHPXC_LIBRARIES}")
 
 
-else (AHPXC_LIBRARIES)
+else (AHPXC_INCLUDE_DIR AND AHPXC_LIBRARIES)
+
+    find_path(AHPXC_INCLUDE_DIR ahp_xc.h
+      PATH_SUFFIXES ahp
+      ${_obIncDir}
+      ${GNUWIN32_DIR}/include
+    )
 
   find_library(AHPXC_LIBRARIES NAMES ahp_xc
     PATHS
     ${_obLinkDir}
     ${GNUWIN32_DIR}/lib
     /usr/local/lib
+    HINTS ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}
   )
 
-  if(AHPXC_LIBRARIES)
-    set(AHPXC_FOUND TRUE)
-  else (AHPXC_LIBRARIES)
-    set(AHPXC_FOUND FALSE)
-  endif(AHPXC_LIBRARIES)
-
+if(AHPXC_INCLUDE_DIR AND AHPXC_LIBRARIES)
+  set(AHPXC_FOUND TRUE)
+else (AHPXC_INCLUDE_DIR AND AHPXC_LIBRARIES)
+  set(AHPXC_FOUND FALSE)
+endif(AHPXC_INCLUDE_DIR AND AHPXC_LIBRARIES)
 
   if (AHPXC_FOUND)
     if (NOT AHPXC_FIND_QUIETLY)
@@ -49,4 +55,4 @@ else (AHPXC_LIBRARIES)
 
   mark_as_advanced(AHPXC_LIBRARIES)
   
-endif (AHPXC_LIBRARIES)
+endif (AHPXC_INCLUDE_DIR AND AHPXC_LIBRARIES)
