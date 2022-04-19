@@ -78,7 +78,7 @@ extern "C" {
 ///The base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
 ///The base baud rate for big packet XC cross-correlators
-#define XC_HIGH_RATE ((int)500000)
+#define XC_HIGH_RATE ((int)750000)
 ///The PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 
@@ -390,6 +390,24 @@ DLL_EXPORT double ahp_xc_get_packettime(void);
 DLL_EXPORT unsigned int ahp_xc_get_packetsize(void);
 
 /**
+* \brief Enable the intensity cross-correlation feature
+* \param enable set to non-zero to enable the intensity crosscorrelator
+*/
+DLL_EXPORT void ahp_xc_enable_intensity_crosscorrelator(int enable);
+
+/**
+* \brief Return non-zero if intensity crosscorrelation was enabled
+* \return Returns non-zero if intensity crosscorrelation was enabled
+*/
+DLL_EXPORT int ahp_xc_intensity_crosscorrelator_enabled();
+
+/**
+* \brief Enable the cross-correlation capability of the device
+* \param enable set to non-zero to enable the crosscorrelator
+*/
+DLL_EXPORT void ahp_xc_enable_crosscorrelator(int enable);
+
+/**
 * \brief Returns the cross-correlation capability of the device
 * \return Returns non-zero if the device is a crosscorrelator
 */
@@ -581,7 +599,7 @@ DLL_EXPORT void ahp_xc_set_voltage(unsigned int index, unsigned char value);
 * \param index The input line index starting from 0
 * \param value The test type
 */
-DLL_EXPORT void ahp_xc_set_test_flags(unsigned int index, xc_test_flags value);
+DLL_EXPORT void ahp_xc_set_test_flags(unsigned int index, int test);
 
 /**
 * \brief Get the current status of the test features
