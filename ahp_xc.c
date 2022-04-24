@@ -66,13 +66,14 @@ static unsigned char ahp_xc_max_lost_packets = 1;
 static void complex_phase_magnitude(ahp_xc_correlation *sample)
 {
     if(!ahp_xc_detected) return;
-    sample->magnitude = (double)sqrt(pow((double)sample->real, 2)+pow((double)sample->imaginary, 2));
+    sample->magnitude = (double)pow(pow((double)sample->real, 2)+pow((double)sample->imaginary, 2), 0.5);
     double rad = 0.0;
     if(sample->magnitude > 0.0) {
         rad = acos ((double)sample->imaginary / sample->magnitude);
-        if(sample->real < 0 && rad != 0.0)
-            rad = M_PI*2-rad;
+        if(sample->real < 0)
+            rad = -rad;
     }
+    rad += M_PI;
     sample->phase = rad;
 }
 
@@ -327,7 +328,7 @@ int ahp_xc_connect(const char *port, int high_rate)
     ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
     if(!ahp_serial_OpenComport(ahp_xc_comport))
-        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N1", 0);
+        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N2", 0);
     if(!ret) {
         xc_current_input = 0;
         ahp_xc_connected = 1;
@@ -661,9 +662,9 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     }
     ahp_xc_end_crosscorrelation_scan(index1);
     ahp_xc_set_channel_cross(index1, head_start, 1);
+    ahp_xc_start_crosscorrelation_scan(index2, tail_start, tail_size);
     if(ahp_xc_intensity_crosscorrelator_enabled())
         ahp_xc_start_crosscorrelation_scan(index1, head_start, head_size);
-    ahp_xc_start_crosscorrelation_scan(index2, tail_start, tail_size);
     i = 0;
     while(i < (int)tail_size) {
         if(*interrupt)
@@ -713,8 +714,6 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     free(tail);
     free(sample);
     *crosscorrelations = correlations;
-    if(ahp_xc_intensity_crosscorrelator_enabled())
-        i /= 2;
     return i;
 }
 
