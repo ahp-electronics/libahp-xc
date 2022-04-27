@@ -508,7 +508,7 @@ DLL_EXPORT void ahp_xc_end_autocorrelation_scan(unsigned int index);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrelations, off_t start, unsigned int len, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp_xc_sample **autocorrelations, off_t *starts, unsigned int *sizes, int *interrupt, double *percent);
 
 /**
 * \brief Initiate a crosscorrelation scan

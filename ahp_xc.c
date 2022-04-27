@@ -328,7 +328,7 @@ int ahp_xc_connect(const char *port, int high_rate)
     ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
     if(!ahp_serial_OpenComport(ahp_xc_comport))
-        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N2", 0);
+        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N1", 0);
     if(!ret) {
         xc_current_input = 0;
         ahp_xc_connected = 1;
@@ -469,23 +469,29 @@ void ahp_xc_get_autocorrelation(ahp_xc_sample *sample, int index, const char *da
     free(subpacket);
 }
 
-int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrelations, off_t start, unsigned int len, int *interrupt, double *percent)
+int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp_xc_sample **autocorrelations, off_t *starts, unsigned int *sizes, int *interrupt, double *percent)
 {
     if(!ahp_xc_detected) return 0;
     int r = -1;
     unsigned int n = ahp_xc_get_bps()/4;
-    int i = 0;
+    unsigned int i = 0;
+    unsigned int x = 0;
     *autocorrelations = NULL;
-    ahp_xc_sample *correlations = ahp_xc_alloc_samples(len, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
     char* sample = (char*)malloc((unsigned int)n+1);
     sample[n] = 0;
     (*percent) = 0;
     r++;
-    start = (start < ahp_xc_get_delaysize()-2 ? start : (off_t)ahp_xc_get_delaysize()-2);
-    len = (start+(off_t)len < ahp_xc_get_delaysize() ? (off_t)len : (off_t)ahp_xc_get_delaysize()-1-start);
+    size_t len = 0;
+    for(i = 0; i < nlines; i++) {
+        starts[i] = (starts[i] < ahp_xc_get_delaysize()-2 ? starts[i] : (off_t)ahp_xc_get_delaysize()-2);
+        sizes[i] = (starts[i]+(off_t)sizes[i] < ahp_xc_get_delaysize() ? (off_t)sizes[i] : (off_t)ahp_xc_get_delaysize()-1-starts[i]);
+        len = fmax(len, sizes[i]);
+    }
+    ahp_xc_sample *correlations = ahp_xc_alloc_samples(len*nlines, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
     char* data = (char*)malloc(ahp_xc_get_packetsize()*len);
+    for(i = 0; i < nlines; i++)
+        ahp_xc_start_autocorrelation_scan(indexes[i], starts[i], sizes[i]);
     i = 0;
-    ahp_xc_start_autocorrelation_scan(index, start, len);
     while(i < (int)len) {
         if(*interrupt)
             break;
@@ -499,7 +505,8 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
         (*percent) += 100.0 / len;
         r++;
     }
-    ahp_xc_end_autocorrelation_scan(index);
+    for(i = 0; i < nlines; i++)
+        ahp_xc_end_autocorrelation_scan(indexes[i]);
     i = 0;
     char timestamp[16];
     double ts = 0.0;
@@ -513,7 +520,13 @@ int ahp_xc_scan_autocorrelations(unsigned int index, ahp_xc_sample **autocorrela
         if(ts0 == 0.0)
             ts0 = ts;
         ts -= ts0;
-        ahp_xc_get_autocorrelation(&correlations[i], index, packet, ts);
+        size_t off = 0;
+        for(x = 0; x < nlines; x++) {
+            if(i < sizes[x]) {
+                ahp_xc_get_autocorrelation(&correlations[i+off], indexes[x], packet, ts);
+            }
+            off += sizes[x];
+        }
         i++;
     }
     free(data);
