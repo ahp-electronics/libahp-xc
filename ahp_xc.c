@@ -51,7 +51,6 @@ static unsigned int ahp_xc_flags = 0;
 static unsigned int ahp_xc_correlator_enabled = 1;
 static unsigned int ahp_xc_intensity_correlator_enabled = 0;
 static unsigned int ahp_xc_frequency = 1;
-static unsigned int ahp_xc_frequency_divider = 0;
 static unsigned int ahp_xc_voltage = 0;
 static unsigned int ahp_xc_connected = 0;
 static unsigned int ahp_xc_detected = 0;
@@ -241,7 +240,7 @@ unsigned int ahp_xc_get_nbaselines()
 unsigned int ahp_xc_get_delaysize()
 {
     if(!ahp_xc_detected) return 0;
-    return ahp_xc_delaysize;
+    return ahp_xc_delaysize << 4;
 }
 
 unsigned int ahp_xc_get_autocorrelator_lagsize()
@@ -265,15 +264,9 @@ unsigned int ahp_xc_get_frequency()
     return ahp_xc_frequency;
 }
 
-unsigned int ahp_xc_get_frequency_divider()
-{
-    if(!ahp_xc_detected) return 0;
-    return  ahp_xc_frequency_divider;
-}
-
 double ahp_xc_get_sampletime()
 {
-    return pow(2.0, (double)ahp_xc_get_frequency_divider())/(double)ahp_xc_get_frequency();
+    return (double)ahp_xc_get_frequency();
 }
 
 double ahp_xc_get_packettime()
@@ -391,7 +384,7 @@ ahp_xc_packet *ahp_xc_alloc_packet()
 {
     ahp_xc_packet *packet = (ahp_xc_packet*)malloc(sizeof(ahp_xc_packet));
     packet->bps = (unsigned long)ahp_xc_get_bps();
-    packet->tau = (unsigned long)((1000000000000<<ahp_xc_get_frequency_divider())/ahp_xc_get_frequency());
+    packet->tau = (unsigned long)(1.0/ahp_xc_get_frequency());
     packet->n_lines = (unsigned long)ahp_xc_get_nlines();
     packet->n_baselines = (unsigned long)ahp_xc_get_nbaselines();
     packet->counts = (unsigned long*)malloc(packet->n_lines*sizeof(unsigned long));
@@ -926,14 +919,12 @@ void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size)
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)|0x8));
     value >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)|0x8));
-}
-
-void ahp_xc_set_frequency_divider(unsigned char value)
-{
-    if(!ahp_xc_detected) return;
-    value = (unsigned char)(value < 0xf ? value : 0xf);
-    ahp_xc_send_command(SET_FREQ_DIV, value);
-    ahp_xc_frequency_divider = value;
+    int divider = log2(value);
+    if(value>ahp_xc_delaysize) {
+        ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(0|(divider&0x3)));
+        divider >>= 2;
+        ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(1|(divider&0x3)));
+    }
 }
 
 void ahp_xc_set_voltage(unsigned int index, unsigned char value)
