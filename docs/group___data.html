@@ -370,20 +370,17 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">nlines</td><td>Number of inputs to scan. must be less of <a class="el" href="group___feat.html#ga603e0bce59ba67ed46b5a5a8827871fc" title="Obtain the correlator number of lines.">ahp_xc_get_nlines()</a>. </td></tr>
-    <tr><td class="paramname">indexes</td><td>Indexes of the inputs to scan. </td></tr>
-    <tr><td class="paramname">autocorrelations</td><td>Array of samples containing all channels of all scans done, of size sizes of each indexes elenent limited by nlines. </td></tr>
-    <tr><td class="paramname">starts</td><td>First channel to be scanned list. </td></tr>
-    <tr><td class="paramname">sizes</td><td>Number of channels to be scanned list. </td></tr>
+    <tr><td class="paramname">index</td><td>the input index. </td></tr>
+    <tr><td class="paramname">autocorrelations</td><td>An <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> array pointer, can be NULL. Will be allocated by reference and filled by this function. </td></tr>
+    <tr><td class="paramname">start</td><td>First channel to be scanned. </td></tr>
+    <tr><td class="paramname">len</td><td>Number of channels to be scanned. </td></tr>
     <tr><td class="paramname">interrupt</td><td>This should point to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted. </td></tr>
     <tr><td class="paramname">percent</td><td>Like interrupt a variable, passed by reference that will be updated with the percent of completion. </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Returns the number of channels scanned </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___feat.html#ga603e0bce59ba67ed46b5a5a8827871fc" title="Obtain the correlator number of lines.">ahp_xc_get_nlines</a> </dd>
-<dd>
-<a class="el" href="group___feat.html#ga2699fdc566785b22ab8a80cf13e9583d" title="Obtain the correlator maximum delay value.">ahp_xc_get_delaysize</a> </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___feat.html#ga2699fdc566785b22ab8a80cf13e9583d" title="Obtain the correlator maximum delay value.">ahp_xc_get_delaysize</a> </dd>
 <dd>
 <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> </dd></dl>
 
@@ -554,7 +551,6 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">index</td><td>The line index. </td></tr>
     <tr><td class="paramname">start</td><td>the starting channel for this scan. </td></tr>
-    <tr><td class="paramname">size</td><td>the number of channels to be scanned. </td></tr>
   </table>
   </dd>
 </dl>
@@ -564,7 +560,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Apr 30 2022 21:03:44 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Apr 30 2022 21:08:16 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>
