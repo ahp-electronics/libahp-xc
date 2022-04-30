@@ -110,6 +110,15 @@ Functions</h2></td></tr>
 <tr class="memitem:gac53cad053bf99cba77fba5d9e64c91ce"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___feat.html#gac53cad053bf99cba77fba5d9e64c91ce">ahp_xc_get_packetsize</a> (void)</td></tr>
 <tr class="memdesc:gac53cad053bf99cba77fba5d9e64c91ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain the serial packet size.  <a href="group___feat.html#gac53cad053bf99cba77fba5d9e64c91ce">More...</a><br /></td></tr>
 <tr class="separator:gac53cad053bf99cba77fba5d9e64c91ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga75cd1dde867a401c83f3f824665c5f5c"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___feat.html#ga75cd1dde867a401c83f3f824665c5f5c">ahp_xc_enable_intensity_crosscorrelator</a> (int enable)</td></tr>
+<tr class="memdesc:ga75cd1dde867a401c83f3f824665c5f5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable the intensity cross-correlation feature.  <a href="group___feat.html#ga75cd1dde867a401c83f3f824665c5f5c">More...</a><br /></td></tr>
+<tr class="separator:ga75cd1dde867a401c83f3f824665c5f5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga03cbcf7a0d61d1ae1d6394a0d4f6c004"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___feat.html#ga03cbcf7a0d61d1ae1d6394a0d4f6c004">ahp_xc_intensity_crosscorrelator_enabled</a> ()</td></tr>
+<tr class="memdesc:ga03cbcf7a0d61d1ae1d6394a0d4f6c004"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return non-zero if intensity crosscorrelation was enabled.  <a href="group___feat.html#ga03cbcf7a0d61d1ae1d6394a0d4f6c004">More...</a><br /></td></tr>
+<tr class="separator:ga03cbcf7a0d61d1ae1d6394a0d4f6c004"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3096c28ac9bbf003042838f7f5cd7989"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___feat.html#ga3096c28ac9bbf003042838f7f5cd7989">ahp_xc_enable_crosscorrelator</a> (int enable)</td></tr>
+<tr class="memdesc:ga3096c28ac9bbf003042838f7f5cd7989"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable the cross-correlation capability of the device.  <a href="group___feat.html#ga3096c28ac9bbf003042838f7f5cd7989">More...</a><br /></td></tr>
+<tr class="separator:ga3096c28ac9bbf003042838f7f5cd7989"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4eac9f4ede6e08ae1d268c36412e81b0"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___feat.html#ga4eac9f4ede6e08ae1d268c36412e81b0">ahp_xc_has_crosscorrelator</a> (void)</td></tr>
 <tr class="memdesc:ga4eac9f4ede6e08ae1d268c36412e81b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the cross-correlation capability of the device.  <a href="group___feat.html#ga4eac9f4ede6e08ae1d268c36412e81b0">More...</a><br /></td></tr>
 <tr class="separator:ga4eac9f4ede6e08ae1d268c36412e81b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -125,6 +134,54 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="ga3096c28ac9bbf003042838f7f5cd7989"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3096c28ac9bbf003042838f7f5cd7989">&#9670;&nbsp;</a></span>ahp_xc_enable_crosscorrelator()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT void ahp_xc_enable_crosscorrelator </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>enable</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">enable</td><td>set to non-zero to enable the crosscorrelator </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga75cd1dde867a401c83f3f824665c5f5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga75cd1dde867a401c83f3f824665c5f5c">&#9670;&nbsp;</a></span>ahp_xc_enable_intensity_crosscorrelator()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT void ahp_xc_enable_intensity_crosscorrelator </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>enable</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">enable</td><td>set to non-zero to enable the intensity crosscorrelator </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ga544596cc246c59ebb103107dd31b6213"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga544596cc246c59ebb103107dd31b6213">&#9670;&nbsp;</a></span>ahp_xc_get_autocorrelator_lagsize()</h2>
 
@@ -447,10 +504,28 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ga03cbcf7a0d61d1ae1d6394a0d4f6c004"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga03cbcf7a0d61d1ae1d6394a0d4f6c004">&#9670;&nbsp;</a></span>ahp_xc_intensity_crosscorrelator_enabled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_xc_intensity_crosscorrelator_enabled </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>Returns non-zero if intensity crosscorrelation was enabled </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Feb 28 2022 21:33:47 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Apr 30 2022 21:03:44 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

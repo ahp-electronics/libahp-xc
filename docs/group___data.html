@@ -92,9 +92,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga9a9be7d862c7ba0c6ad294379c94ce0b"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga9a9be7d862c7ba0c6ad294379c94ce0b">ahp_xc_end_autocorrelation_scan</a> (unsigned int index)</td></tr>
 <tr class="memdesc:ga9a9be7d862c7ba0c6ad294379c94ce0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">End an autocorrelation scan.  <a href="group___data.html#ga9a9be7d862c7ba0c6ad294379c94ce0b">More...</a><br /></td></tr>
 <tr class="separator:ga9a9be7d862c7ba0c6ad294379c94ce0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1bc82eedae95d6e1f4080f53ec159d09"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga1bc82eedae95d6e1f4080f53ec159d09">ahp_xc_scan_autocorrelations</a> (unsigned int index, <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> **autocorrelations, off_t start, unsigned int len, int *interrupt, double *percent)</td></tr>
-<tr class="memdesc:ga1bc82eedae95d6e1f4080f53ec159d09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scan all available delay channels and get autocorrelations of each input.  <a href="group___data.html#ga1bc82eedae95d6e1f4080f53ec159d09">More...</a><br /></td></tr>
-<tr class="separator:ga1bc82eedae95d6e1f4080f53ec159d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga44061a866cef4701d51b8a408c6ffa85"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga44061a866cef4701d51b8a408c6ffa85">ahp_xc_scan_autocorrelations</a> (unsigned int nlines, unsigned int *indexes, <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> **autocorrelations, off_t *starts, unsigned int *sizes, int *interrupt, double *percent)</td></tr>
+<tr class="memdesc:ga44061a866cef4701d51b8a408c6ffa85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scan all available delay channels and get autocorrelations of each input.  <a href="group___data.html#ga44061a866cef4701d51b8a408c6ffa85">More...</a><br /></td></tr>
+<tr class="separator:ga44061a866cef4701d51b8a408c6ffa85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3dffb11f2acfc4aa0f77f1cd93888396"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga3dffb11f2acfc4aa0f77f1cd93888396">ahp_xc_start_crosscorrelation_scan</a> (unsigned int index, off_t start, size_t size)</td></tr>
 <tr class="memdesc:ga3dffb11f2acfc4aa0f77f1cd93888396"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate a crosscorrelation scan.  <a href="group___data.html#ga3dffb11f2acfc4aa0f77f1cd93888396">More...</a><br /></td></tr>
 <tr class="separator:ga3dffb11f2acfc4aa0f77f1cd93888396"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -313,8 +313,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga1bc82eedae95d6e1f4080f53ec159d09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1bc82eedae95d6e1f4080f53ec159d09">&#9670;&nbsp;</a></span>ahp_xc_scan_autocorrelations()</h2>
+<a id="ga44061a866cef4701d51b8a408c6ffa85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga44061a866cef4701d51b8a408c6ffa85">&#9670;&nbsp;</a></span>ahp_xc_scan_autocorrelations()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -323,7 +323,13 @@ Functions</h2></td></tr>
           <td class="memname">DLL_EXPORT int ahp_xc_scan_autocorrelations </td>
           <td>(</td>
           <td class="paramtype">unsigned int&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
+          <td class="paramname"><em>nlines</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned int *&#160;</td>
+          <td class="paramname"><em>indexes</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -334,14 +340,14 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">off_t&#160;</td>
-          <td class="paramname"><em>start</em>, </td>
+          <td class="paramtype">off_t *&#160;</td>
+          <td class="paramname"><em>starts</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned int&#160;</td>
-          <td class="paramname"><em>len</em>, </td>
+          <td class="paramtype">unsigned int *&#160;</td>
+          <td class="paramname"><em>sizes</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -364,17 +370,20 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">index</td><td>the input index. </td></tr>
-    <tr><td class="paramname">autocorrelations</td><td>An <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> array pointer, can be NULL. Will be allocated by reference and filled by this function. </td></tr>
-    <tr><td class="paramname">start</td><td>First channel to be scanned. </td></tr>
-    <tr><td class="paramname">len</td><td>Number of channels to be scanned. </td></tr>
+    <tr><td class="paramname">nlines</td><td>Number of inputs to scan. must be less of <a class="el" href="group___feat.html#ga603e0bce59ba67ed46b5a5a8827871fc" title="Obtain the correlator number of lines.">ahp_xc_get_nlines()</a>. </td></tr>
+    <tr><td class="paramname">indexes</td><td>Indexes of the inputs to scan. </td></tr>
+    <tr><td class="paramname">autocorrelations</td><td>Array of samples containing all channels of all scans done, of size sizes of each indexes elenent limited by nlines. </td></tr>
+    <tr><td class="paramname">starts</td><td>First channel to be scanned list. </td></tr>
+    <tr><td class="paramname">sizes</td><td>Number of channels to be scanned list. </td></tr>
     <tr><td class="paramname">interrupt</td><td>This should point to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted. </td></tr>
     <tr><td class="paramname">percent</td><td>Like interrupt a variable, passed by reference that will be updated with the percent of completion. </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Returns the number of channels scanned </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___feat.html#ga2699fdc566785b22ab8a80cf13e9583d" title="Obtain the correlator maximum delay value.">ahp_xc_get_delaysize</a> </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___feat.html#ga603e0bce59ba67ed46b5a5a8827871fc" title="Obtain the correlator number of lines.">ahp_xc_get_nlines</a> </dd>
+<dd>
+<a class="el" href="group___feat.html#ga2699fdc566785b22ab8a80cf13e9583d" title="Obtain the correlator maximum delay value.">ahp_xc_get_delaysize</a> </dd>
 <dd>
 <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> </dd></dl>
 
@@ -545,6 +554,7 @@ Functions</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">index</td><td>The line index. </td></tr>
     <tr><td class="paramname">start</td><td>the starting channel for this scan. </td></tr>
+    <tr><td class="paramname">size</td><td>the number of channels to be scanned. </td></tr>
   </table>
   </dd>
 </dl>
@@ -554,7 +564,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Feb 28 2022 21:33:47 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Apr 30 2022 21:03:44 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>
