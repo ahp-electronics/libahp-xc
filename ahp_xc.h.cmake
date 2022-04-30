@@ -498,10 +498,11 @@ DLL_EXPORT void ahp_xc_end_autocorrelation_scan(unsigned int index);
 
 /**
 * \brief Scan all available delay channels and get autocorrelations of each input
-* \param index the input index.
+* \param nlines the number of inputs for this scan.
+* \param indexes the input indexes list.
 * \param autocorrelations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
-* \param start First channel to be scanned.
-* \param len Number of channels to be scanned.
+* \param starts First channel to be scanned list.
+* \param sizes Number of channels to be scanned list.
 * \param interrupt This should point to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
 * \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
 * \return Returns the number of channels scanned
@@ -514,6 +515,7 @@ DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *i
 * \brief Initiate a crosscorrelation scan
 * \param index The line index.
 * \param start the starting channel for this scan.
+* \param size The number of channels to scan afterwards.
 */
 DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size);
 
@@ -597,7 +599,7 @@ DLL_EXPORT void ahp_xc_set_voltage(unsigned int index, unsigned char value);
 /**
 * \brief Enable tests on the current line
 * \param index The input line index starting from 0
-* \param value The test type
+* \param test The test flags
 */
 DLL_EXPORT void ahp_xc_set_test_flags(unsigned int index, int test);
 
