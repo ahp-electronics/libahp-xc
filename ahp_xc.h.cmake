@@ -157,13 +157,15 @@ typedef enum {
 ///No extra signals or functions
 TEST_NONE = 0,
 ///Apply PLL clock on voltage led
-TEST_SIGNAL = 1,
+TEST_SIGNAL = 1<<0,
 ///Autocorrelator continuum scan
-SCAN_AUTO = 2,
+SCAN_AUTO = 1<<1,
 ///Crosscorrelator continuum scan
-SCAN_CROSS = 4,
+SCAN_CROSS = 1<<2,
 ///BCM modulation on voltage led
-TEST_BCM = 8,
+TEST_BCM = 1<<3,
+///Set channel scan step
+TEST_STEP = 1<<7,
 ///All tests enabled
 TEST_ALL = 0xf,
 } xc_test_flags;
@@ -487,8 +489,9 @@ DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 * \param index The line index.
 * \param start The starting channel for this scan.
 * \param size The number of channels to scan afterwards.
+* \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size);
+DLL_EXPORT void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size, size_t step);
 
 /**
 * \brief End an autocorrelation scan
@@ -503,21 +506,23 @@ DLL_EXPORT void ahp_xc_end_autocorrelation_scan(unsigned int index);
 * \param autocorrelations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
 * \param starts First channel to be scanned list.
 * \param sizes Number of channels to be scanned list.
+* \param steps The scan steps in channels.
 * \param interrupt This should point to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
 * \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
 * \return Returns the number of channels scanned
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp_xc_sample **autocorrelations, off_t *starts, unsigned int *sizes, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp_xc_sample **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, int *interrupt, double *percent);
 
 /**
 * \brief Initiate a crosscorrelation scan
 * \param index The line index.
 * \param start the starting channel for this scan.
 * \param size The number of channels to scan afterwards.
+* \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size);
+DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size, size_t step);
 
 /**
 * \brief End a crosscorrelation scan
@@ -534,13 +539,14 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(unsigned int index);
 * \param size1 Number of channels to scan on index1 input.
 * \param start2 Initial channel on index2 input.
 * \param size2 Number of channels to scan on index2 input.
+* \param step The scan step in channels.
 * \param interrupt This should point to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
 * \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
 * \return Returns the number of channels scanned
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, int *interrupt, double *percent);
 
 /**\}*/
 /**
@@ -570,18 +576,20 @@ DLL_EXPORT void ahp_xc_set_leds(unsigned int index, int leds);
 /**
 * \brief Set the channel of the selected input (for cross-correlation)
 * \param index The input line index starting from 0
-* \param value The channel number
-* \param size The number of channels to scan afterwards
+* \param value The starting channel
+* \param size The number of channels to scan
+* \param step The scan stepping in channels
 */
-DLL_EXPORT void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size);
+DLL_EXPORT void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size, size_t step);
 
 /**
 * \brief Set the channel of the selected input (for auto-correlation)
 * \param index The input line index starting from 0
-* \param value The channel number
-* \param size The number of channels to scan afterwards
+* \param value The starting channel
+* \param size The number of channels to scan
+* \param step The scan stepping in channels
 */
-DLL_EXPORT void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size);
+DLL_EXPORT void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size, size_t step);
 
 /**
 * \brief Set the clock divider for autocorrelation and crosscorrelation
