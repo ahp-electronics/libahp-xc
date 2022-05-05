@@ -74,7 +74,6 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
         phase = asin ((double)sample->real / magnitude);
         if(sample->imaginary < 0)
             phase = -phase;
-        magnitude *= M_PI * 2.0 / (labs(sample->real) + labs(sample->imaginary));
     }
     phase += M_PI;
     sample->magnitude = magnitude;
@@ -511,6 +510,7 @@ int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp
     char timestamp[16];
     double ts = 0.0;
     double ts0 = 0.0;
+    int s = 0;
     while((int)i < r) {
         if(*interrupt)
             break;
@@ -524,6 +524,7 @@ int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp
         for(x = 0; x < nlines; x++) {
             if(i < sizes[x]/steps[x]) {
                 ahp_xc_get_autocorrelation(&correlations[i+off], indexes[x], packet, ts);
+                s++;
             }
             off += sizes[x]/steps[x];
         }
@@ -532,7 +533,7 @@ int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp
     free(data);
     free(sample);
     *autocorrelations = correlations;
-    return i;
+    return s;
 }
 
 void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size, size_t step)
@@ -768,10 +769,8 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     int idx = 0;
     for(x = 0; x < ahp_xc_get_nlines(); x++) {
         ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, data, 0.0);
-        if(ahp_xc_intensity_crosscorrelator_enabled()) {
-            for(y = x+1; y < ahp_xc_get_nlines(); y++) {
-                ahp_xc_get_crosscorrelation(&packet->crosscorrelations[idx++], x, y, data, 0.0);
-            }
+        for(y = x+1; y < ahp_xc_get_nlines(); y++) {
+            ahp_xc_get_crosscorrelation(&packet->crosscorrelations[idx++], x, y, data, 0.0);
         }
     }
     char timestamp[16];
