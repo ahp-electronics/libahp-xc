@@ -57,7 +57,7 @@ static unsigned int ahp_xc_frequency = 1;
 static unsigned int ahp_xc_voltage = 0;
 static unsigned int ahp_xc_connected = 0;
 static unsigned int ahp_xc_detected = 0;
-static unsigned int ahp_xc_packetsize = 20;
+static unsigned int ahp_xc_packetsize = 17;
 static int ahp_xc_baserate = XC_BASE_RATE;
 static baud_rate ahp_xc_rate = R_BASE;
 static char ahp_xc_comport[128];
@@ -117,7 +117,7 @@ static char * grab_packet()
         errno = ETIMEDOUT;
         goto err_end;
     } else {
-        if(size > 20) {
+        if(size > 17) {
             off_t len = (off_t)(strchr((char*)buf, '\r')-(char*)buf);
             if(len < size-1) {
                 if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
@@ -131,7 +131,10 @@ static char * grab_packet()
         } else {
             if(buf[0] == '\r') {
                 memcpy(buf, buf+1, 16);
-                buf[16] =0;
+                buf[16] = 13;
+            } else {
+                errno = EINVAL;
+                goto err_end;
             }
         }
     }
@@ -139,11 +142,10 @@ static char * grab_packet()
         errno = ENODATA;
     if(errno)
         goto err_end;
-    if(size > 20)
+    if(size > 17)
         errno = calc_checksum((char*)buf);
     if(errno)
         goto err_end;
-    fprintf(stderr, "%s\n", buf);
     return buf;
 err_end:
     free(buf);
@@ -300,7 +302,7 @@ int ahp_xc_connect_fd(int fd)
     ahp_xc_nbaselines = 0;
     ahp_xc_delaysize = 0;
     ahp_xc_frequency = 0;
-    ahp_xc_packetsize = 20;
+    ahp_xc_packetsize = 17;
     ahp_xc_rate = R_BASE;
     if(fd > -1) {
         ahp_xc_connected = 1;
@@ -324,7 +326,7 @@ int ahp_xc_connect(const char *port, int high_rate)
     ahp_xc_nbaselines = 0;
     ahp_xc_delaysize = 0;
     ahp_xc_frequency = 0;
-    ahp_xc_packetsize = 20;
+    ahp_xc_packetsize = 17;
     ahp_xc_baserate = (high_rate ? XC_HIGH_RATE : XC_BASE_RATE);
     ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
@@ -347,7 +349,7 @@ void ahp_xc_disconnect()
         ahp_xc_nbaselines = 0;
         ahp_xc_delaysize = 0;
         ahp_xc_frequency = 0;
-        ahp_xc_packetsize = 20;
+        ahp_xc_packetsize = 17;
         ahp_xc_set_baudrate(ahp_xc_baserate);
         ahp_serial_CloseComport();
     }

@@ -440,8 +440,8 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000*bytes_left/ahp_serial_baudrate);
-            n = read(ahp_serial_fd, buf+nbytes, bytes_left);
+            usleep(10000000/ahp_serial_baudrate);
+            n = read(ahp_serial_fd, buf+nbytes, 1);
             if(n<1) {
                 err = -errno;
                 continue;
@@ -467,8 +467,8 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_send_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000*bytes_left/ahp_serial_baudrate);
-            n = write(ahp_serial_fd, buf+nbytes, bytes_left);
+            usleep(10000000/ahp_serial_baudrate);
+            n = write(ahp_serial_fd, buf+nbytes, 1);
             if(n<1) {
                 err = -errno;
                 continue;
