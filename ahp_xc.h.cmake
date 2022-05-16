@@ -106,6 +106,7 @@ typedef enum {
     R_BASEX2 = 1,
     R_BASEX4 = 2,
     R_BASEX8 = 3,
+    R_BASEX16 = 4,
 } baud_rate;
 
 /**

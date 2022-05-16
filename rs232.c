@@ -440,7 +440,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000/ahp_serial_baudrate);
+            usleep(10000000*bytes_left/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
@@ -467,7 +467,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_send_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000/ahp_serial_baudrate);
+            usleep(10000000*bytes_left/ahp_serial_baudrate);
             n = write(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
@@ -508,6 +508,7 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
     int c = 0;
     ahp_serial_flushRX();
+    int n = 0;
     while(c != sof && maxtries-- > 0) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
@@ -516,8 +517,9 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
           else
               return errno;
         }
+        n++;
     }
-    return 0;
+    return n == maxtries;
 }
 
 static void ahp_serial_SetFD(int f, int bauds)
