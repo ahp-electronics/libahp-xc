@@ -93,15 +93,14 @@ unsigned long int ahp_xc_max_threads(unsigned long value)
 
 void wait_threads()
 {
-    while (nthreads >= ahp_xc_max_threads(0)) {
-        usleep(100);
-    }
+    while (nthreads >= ahp_xc_max_threads(0))
+        usleep(1);
 }
 
 void wait_no_threads()
 {
     while (nthreads > 0)
-        usleep(100);
+        usleep(1);
 }
 
 static void complex_phase_magnitude(ahp_xc_correlation *sample)
@@ -530,10 +529,7 @@ static void* _get_autocorrelation(void *o)
         complex_phase_magnitude(&sample->correlations[y]);
     }
     free(subpacket);
-    while(pthread_mutex_trylock(&ahp_xc_mutex))
-        usleep(100);
     nthreads--;
-    pthread_mutex_unlock(&ahp_xc_mutex);
     return NULL;
 }
 
@@ -727,10 +723,7 @@ void *_get_crosscorrelation(void *o)
         }
         free(subpacket);
     }
-    while(pthread_mutex_trylock(&ahp_xc_mutex))
-        usleep(100);
     nthreads--;
-    pthread_mutex_unlock(&ahp_xc_mutex);
     return NULL;
 }
 
