@@ -418,7 +418,6 @@ static void ahp_serial_CloseComport()
         pthread_mutex_destroy(&ahp_serial_send_mutex);
         pthread_mutexattr_destroy(&ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 0;
-
     }
     strcpy(ahp_serial_mode, "   ");
     ahp_serial_flowctrl = -1;

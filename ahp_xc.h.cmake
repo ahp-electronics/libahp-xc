@@ -244,6 +244,12 @@ const char* buf;
 */
 DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *baseline);
 
+/**
+* \brief Set or get the maximum number of concurrent threads
+* \param value If non-zero set the maximum numnber of threads to this value, otherwise just return the current value
+* \return Returns The maximum number of threads
+*/DLL_EXPORT unsigned long int ahp_xc_max_threads(unsigned long value);
+
 /**\}*/
 /**
  * \defgroup Comm Communication
