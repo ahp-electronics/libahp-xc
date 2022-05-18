@@ -453,6 +453,12 @@ DLL_EXPORT int ahp_xc_has_differential_only();
 DLL_EXPORT ahp_xc_packet *ahp_xc_alloc_packet(void);
 
 /**
+* \brief Allocate and return a copy of a packet structure
+* \return Returns a new ahp_xc_packet structure pointer
+*/
+DLL_EXPORT ahp_xc_packet *ahp_xc_copy_packet(ahp_xc_packet *packet);
+
+/**
 * \brief Free a previously allocated packet structure
 * \param packet pointer to the ahp_xc_packet structure to be freed
 */

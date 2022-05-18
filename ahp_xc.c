@@ -464,6 +464,15 @@ ahp_xc_packet *ahp_xc_alloc_packet()
     return packet;
 }
 
+ahp_xc_packet *ahp_xc_copy_packet(ahp_xc_packet *packet)
+{
+    ahp_xc_packet *copy = ahp_xc_alloc_packet();
+    memcpy(copy->counts, packet->counts, packet->n_lines*sizeof(unsigned long));
+    memcpy(copy->autocorrelations, packet->autocorrelations, sizeof(ahp_xc_sample) * (unsigned long)ahp_xc_get_nlines() * (unsigned long)ahp_xc_get_autocorrelator_lagsize());
+    memcpy(copy->crosscorrelations, packet->autocorrelations, sizeof(ahp_xc_sample) * (unsigned long)ahp_xc_get_nbaselines() * (unsigned long)ahp_xc_get_autocorrelator_lagsize());
+    return copy;
+}
+
 void ahp_xc_free_packet(ahp_xc_packet *packet)
 {
     if(packet != NULL) {
