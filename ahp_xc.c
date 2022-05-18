@@ -118,6 +118,13 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
     sample->phase = phase;
 }
 
+double get_timestamp(char *packet)
+{
+    char timestamp[16];
+    strncpy(timestamp, &packet[ahp_xc_get_packetsize()-18], 16);
+    return (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+}
+
 int calc_checksum(char *data)
 {
     if(!ahp_xc_connected) return -ENOENT;
@@ -585,7 +592,6 @@ int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp
     for(i = 0; i < nlines; i++)
         ahp_xc_end_autocorrelation_scan(indexes[i]);
     i = 0;
-    char timestamp[16];
     double ts = 0.0;
     double ts0 = 0.0;
     int s = 0;
@@ -593,8 +599,7 @@ int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp
         if(*interrupt)
             break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
-        strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
-        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+        ts = get_timestamp(packet);
         if(ts0 == 0.0)
             ts0 = ts;
         ts -= ts0;
@@ -749,7 +754,6 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     int i = 0;
     double ts = 0.0;
     double ts0 = 0.0;
-    char timestamp[16];
     unsigned int n = ahp_xc_get_bps()/4;
     *crosscorrelations = NULL;
     unsigned int idx1 = (index1 < index2 ? index1 : index2);
@@ -809,8 +813,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         if(*interrupt)
             break;
         char *packet = (char*)head+k*ahp_xc_get_packetsize();
-        strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
-        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+        ts = get_timestamp(packet);
         if(ts0 == 0.0)
             ts0 = ts;
         ts -= ts0;
@@ -826,8 +829,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         if(*interrupt)
             break;
         char *packet = (char*)tail+k*ahp_xc_get_packetsize();
-        strncpy(timestamp, &packet[ahp_xc_get_packetsize()-19], 16);
-        ts = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+        ts = get_timestamp(packet);
         if(ts0 == 0.0)
             ts0 = ts;
         ts -= ts0;
@@ -878,9 +880,7 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         }
     }
     wait_no_threads();
-    char timestamp[16];
-    strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
-    packet->timestamp = (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+    packet->timestamp = get_timestamp(data);
     ret = 0;
     goto end;
 err_end:
