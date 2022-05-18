@@ -118,10 +118,10 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
     sample->phase = phase;
 }
 
-double get_timestamp(char *packet)
+double get_timestamp(char *data)
 {
     char timestamp[16];
-    strncpy(timestamp, &packet[ahp_xc_get_packetsize()-18], 16);
+    strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
     return (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
 }
 
@@ -545,7 +545,8 @@ static void* _get_autocorrelation(void *o)
         complex_phase_magnitude(&sample->correlations[y]);
     }
     free(subpacket);
-    nthreads--;
+    if(nthreads > 0)
+        nthreads--;
     return NULL;
 }
 
@@ -557,9 +558,10 @@ void ahp_xc_get_autocorrelation(ahp_xc_sample *sample, int index, const char *da
     autocorrelation_thread_args[index].index = index;
     autocorrelation_thread_args[index].data = data;
     autocorrelation_thread_args[index].lag = lag;
-    wait_threads();
+    _get_autocorrelation(&autocorrelation_thread_args[index]);
+    /*wait_threads();
     nthreads ++;
-    pthread_create(&autocorrelation_threads[index], NULL, _get_autocorrelation, &autocorrelation_thread_args[index]);
+    pthread_create(&autocorrelation_threads[index], NULL, _get_autocorrelation, &autocorrelation_thread_args[index]);*/
 }
 
 int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp_xc_sample **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, int *interrupt, double *percent)
@@ -737,7 +739,8 @@ void *_get_crosscorrelation(void *o)
         }
         free(subpacket);
     }
-    nthreads--;
+    if(nthreads > 0)
+        nthreads--;
     return NULL;
 }
 
@@ -751,9 +754,10 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
     crosscorrelation_thread_args[idx].index2 = index2;
     crosscorrelation_thread_args[idx].data = data;
     crosscorrelation_thread_args[idx].lag = lag;
-    wait_threads();
+    _get_crosscorrelation(&crosscorrelation_thread_args[idx]);
+    /*wait_threads();
     nthreads ++;
-    pthread_create(&crosscorrelation_threads[idx], NULL, _get_crosscorrelation, &crosscorrelation_thread_args[idx]);
+    pthread_create(&crosscorrelation_threads[idx], NULL, _get_crosscorrelation, &crosscorrelation_thread_args[idx]);*/
 }
 
 int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t head_start, size_t head_size, off_t tail_start, size_t tail_size, size_t step, int *interrupt, double *percent)
