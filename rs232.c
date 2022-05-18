@@ -440,7 +440,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(10000000/ahp_serial_baudrate);
-            n = read(ahp_serial_fd, buf+nbytes, 1);
+            n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
                 continue;
@@ -467,7 +467,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(10000000/ahp_serial_baudrate);
-            n = write(ahp_serial_fd, buf+nbytes, 1);
+            n = write(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
                 continue;
