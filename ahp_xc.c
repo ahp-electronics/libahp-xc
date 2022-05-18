@@ -458,7 +458,7 @@ ahp_xc_packet *ahp_xc_alloc_packet()
     packet->tau = (unsigned long)(1.0/ahp_xc_get_frequency());
     packet->n_lines = (unsigned long)ahp_xc_get_nlines();
     packet->n_baselines = (unsigned long)ahp_xc_get_nbaselines();
-    packet->counts = (unsigned long*)malloc(packet->n_lines*sizeof(unsigned long));
+    packet->counts = (unsigned long*)malloc((unsigned long)ahp_xc_get_nlines() * sizeof(unsigned long));
     packet->autocorrelations = ahp_xc_alloc_samples((unsigned long)ahp_xc_get_nlines(), (unsigned long)ahp_xc_get_autocorrelator_lagsize());
     packet->crosscorrelations = ahp_xc_alloc_samples((unsigned long)ahp_xc_get_nbaselines(), (unsigned long)ahp_xc_get_crosscorrelator_lagsize()*2-1);
     return packet;
@@ -467,9 +467,9 @@ ahp_xc_packet *ahp_xc_alloc_packet()
 ahp_xc_packet *ahp_xc_copy_packet(ahp_xc_packet *packet)
 {
     ahp_xc_packet *copy = ahp_xc_alloc_packet();
-    memcpy(copy->counts, packet->counts, packet->n_lines*sizeof(unsigned long));
+    memcpy(copy->counts, packet->counts, sizeof(unsigned long) * (unsigned long)ahp_xc_get_nlines());
     memcpy(copy->autocorrelations, packet->autocorrelations, sizeof(ahp_xc_sample) * (unsigned long)ahp_xc_get_nlines() * (unsigned long)ahp_xc_get_autocorrelator_lagsize());
-    memcpy(copy->crosscorrelations, packet->autocorrelations, sizeof(ahp_xc_sample) * (unsigned long)ahp_xc_get_nbaselines() * (unsigned long)ahp_xc_get_autocorrelator_lagsize());
+    memcpy(copy->crosscorrelations, packet->crosscorrelations, sizeof(ahp_xc_sample) * (unsigned long)ahp_xc_get_nbaselines() * (unsigned long)ahp_xc_get_crosscorrelator_lagsize());
     return copy;
 }
 
