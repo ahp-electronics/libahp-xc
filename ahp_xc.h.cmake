@@ -314,6 +314,12 @@ DLL_EXPORT int ahp_xc_get_baudrate(void);
 */
 DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate);
 
+/**
+* \brief Set the crosscorrelation order
+* \param rate The new crosscorrelation order
+*/
+DLL_EXPORT void ahp_xc_set_correlation_order(unsigned int order);
+
 /**\}*/
 /**
  * \defgroup Feat Features of the correlator
