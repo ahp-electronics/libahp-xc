@@ -83,7 +83,7 @@ extern "C" {
 #define AHP_XC_PLL_FREQUENCY 400000000
 
 /**\}
- * \defgroup Types
+ * \defgroup Types Types and structures
  *\{*/
 
 ///AHP XC header flags
@@ -316,7 +316,7 @@ DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate);
 
 /**
 * \brief Set the crosscorrelation order
-* \param rate The new crosscorrelation order
+* \param order The new crosscorrelation order
 */
 DLL_EXPORT void ahp_xc_set_correlation_order(unsigned int order);
 
