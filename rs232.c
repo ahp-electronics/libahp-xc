@@ -33,18 +33,30 @@ extern "C" {
 #include <errno.h>
 #include <fcntl.h>
 
-#ifndef _WIN32
+#if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+    #define LINUX
+#elif defined(__APPLE__) && defined(__MACH__)
+    #define MACOS
+#elif defined(_WIN32) || defined(_WIN64)
+    #define WINDOWS
+#endif
+
+#ifndef WINDOWS
 
 #include <termios.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <sys/file.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #else
 #include <winsock2.h>
 #include <windows.h>
+#include <ws2tcpip.h>
+#include <winsock.h>
 #undef UNICODE
 #undef _UNICODE
 #endif
@@ -59,18 +71,13 @@ static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
 static int ahp_serial_flowctrl = -1;
 static int ahp_serial_fd = -1;
 
-static fd_set set;
-static struct timeval ahp_serial_timeout;
-
-#ifndef _WIN32   /* Linux & FreeBSD */
+#ifndef WINDOWS
 static int ahp_serial_error = 0;
 
 static struct termios ahp_serial_new_port_settings, ahp_serial_old_port_settings;
 
 static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
 {
-    FD_ZERO(&set);
-    FD_SET(ahp_serial_fd, &set);
     strcpy(ahp_serial_mode, m);
     ahp_serial_flowctrl = fc;
     ahp_serial_baudrate = bauds;
@@ -418,6 +425,7 @@ static void ahp_serial_CloseComport()
         pthread_mutex_destroy(&ahp_serial_send_mutex);
         pthread_mutexattr_destroy(&ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 0;
+
     }
     strcpy(ahp_serial_mode, "   ");
     ahp_serial_flowctrl = -1;
@@ -432,14 +440,12 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int ntries = size*2;
     int bytes_left = size;
     int err = 0;
-    ahp_serial_timeout.tv_sec = 0;
-    ahp_serial_timeout.tv_usec = 10000000/ahp_serial_baudrate;
 
     if(ahp_serial_mutexes_initialized) {
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000/ahp_serial_baudrate);
+            usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
@@ -466,7 +472,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_send_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000/ahp_serial_baudrate);
+            usleep(12000000/ahp_serial_baudrate);
             n = write(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
@@ -507,7 +513,6 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
     int c = 0;
     ahp_serial_flushRX();
-    int n = 0;
     while(c != sof && maxtries-- > 0) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
@@ -516,9 +521,8 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
           else
               return errno;
         }
-        n++;
     }
-    return n == maxtries;
+    return 0;
 }
 
 static void ahp_serial_SetFD(int f, int bauds)
