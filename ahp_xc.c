@@ -384,7 +384,7 @@ int ahp_xc_connect(const char *port, int high_rate)
     ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
     if(!ahp_serial_OpenComport(ahp_xc_comport))
-        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N1", 0);
+        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N1");
     if(!ret) {
         if(!ahp_xc_mutexes_initialized) {
             pthread_mutex_init(&ahp_xc_mutex, &ahp_serial_mutex_attr);
@@ -997,7 +997,7 @@ void ahp_xc_set_baudrate(baud_rate rate)
     ahp_xc_set_capture_flags(old_flags);
     ahp_serial_CloseComport();
     ahp_serial_OpenComport(ahp_xc_comport);
-    ahp_serial_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N2", 0);
+    ahp_serial_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N2");
 }
 
 void ahp_xc_set_correlation_order(unsigned int order)
