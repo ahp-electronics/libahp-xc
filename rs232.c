@@ -127,7 +127,7 @@ static int ahp_serial_OpenComport(const char* devname)
 {
     char dev_name[128];
     sprintf(dev_name, "%s", devname);
-    int err = sp_get_port_by_name(devname, &serialport);
+    int err = sp_get_port_by_name(dev_name, &serialport);
     if (err != SP_OK) {
         fprintf(stderr, "no such comport\n");
         return 1;
@@ -138,8 +138,7 @@ static int ahp_serial_OpenComport(const char* devname)
         return 1;
     }
     err = sp_get_port_handle(serialport, &ahp_serial_fd);
-
-    if (err != SP_OK) {
+    if (ahp_serial_fd < 0) {
         fprintf(stderr, "invalid file descriptor\n");
         return 1;
     }
