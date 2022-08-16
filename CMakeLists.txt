@@ -18,9 +18,28 @@ set(AHP_XC_VERSION 0x${AHP_XC_VERSION_MAJOR}${AHP_XC_VERSION_MINOR}${AHP_XC_VERS
 set(AHPXC_SOVERSION ${AHP_XC_VERSION_MAJOR})
 
 set(SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/serialport.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/test_timing.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
    )
+
+if (WIN32)
+set(PLATFORM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/windows.c
+   )
+else (WIN32)
+   if (APPLE)
+   set(PLATFORM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/macosx.c
+   )
+   else (APPLE)
+   set(PLATFORM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux.c
+   )
+   endif(APPLE)
+endif (WIN32)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
@@ -30,7 +49,7 @@ include_directories(${CMAKE_INCLUDE_PATH})
 link_directories(${CMAKE_LIBRARY_PATH})
 execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-add_library(ahp_xc SHARED ${SOURCES})
+add_library(ahp_xc SHARED ${SOURCES} ${PLATFORM_SOURCES})
 set_target_properties(ahp_xc PROPERTIES VERSION ${AHPXC_VERSION} SOVERSION ${AHPXC_SOVERSION})
 
 target_link_libraries(ahp_xc ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
