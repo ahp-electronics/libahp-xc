@@ -280,20 +280,6 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     ahp_serial_baudrate = bauds;
     HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
 
-    COMMTIMEOUTS Cptimeouts;
-
-    Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
-    Cptimeouts.ReadTotalTimeoutMultiplier  = 1;
-    Cptimeouts.ReadTotalTimeoutConstant    = 1;
-    Cptimeouts.WriteTotalTimeoutMultiplier = 1;
-    Cptimeouts.WriteTotalTimeoutConstant   = 1;
-
-    if(!SetCommTimeouts(pHandle, &Cptimeouts))
-    {
-        printf("unable to set comport timeouts\n");
-        return 1;
-    }
-
     memset(&ahp_serial_old_port_settings, 0, sizeof(DCB));
 
     if(!GetCommState(pHandle, &ahp_serial_old_port_settings))
