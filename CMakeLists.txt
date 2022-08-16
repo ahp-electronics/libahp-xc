@@ -52,11 +52,11 @@ execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DI
 
 add_library(ahp_xc SHARED ${SOURCES} ${PLATFORM_SOURCES})
 
-if(MINGW)
-    target_link_libraries(ahp_xc ws2_32 setupapi)
-else(MINGW)
+if(WIN32)
+    target_link_libraries(ahp_xc ws2_32 setupapi cfgmgr32)
+else(WIN32)
    set_target_properties(ahp_xc PROPERTIES VERSION ${AHPXC_VERSION} SOVERSION ${AHPXC_SOVERSION})
-endif(MINGW)
+endif(WIN32)
 
 target_link_libraries(ahp_xc ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
 
