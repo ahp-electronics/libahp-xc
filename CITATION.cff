@@ -5,7 +5,7 @@ authors:
   given-names: "Ilia"
   orcid: "https://orcid.org/0000-0002-8527-4611"
 title: "libahp-xc"
-version: 1.2.8
+version: 1.2.9
 doi: 10.5281/zenodo.5802529
 date-released: 2021-12-24
 url: "https://github.com/ahp-electronics/libahp-xc"
