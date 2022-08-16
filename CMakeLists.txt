@@ -19,7 +19,6 @@ set(AHPXC_SOVERSION ${AHP_XC_VERSION_MAJOR})
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/serialport.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/test_timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
@@ -54,7 +53,7 @@ execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DI
 add_library(ahp_xc SHARED ${SOURCES} ${PLATFORM_SOURCES})
 
 if(MINGW)
-    target_link_libraries(ahp_xc ws2_32)
+    target_link_libraries(ahp_xc ws2_32 setupapi)
 else(MINGW)
    set_target_properties(ahp_xc PROPERTIES VERSION ${AHPXC_VERSION} SOVERSION ${AHPXC_SOVERSION})
 endif(MINGW)
