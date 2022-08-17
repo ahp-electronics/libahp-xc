@@ -18,28 +18,9 @@ set(AHP_XC_VERSION 0x${AHP_XC_VERSION_MAJOR}${AHP_XC_VERSION_MINOR}${AHP_XC_VERS
 set(AHPXC_SOVERSION ${AHP_XC_VERSION_MAJOR})
 
 set(SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/serialport.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
    )
-
-if (WIN32)
-set(PLATFORM_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/windows.c
-   )
-else (WIN32)
-   if (APPLE)
-   set(PLATFORM_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/macosx.c
-   )
-   else (APPLE)
-   set(PLATFORM_SOURCES
-       ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux.c
-       ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux_termios.c
-   )
-   endif(APPLE)
-endif (WIN32)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
