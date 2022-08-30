@@ -881,9 +881,9 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         buf += n;
     }
     int idx = 0;
-    for(x = 0; x < ahp_xc_get_nlines()-ahp_xc_correlation_order; x++) {
+    for(x = 0; x < ahp_xc_get_nlines()-ahp_xc_correlation_order-1; x++) {
         ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, data, 0.0);
-        for(y = x+ahp_xc_correlation_order; y < ahp_xc_get_nlines(); y++) {
+        for(y = x+ahp_xc_correlation_order+1; y < ahp_xc_get_nlines(); y++) {
             ahp_xc_get_crosscorrelation(&packet->crosscorrelations[idx++], x, y, data, 0.0);
         }
     }
