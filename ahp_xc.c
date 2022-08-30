@@ -1005,7 +1005,7 @@ void ahp_xc_set_correlation_order(unsigned int order)
     if(!ahp_xc_detected) return;
     if(order < 2) return;
     if(order > ahp_xc_get_nlines()) return;
-    ahp_xc_correlation_order = order - 1;
+    ahp_xc_correlation_order = order - 2;
     xc_capture_flags old_flags = ahp_xc_get_capture_flags();
     ahp_xc_set_capture_flags(old_flags|CAP_EXTRA_CMD);
     ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)ahp_xc_correlation_order);
