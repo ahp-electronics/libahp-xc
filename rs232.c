@@ -401,7 +401,7 @@ static void ahp_serial_flushRXTX()
 static int ahp_serial_OpenComport(const char* devname)
 {
     char dev_name[128];
-#ifndef _WIN32
+#ifndef WINDOWS
     sprintf(dev_name, "/dev/%s", devname);
 #else
     sprintf(dev_name, "\\\\.\\%s", devname);
@@ -456,8 +456,12 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
+#ifndef WINDOWS
             usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
+#else
+            n = read(ahp_serial_fd, buf+nbytes, 1);
+#endif
             if(n<1) {
                 err = -errno;
                 continue;
