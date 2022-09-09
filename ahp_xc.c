@@ -158,31 +158,41 @@ static char * grab_packet()
     }
     unsigned int size = ahp_xc_get_packetsize();
     memset(buf, 0, (unsigned int)size);
-    int nread = ahp_serial_RecvBuf((unsigned char*)buf, (int)size);
-    if(nread < 0) {
-        errno = ETIMEDOUT;
-        goto err_end;
-    } else {
-        if(size > 17) {
-            off_t len = (off_t)(strchr((char*)buf, '\r')-(char*)buf);
-            if(len < size-1) {
-                if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
-                    errno = EINVAL;
-                } else {
-                    errno = EPIPE;
-                }
-                ahp_serial_AlignFrame('\r', (int)size);
-                goto err_end;
-            }
-        } else {
-            if(buf[0] == '\r') {
-                memcpy(buf, buf+1, 16);
-                buf[16] = 13;
-            } else {
-                errno = EINVAL;
-                goto err_end;
-            }
+    unsigned char c = '\0';
+    int nread = 0;
+    if(size == 17)
+        ahp_serial_AlignFrame('\r', -1);
+#ifdef WINDOWS
+    while (c != '\r' && nread < (int)size) {
+        int len = ahp_serial_RecvBuf(&c, 1);
+        if(len < 0) {
+            errno = ETIMEDOUT;
+            goto err_end;
+        } else if(len > 0) {
+            buf[nread++] = c;
         }
+    }
+#else
+    nread = ahp_serial_RecvBuf(&c, size);
+#endif
+    buf[nread] = 0;
+    if(nread > 17) {
+        off_t len = (off_t)(strchr((char*)buf, '\r')-(char*)buf);
+        if(len < size-1) {
+            if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
+                errno = EINVAL;
+            } else {
+                errno = EPIPE;
+            }
+            ahp_serial_AlignFrame('\r', (int)size);
+            goto err_end;
+        }
+    } else if(nread == 17) {
+        memcpy(buf, buf, 16);
+        buf[16] = 13;
+    } else {
+        errno = EINVAL;
+        goto err_end;
     }
     if(strlen((char*)buf) < size)
         errno = ENODATA;
