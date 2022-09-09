@@ -188,6 +188,10 @@ static char * grab_packet()
             ahp_serial_AlignFrame('\r', (int)size);
             goto err_end;
         }
+    } else if(nread == 17) {
+        buf[16] = 0;
+        fprintf(stdout, "Model: %s\n", buf);
+        buf[16] = '\r';
     } else {
         errno = EINVAL;
         goto err_end;
