@@ -188,8 +188,6 @@ static char * grab_packet()
             ahp_serial_AlignFrame('\r', (int)size);
             goto err_end;
         }
-    } else if(nread == 17) {
-        fprintf(stdout, "Model: %16s\n", buf);
     } else {
         errno = EINVAL;
         goto err_end;
@@ -204,6 +202,7 @@ static char * grab_packet()
         goto err_end;
     return buf;
 err_end:
+    fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
     free(buf);
     return NULL;
 }
