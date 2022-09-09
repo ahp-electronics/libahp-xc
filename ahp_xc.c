@@ -171,6 +171,10 @@ static char * grab_packet()
 #else
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
 #endif
+    if(nread == 0) {
+        errno = ENODATA;
+        goto err_end;
+    }
     if(nread < 0) {
         errno = ETIMEDOUT;
         goto err_end;
