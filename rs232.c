@@ -524,7 +524,7 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
     int c = 0;
     ahp_serial_flushRX();
-    while(c != sof && maxtries-- > 0) {
+    while(c != sof && (maxtries > -1 ? maxtries-- > 0 : 1)) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
           if(errno == EAGAIN)
