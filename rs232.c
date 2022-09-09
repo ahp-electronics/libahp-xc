@@ -456,12 +456,8 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-#ifndef WINDOWS
             usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
-#else
-            n = read(ahp_serial_fd, buf+nbytes, 1);
-#endif
             if(n<1) {
                 err = -errno;
                 continue;
@@ -528,7 +524,7 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
     int c = 0;
     ahp_serial_flushRX();
-    while(c != sof && (maxtries > -1 ? maxtries-- > 0 : 1)) {
+    while(c != sof && (maxtries > 0 ? maxtries-- > 0 : 1)) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
           if(errno == EAGAIN)

@@ -150,32 +150,33 @@ int calc_checksum(char *data)
 static char * grab_packet()
 {
     errno = 0;
+    unsigned int size = ahp_xc_get_packetsize();
     char *buf = (char*)malloc(ahp_xc_get_packetsize());
-    memset(buf, 0, ahp_xc_get_packetsize());
+    memset(buf, 0, (unsigned int)size);
     if(!ahp_xc_connected){
         errno = ENOENT;
         goto err_end;
     }
-    unsigned int size = ahp_xc_get_packetsize();
-    memset(buf, 0, (unsigned int)size);
-    unsigned char c = '\0';
     int nread = 0;
-    if(size == 17)
-        ahp_serial_AlignFrame('\r', -1);
 #ifdef WINDOWS
-    while (c != '\r' && nread < (int)size) {
+    unsigned char c = '\0';
+    while (nread < (int)size) {
         int len = ahp_serial_RecvBuf(&c, 1);
-        if(len < 0) {
-            errno = ETIMEDOUT;
-            goto err_end;
-        } else if(len > 0) {
+        if(len > 0) {
             buf[nread++] = c;
+            if(size > 17 && c == '\r')
+                break;
         }
     }
 #else
-    nread = ahp_serial_RecvBuf(&c, size);
+    nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
 #endif
-    buf[nread] = 0;
+    if(nread < 0) {
+        errno = ETIMEDOUT;
+        goto err_end;
+    }
+    memcpy(buf, buf+1, nread-1);
+    buf[nread-1] = '\r';
     if(nread > 17) {
         off_t len = (off_t)(strchr((char*)buf, '\r')-(char*)buf);
         if(len < size-1) {
@@ -188,8 +189,7 @@ static char * grab_packet()
             goto err_end;
         }
     } else if(nread == 17) {
-        memcpy(buf, buf, 16);
-        buf[16] = 13;
+        fprintf(stdout, "Model: %16s\n", buf);
     } else {
         errno = EINVAL;
         goto err_end;
