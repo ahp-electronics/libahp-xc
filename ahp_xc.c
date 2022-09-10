@@ -158,45 +158,25 @@ static char * grab_packet()
         goto err_end;
     }
     int nread = 0;
-#ifdef WINDOWS
-    unsigned char c = '\0';
-    while (nread < (int)size) {
-        int len = ahp_serial_RecvBuf(&c, 1);
-        if(len > 0) {
-            buf[nread++] = c;
-            if(size > 17 && c == '\r')
-                break;
-        }
-    }
-#else
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
-#endif
     if(nread == 0) {
         errno = ENODATA;
-        goto err_end;
-    }
-    if(nread < 0) {
+    } else if(nread < 0) {
         errno = ETIMEDOUT;
-        goto err_end;
-    }
-    buf[nread-1] = '\0';
-    if(size > 17) {
+    } else if(nread > 17) {
         if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
             errno = EINVAL;
             ahp_serial_AlignFrame('\r', (int)size);
-            goto err_end;
+        } else if(strlen((char*)buf) < size-1){
+            errno = ERANGE;
+        } else {
+            buf[nread-1] = 0;
+            errno = calc_checksum((char*)buf);
         }
     } else if(size == 17) {
         buf[16] = 0;
         fprintf(stdout, "Model: %s\n", buf);
-        buf[16] = '\r';
     }
-    if(strlen((char*)buf) < size-1)
-        errno = ENODATA;
-    if(errno)
-        goto err_end;
-    if(size > 17)
-        errno = calc_checksum((char*)buf);
     if(errno)
         goto err_end;
     return buf;
