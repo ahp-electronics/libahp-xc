@@ -63,8 +63,7 @@ extern "C" {
 #include <pthread.h>
 
 static pthread_mutexattr_t ahp_serial_mutex_attr;
-static pthread_mutex_t ahp_serial_read_mutex;
-static pthread_mutex_t ahp_serial_send_mutex;
+static pthread_mutex_t ahp_serial_mutex;
 static int ahp_serial_mutexes_initialized = 0;
 static int ahp_serial_baudrate = 230400;
 static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
@@ -416,8 +415,7 @@ static int ahp_serial_OpenComport(const char* devname)
     if(!ahp_serial_mutexes_initialized) {
         pthread_mutexattr_init(&ahp_serial_mutex_attr);
         pthread_mutexattr_settype(&ahp_serial_mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-        pthread_mutex_init(&ahp_serial_read_mutex, &ahp_serial_mutex_attr);
-        pthread_mutex_init(&ahp_serial_send_mutex, &ahp_serial_mutex_attr);
+        pthread_mutex_init(&ahp_serial_mutex, &ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 1;
     }
     int value = 0x1000;
@@ -431,10 +429,8 @@ static void ahp_serial_CloseComport()
     if(ahp_serial_fd != -1)
         close(ahp_serial_fd);
     if(ahp_serial_mutexes_initialized) {
-        pthread_mutex_unlock(&ahp_serial_read_mutex);
-        pthread_mutex_destroy(&ahp_serial_read_mutex);
-        pthread_mutex_unlock(&ahp_serial_send_mutex);
-        pthread_mutex_destroy(&ahp_serial_send_mutex);
+        pthread_mutex_unlock(&ahp_serial_mutex);
+        pthread_mutex_destroy(&ahp_serial_mutex);
         pthread_mutexattr_destroy(&ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 0;
 
@@ -453,7 +449,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int bytes_left = size;
     int err = 0;
     if(ahp_serial_mutexes_initialized) {
-        while(pthread_mutex_trylock(&ahp_serial_read_mutex))
+        while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(12000000/ahp_serial_baudrate);
@@ -465,7 +461,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
             nbytes += n;
             bytes_left -= n;
         }
-        pthread_mutex_unlock(&ahp_serial_read_mutex);
+        pthread_mutex_unlock(&ahp_serial_mutex);
     }
     if(nbytes < size)
         return err;
@@ -480,7 +476,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
     int bytes_left = size;
     int err = 0;
     if(ahp_serial_mutexes_initialized) {
-        while(pthread_mutex_trylock(&ahp_serial_send_mutex))
+        while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(12000000/ahp_serial_baudrate);
@@ -492,7 +488,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
             nbytes += n;
             bytes_left -= n;
         }
-        pthread_mutex_unlock(&ahp_serial_send_mutex);
+        pthread_mutex_unlock(&ahp_serial_mutex);
     }
     if(nbytes < size)
         return err;
@@ -541,8 +537,7 @@ static void ahp_serial_SetFD(int f, int bauds)
     if(!ahp_serial_mutexes_initialized) {
         pthread_mutexattr_init(&ahp_serial_mutex_attr);
         pthread_mutexattr_settype(&ahp_serial_mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-        pthread_mutex_init(&ahp_serial_read_mutex, &ahp_serial_mutex_attr);
-        pthread_mutex_init(&ahp_serial_send_mutex, &ahp_serial_mutex_attr);
+        pthread_mutex_init(&ahp_serial_mutex, &ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 1;
     }
     ahp_serial_fd = f;

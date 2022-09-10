@@ -179,28 +179,19 @@ static char * grab_packet()
         errno = ETIMEDOUT;
         goto err_end;
     }
-    memcpy(buf, buf+1, nread-1);
-    buf[nread-1] = '\r';
-    if(nread > 17) {
-        off_t len = (off_t)(strchr((char*)buf, '\r')-(char*)buf);
-        if(len < size-1) {
-            if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
-                errno = EINVAL;
-            } else {
-                errno = EPIPE;
-            }
+    buf[nread-1] = '\0';
+    if(size > 17) {
+        if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
+            errno = EINVAL;
             ahp_serial_AlignFrame('\r', (int)size);
             goto err_end;
         }
-    } else if(nread == 17) {
+    } else if(size == 17) {
         buf[16] = 0;
         fprintf(stdout, "Model: %s\n", buf);
         buf[16] = '\r';
-    } else {
-        errno = EINVAL;
-        goto err_end;
     }
-    if(strlen((char*)buf) < size)
+    if(strlen((char*)buf) < size-1)
         errno = ENODATA;
     if(errno)
         goto err_end;
@@ -926,6 +917,7 @@ int ahp_xc_get_properties()
     while(ntries-- > 0) {
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
+        ahp_serial_AlignFrame('\r', 16384);
         data = grab_packet();
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         if(data == NULL)
@@ -1014,7 +1006,7 @@ void ahp_xc_set_baudrate(baud_rate rate)
     ahp_xc_set_capture_flags(old_flags);
     ahp_serial_CloseComport();
     ahp_serial_OpenComport(ahp_xc_comport);
-    ahp_serial_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N2", 0);
+    ahp_serial_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N1", 0);
 }
 
 void ahp_xc_set_correlation_order(unsigned int order)
