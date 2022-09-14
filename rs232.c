@@ -418,9 +418,13 @@ static int ahp_serial_OpenComport(const char* devname)
         pthread_mutex_init(&ahp_serial_mutex, &ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 1;
     }
-    int value = 0x1000;
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_SNDBUF, (const char *)&value, sizeof(int));
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_RCVBUF, (const char *)&value, sizeof(int));
+#ifdef WINDOWS
+    unsigned long nonblocking = 1;
+    ioctlsocket(ahp_serial_fd, FIONBIO, &nonblocking);
+#else
+    int flags = fcntl(ahp_serial_fd, F_GETFL);
+    fcntl(ahp_serial_fd, F_SETFL, flags | O_NONBLOCK);
+#endif
     return 0;
 }
 
@@ -542,9 +546,13 @@ static void ahp_serial_SetFD(int f, int bauds)
     }
     ahp_serial_fd = f;
     ahp_serial_baudrate = bauds;
-    int value = 0x1000;
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_SNDBUF, (const char *)&value, sizeof(int));
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_RCVBUF, (const char *)&value, sizeof(int));
+#ifdef WINDOWS
+    unsigned long nonblocking = 1;
+    ioctlsocket(ahp_serial_fd, FIONBIO, &nonblocking);
+#else
+    int flags = fcntl(ahp_serial_fd, F_GETFL);
+    fcntl(ahp_serial_fd, F_SETFL, flags | O_NONBLOCK);
+#endif
 }
 
 static int ahp_serial_GetFD()
