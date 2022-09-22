@@ -340,6 +340,8 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
         ahp_serial_new_port_settings.fRtsControl = RTS_CONTROL_DISABLE;
     }
 
+    SetupComm(pHandle, 524288, 128);
+
     ahp_serial_new_port_settings.DCBlength = sizeof(ahp_serial_new_port_settings);
 
     if(!SetCommState(pHandle, &ahp_serial_new_port_settings))

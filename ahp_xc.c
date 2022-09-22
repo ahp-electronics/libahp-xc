@@ -28,6 +28,7 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <pthread.h>
 #include <sys/time.h>
 #include "rs232.c"
 #include "ahp_xc.h"
@@ -147,7 +148,7 @@ int calc_checksum(char *data)
     return 0;
 }
 
-static char * grab_packet()
+static char * grab_packet(double *timestamp)
 {
     errno = 0;
     unsigned int size = ahp_xc_get_packetsize();
@@ -159,6 +160,7 @@ static char * grab_packet()
     }
     int nread = 0;
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
+    buf[nread-1] = 0;
     if(nread == 0) {
         errno = ENODATA;
     } else if(nread < 0) {
@@ -170,7 +172,6 @@ static char * grab_packet()
         } else if(strlen((char*)buf) < size-1){
             errno = ERANGE;
         } else {
-            buf[nread-1] = 0;
             errno = calc_checksum((char*)buf);
         }
     } else if(size == 17) {
@@ -179,6 +180,8 @@ static char * grab_packet()
     }
     if(errno)
         goto err_end;
+    if(timestamp != NULL)
+        *timestamp = get_timestamp(buf);
     return buf;
 err_end:
     fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
@@ -450,6 +453,8 @@ ahp_xc_packet *ahp_xc_alloc_packet()
     packet->counts = (unsigned long*)malloc((unsigned long)ahp_xc_get_nlines() * sizeof(unsigned long));
     packet->autocorrelations = ahp_xc_alloc_samples((unsigned long)ahp_xc_get_nlines(), (unsigned long)ahp_xc_get_autocorrelator_lagsize());
     packet->crosscorrelations = ahp_xc_alloc_samples((unsigned long)ahp_xc_get_nbaselines(), (unsigned long)ahp_xc_get_crosscorrelator_lagsize()*2-1);
+    packet->lock = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(((pthread_mutex_t*)packet->lock), &ahp_serial_mutex_attr);
     return packet;
 }
 
@@ -467,6 +472,8 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
     if(packet != NULL) {
         if(packet->counts != NULL)
             free(packet->counts);
+        pthread_mutex_destroy(((pthread_mutex_t*)packet->lock));
+        free(packet->lock);
         ahp_xc_free_samples((unsigned long)ahp_xc_get_nlines(), packet->autocorrelations);
         ahp_xc_free_samples((unsigned long)ahp_xc_get_nbaselines(), packet->crosscorrelations);
         free(packet);
@@ -577,7 +584,7 @@ int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp
         if(*interrupt)
             break;
         usleep(ahp_xc_get_packettime()*1000000);
-        char* buf = grab_packet();
+        char* buf = grab_packet(NULL);
         if(!buf)
             continue;
         memcpy(data+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
@@ -775,7 +782,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         if(*interrupt)
             break;
         usleep(ahp_xc_get_packettime()*1000000);
-        char* buf = grab_packet();
+        char* buf = grab_packet(NULL);
         if(!buf)
             continue;
         memcpy(head+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
@@ -793,7 +800,7 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         if(*interrupt)
             break;
         usleep(ahp_xc_get_packettime()*1000000);
-        char* buf = grab_packet();
+        char* buf = grab_packet(NULL);
         if(!buf)
             continue;
         memcpy(tail+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
@@ -849,12 +856,13 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     if(packet == NULL) {
         return -EINVAL;
     }
-    char *sample = (char*)malloc((unsigned int)n+1);
-    char* data = grab_packet();
+    char* data = grab_packet(&packet->timestamp);
     if(!data){
-        ret = -ENOENT;
-        goto end;
+        return -ENOENT;
     }
+    char *sample = (char*)malloc((unsigned int)n+1);
+    while(pthread_mutex_trylock(((pthread_mutex_t*)packet->lock)))
+        usleep(100);
     packet->buf = data;
     const char *buf = packet->buf;
     buf += 16;
@@ -876,14 +884,15 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         }
     }
     wait_no_threads();
-    packet->timestamp = get_timestamp(data);
+    pthread_mutex_unlock(((pthread_mutex_t*)packet->lock));
     ret = 0;
     goto end;
 err_end:
+    pthread_mutex_unlock(((pthread_mutex_t*)packet->lock));
     fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
-    free(data);
 end:
     free(sample);
+    free(data);
     return ret;
 }
 
@@ -898,7 +907,7 @@ int ahp_xc_get_properties()
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
         ahp_serial_AlignFrame('\r', 16384);
-        data = grab_packet();
+        data = grab_packet(NULL);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         if(data == NULL)
             continue;

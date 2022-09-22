@@ -112,6 +112,7 @@ typedef enum {
 /**
 * \brief The XC firmare commands
 */
+
 typedef enum {
 ///Clear autocorrelation and crosscorrelation delays
 CLEAR = 0,
@@ -225,6 +226,8 @@ unsigned long* counts;
 ahp_xc_sample* autocorrelations;
 ///Crosscorrelations in the current packet
 ahp_xc_sample* crosscorrelations;
+///Packet lock mutex
+void *lock;
 ///Packet buffer string
 const char* buf;
 } ahp_xc_packet;
