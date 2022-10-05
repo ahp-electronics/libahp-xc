@@ -85,6 +85,42 @@ static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
 
+static int get_line_index(int idx, int order)
+{
+    return (idx + order * (idx / ahp_xc_get_nlines() + 1)) % ahp_xc_get_nlines();
+}
+
+static int get_crosscorrelation_index(int *lines, int order)
+{
+    int _nbaselines = ahp_xc_get_nlines()-order+1;
+    int o = 0;
+    int *idx = malloc(sizeof(int)*_nbaselines);
+    int *freq = malloc(sizeof(int)*_nbaselines);
+    memset(freq, 0, sizeof(int)*_nbaselines);
+    int y;
+    for(y = 0; y < _nbaselines; y++)
+        for(o = 0; o < order; o++)
+            idx[y] = (lines[o] + o) % ahp_xc_get_nlines() + (ahp_xc_get_nlines() - o) * o;
+    int index = 0;
+    for(y = 0; y < _nbaselines; y++) {
+        for(o = 0; o < order; o++) {
+            int line = get_line_index(idx[y], order);
+            if(line == lines[o])
+                freq[y] ++;
+        }
+    }
+    int tmp = 0;
+    for(y = 0; y < _nbaselines; y++) {
+        if(freq[y] > tmp) {
+            tmp = freq[y];
+            index = y;
+        }
+    }
+    free(idx);
+    free(freq);
+    return index;
+}
+
 unsigned long int ahp_xc_max_threads(unsigned long value)
 {
     if(value>0) {
@@ -741,7 +777,7 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
 {
     if(!ahp_xc_mutexes_initialized)
         return;
-    int idx = (index2-index1-1)*ahp_xc_get_nlines()+index1;
+    int idx = get_crosscorrelation_index((int[2]){index1, index2}, 2);
     crosscorrelation_thread_args[idx].sample = sample;
     crosscorrelation_thread_args[idx].index1 = index1;
     crosscorrelation_thread_args[idx].index2 = index2;
