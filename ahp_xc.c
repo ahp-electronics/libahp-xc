@@ -741,7 +741,7 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int index1, int index2, 
 {
     if(!ahp_xc_mutexes_initialized)
         return;
-    int idx = index1*(ahp_xc_get_nlines()-index1)+index2-index1-1;
+    int idx = (index2-index1-1)*ahp_xc_get_nlines()+index1;
     crosscorrelation_thread_args[idx].sample = sample;
     crosscorrelation_thread_args[idx].index1 = index1;
     crosscorrelation_thread_args[idx].index2 = index2;
