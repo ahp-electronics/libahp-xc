@@ -95,7 +95,7 @@ HAS_LEDS = 2,
 ///Indicates that the correlator has an internal PSU PWM driver on 2nd flag bit
 HAS_PSU = 4,
 ///Indicates that the correlator has differential correlators only
-HAS_DIFFERENTIAL_ONLY = 8
+HAS_CUMULATIVE_ONLY = 8
 } xc_header_flags;
 
 /**
@@ -158,8 +158,6 @@ CAP_ALL = 0xf,
 typedef enum {
 ///No extra signals or functions
 TEST_NONE = 0,
-///Apply PLL clock on voltage led
-TEST_SIGNAL = 1<<0,
 ///Autocorrelator continuum scan
 SCAN_AUTO = 1<<1,
 ///Crosscorrelator continuum scan

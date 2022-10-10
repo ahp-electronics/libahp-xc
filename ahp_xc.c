@@ -280,10 +280,10 @@ int ahp_xc_has_leds()
     return (ahp_xc_flags & HAS_LEDS ? 1 : 0);
 }
 
-int ahp_xc_has_differential_only()
+int ahp_xc_has_cumulative_only()
 {
     if(!ahp_xc_detected) return 0;
-    return (ahp_xc_flags & HAS_DIFFERENTIAL_ONLY ? 1 : 0);
+    return (ahp_xc_flags & HAS_CUMULATIVE_ONLY ? 1 : 0);
 }
 
 char* ahp_xc_get_header()
