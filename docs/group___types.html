@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.17"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>AHP® XC Correlators API: Types</title>
+<title>AHP® XC Correlators API: Types and structures</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -66,7 +66,7 @@ $(function() {
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#enum-members">Enumerations</a>  </div>
   <div class="headertitle">
-<div class="title">Types<div class="ingroups"><a class="el" href="group___x_c___a_p_i.html">AHP® XC Correlators API Documentation</a></div></div>  </div>
+<div class="title">Types and structures<div class="ingroups"><a class="el" href="group___x_c___a_p_i.html">AHP® XC Correlators API Documentation</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
@@ -87,7 +87,7 @@ Enumerations</h2></td></tr>
 <tr class="memitem:ga2489b0d6ac13e260f2a47efb271ba980"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___types.html#ga2489b0d6ac13e260f2a47efb271ba980">xc_header_flags</a> { <a class="el" href="group___types.html#gga2489b0d6ac13e260f2a47efb271ba980aca5ca9021533e33fe28961ed2d0bd063">HAS_CROSSCORRELATOR</a> = 1, 
 <a class="el" href="group___types.html#gga2489b0d6ac13e260f2a47efb271ba980acf471b4a572c8c823bcbd47bdae147c7">HAS_LEDS</a> = 2, 
 <a class="el" href="group___types.html#gga2489b0d6ac13e260f2a47efb271ba980a437fd29482c6566ffcc0c8a29470ce20">HAS_PSU</a> = 4, 
-<a class="el" href="group___types.html#gga2489b0d6ac13e260f2a47efb271ba980a5d446c724b0a02435309956c29138951">HAS_DIFFERENTIAL_ONLY</a> = 8
+<a class="el" href="group___types.html#gga2489b0d6ac13e260f2a47efb271ba980a0d66567de28ac66132090586a6bd5aab">HAS_CUMULATIVE_ONLY</a> = 8
  }</td></tr>
 <tr class="memdesc:ga2489b0d6ac13e260f2a47efb271ba980"><td class="mdescLeft">&#160;</td><td class="mdescRight">AHP XC header flags.  <a href="group___types.html#ga2489b0d6ac13e260f2a47efb271ba980">More...</a><br /></td></tr>
 <tr class="separator:ga2489b0d6ac13e260f2a47efb271ba980"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -124,11 +124,11 @@ Enumerations</h2></td></tr>
 <tr class="separator:gad6639b7e5d8044a0c7b76b99276a988c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga92c58466cf4247671f5c1e21a113230a"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___types.html#ga92c58466cf4247671f5c1e21a113230a">xc_test_flags</a> { <br />
 &#160;&#160;<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aaae803ffd396bf4ff6fd5426e860dc24d">TEST_NONE</a> = 0, 
-<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aa9b9e77637e0832719427da08c9629915">TEST_SIGNAL</a> = 1, 
-<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aa2db4db42479caf72824f7b949947d3c1">SCAN_AUTO</a> = 2, 
-<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aabd1e6a99249d677c1902a25df8560ad1">SCAN_CROSS</a> = 4, 
+<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aa2db4db42479caf72824f7b949947d3c1">SCAN_AUTO</a> = 1&lt;&lt;1, 
+<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aabd1e6a99249d677c1902a25df8560ad1">SCAN_CROSS</a> = 1&lt;&lt;2, 
+<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aaf38ef1af1fe04e6545293daa06901a1f">TEST_BCM</a> = 1&lt;&lt;3, 
 <br />
-&#160;&#160;<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aaf38ef1af1fe04e6545293daa06901a1f">TEST_BCM</a> = 8, 
+&#160;&#160;<a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aa500c01551045f9391d4e3f9d032aac06">TEST_STEP</a> = 1&lt;&lt;7, 
 <a class="el" href="group___types.html#gga92c58466cf4247671f5c1e21a113230aa06ad94a981a9ce79f5aa71d61118ba95">TEST_ALL</a> = 0xf
 <br />
  }</td></tr>
@@ -217,7 +217,7 @@ Enumerations</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="gga2489b0d6ac13e260f2a47efb271ba980a437fd29482c6566ffcc0c8a29470ce20"></a>HAS_PSU&#160;</td><td class="fielddoc"><p>Indicates that the correlator has an internal PSU PWM driver on 2nd flag bit. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga2489b0d6ac13e260f2a47efb271ba980a5d446c724b0a02435309956c29138951"></a>HAS_DIFFERENTIAL_ONLY&#160;</td><td class="fielddoc"><p>Indicates that the correlator has differential correlators only. </p>
+<tr><td class="fieldname"><a id="gga2489b0d6ac13e260f2a47efb271ba980a0d66567de28ac66132090586a6bd5aab"></a>HAS_CUMULATIVE_ONLY&#160;</td><td class="fielddoc"><p>Indicates that the correlator has differential correlators only. </p>
 </td></tr>
 </table>
 
@@ -237,13 +237,13 @@ Enumerations</h2></td></tr>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga92c58466cf4247671f5c1e21a113230aaae803ffd396bf4ff6fd5426e860dc24d"></a>TEST_NONE&#160;</td><td class="fielddoc"><p>No extra signals or functions. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga92c58466cf4247671f5c1e21a113230aa9b9e77637e0832719427da08c9629915"></a>TEST_SIGNAL&#160;</td><td class="fielddoc"><p>Apply PLL clock on voltage led. </p>
-</td></tr>
 <tr><td class="fieldname"><a id="gga92c58466cf4247671f5c1e21a113230aa2db4db42479caf72824f7b949947d3c1"></a>SCAN_AUTO&#160;</td><td class="fielddoc"><p>Autocorrelator continuum scan. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="gga92c58466cf4247671f5c1e21a113230aabd1e6a99249d677c1902a25df8560ad1"></a>SCAN_CROSS&#160;</td><td class="fielddoc"><p>Crosscorrelator continuum scan. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="gga92c58466cf4247671f5c1e21a113230aaf38ef1af1fe04e6545293daa06901a1f"></a>TEST_BCM&#160;</td><td class="fielddoc"><p>BCM modulation on voltage led. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga92c58466cf4247671f5c1e21a113230aa500c01551045f9391d4e3f9d032aac06"></a>TEST_STEP&#160;</td><td class="fielddoc"><p>Set channel scan step. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="gga92c58466cf4247671f5c1e21a113230aa06ad94a981a9ce79f5aa71d61118ba95"></a>TEST_ALL&#160;</td><td class="fielddoc"><p>All tests enabled. </p>
 </td></tr>
@@ -254,7 +254,7 @@ Enumerations</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Apr 30 2022 22:26:13 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Oct 10 2022 17:20:34 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

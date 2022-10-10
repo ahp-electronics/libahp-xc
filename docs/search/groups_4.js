@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['types_229',['Types',['../group___types.html',1,'']]]
+  ['types_20and_20structures_237',['Types and structures',['../group___types.html',1,'']]]
 ];
