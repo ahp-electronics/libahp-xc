@@ -460,7 +460,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
-                continue;
+                return err;
             }
             nbytes += n;
             bytes_left -= n;

@@ -94,7 +94,7 @@ HAS_CROSSCORRELATOR = 1,
 HAS_LEDS = 2,
 ///Indicates that the correlator has an internal PSU PWM driver on 2nd flag bit
 HAS_PSU = 4,
-///Indicates that the correlator has differential correlators only
+///Indicates that the correlator has cumulative correlators only
 HAS_CUMULATIVE_ONLY = 8
 } xc_header_flags;
 
@@ -442,10 +442,10 @@ DLL_EXPORT int ahp_xc_has_psu(void);
 DLL_EXPORT int ahp_xc_has_leds(void);
 
 /**
-* \brief Returns if the device has differential correlators only
-* \return Returns non-zero if the device is a differential correlator only
+* \brief Returns if the device has cumulative correlators only
+* \return Returns non-zero if the device is a cumulative correlator only
 */
-DLL_EXPORT int ahp_xc_has_differential_only();
+DLL_EXPORT int ahp_xc_has_cumulative_only();
 
 /**\}*/
 /**
