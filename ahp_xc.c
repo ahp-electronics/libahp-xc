@@ -30,8 +30,9 @@
 #include <errno.h>
 #include <pthread.h>
 #include <sys/time.h>
-#include "rs232.c"
 #include "ahp_xc.h"
+
+#include "rs232.c"
 
 #ifndef AIRY
 #define AIRY 1.21966
@@ -150,7 +151,7 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
     if(magnitude > 0.0) {
         phase = asin ((double)sample->real / magnitude);
         if(sample->imaginary < 0)
-            phase = -phase;
+            phase = M_PI*2.0-phase;
     }
     phase += M_PI;
     sample->magnitude = magnitude;
@@ -712,10 +713,10 @@ void *_get_crosscorrelation(void *o)
             ahp_xc_get_autocorrelation(samples[y], indexes[y], packet, lag);
         }
         wait_no_threads();
-        int z = ahp_xc_get_autocorrelator_lagsize()-1;
         for (x = 0; x < num_indexes; x++) {
+            int z = ahp_xc_get_autocorrelator_lagsize()-1;
             for (y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
-                sample->correlations[z].counts += samples[x]->correlations[y].counts;
+                sample->correlations[z].counts += samples[x]->correlations[z].counts;
                 sample->correlations[z].lag = sample->lag+z*ahp_xc_get_sampletime();
                 sample->correlations[z].magnitude = pow(samples[x]->correlations[z].magnitude * sample->correlations[z].magnitude, 0.5);
                 sample->correlations[z].phase = pow(samples[x]->correlations[z].phase * sample->correlations[z].phase, 0.5);
@@ -802,11 +803,15 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
     char* sample = (char*)malloc((unsigned int)n+1);
     sample[n] = 0;
     (*percent) = 0;
-    ahp_xc_end_crosscorrelation_scan(idx2);
-    ahp_xc_set_channel_cross(idx2, tail_start, 1, 0);
-    ahp_xc_start_crosscorrelation_scan(idx1, head_start, head_size, step);
-    if(ahp_xc_intensity_crosscorrelator_enabled())
-        ahp_xc_start_crosscorrelation_scan(idx2, tail_start, tail_size, step);
+    if(ahp_xc_intensity_crosscorrelator_enabled()) {
+        ahp_xc_end_autocorrelation_scan(idx2);
+        ahp_xc_set_channel_auto(idx2, head_start, 1, 0);
+        ahp_xc_start_autocorrelation_scan(idx2, head_start, head_size, step);
+    } else {
+        ahp_xc_end_crosscorrelation_scan(idx2);
+        ahp_xc_set_channel_cross(idx2, head_start, 1, 0);
+        ahp_xc_start_crosscorrelation_scan(idx1, tail_start, tail_size, step);
+    }
     i = 0;
     while(i < (int)(head_size/step)) {
         if(*interrupt)
@@ -820,11 +825,15 @@ int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_
         (*percent) += 100.0 / size;
         i++;
     }
-    ahp_xc_end_crosscorrelation_scan(idx1);
-    ahp_xc_set_channel_cross(idx1, head_start, 1, 0);
-    ahp_xc_start_crosscorrelation_scan(idx2, tail_start, tail_size, step);
-    if(ahp_xc_intensity_crosscorrelator_enabled())
-        ahp_xc_start_crosscorrelation_scan(idx1, head_start, head_size, step);
+    if(ahp_xc_intensity_crosscorrelator_enabled()) {
+        ahp_xc_end_autocorrelation_scan(idx1);
+        ahp_xc_set_channel_auto(idx1, head_start, 1, 0);
+        ahp_xc_start_autocorrelation_scan(idx1, head_start, head_size, step);
+    } else {
+        ahp_xc_end_crosscorrelation_scan(idx1);
+        ahp_xc_set_channel_cross(idx1, head_start, 1, 0);
+        ahp_xc_start_crosscorrelation_scan(idx2, tail_start, tail_size, step);
+    }
     i = 0;
     while(i < (int)(tail_size/step)) {
         if(*interrupt)
