@@ -711,6 +711,23 @@ DLL_EXPORT unsigned int ahp_xc_current_input();
 DLL_EXPORT int ahp_xc_send_command(xc_cmd cmd, unsigned char value);
 
 /**
+* \brief Program the correlator processor
+* \param fd The file descriptor of the processor firmware SVF
+* \param bsdl_path The path where the BSDL file are stored
+* \return non-zero on failure
+*/
+DLL_EXPORT int ahp_xc_flash_svf(int fd, const char *bsdl_path);
+
+/**
+* \brief Program the control interface
+* \param fd The file descriptor of the control interface DFU
+* \param progress The percent progress of the operation passed by reference
+* \param finished The completion flag the operation
+* \return non-zero on failure
+*/
+DLL_EXPORT int ahp_xc_flash_dfu(int fd, int *progress, int *finished);
+
+/**
 * \brief Obtain the current libahp-xc version
 * \return The current version code
 */

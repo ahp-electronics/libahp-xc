@@ -3,11 +3,16 @@ Section: misc
 Priority: optional
 Maintainer: Ilia Platone <info@iliaplatone.com>
 Build-Depends: debhelper (>= 8.1.3~),
- cdbs,
- cmake (>= 2.4.7),
+    cdbs,
+    cmake (>= 2.4.7),
+    libdfu,
+    libusb-dev,
+    libusb-1.0-0-dev,
+    libftdi-dev,
+    liburjtag
 Standards-Version: 3.9.5
-Homepage: http://iliaplatone.github.io/OpenVLBI/
-Vcs-Git: git://github.com/iliaplatone/OpenVLBI.git
+Homepage: http://iliaplatone.github.io/libahp-xc/
+Vcs-Git: git://github.com/ahp-electronics/libahp-xc.git
 
 Package: libahp-xc
 Section: libs

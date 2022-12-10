@@ -30,6 +30,11 @@
 #include <errno.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include <urjtag.h>
+#include <svf.h>
+#include <bsdl.h>
+#include <bsdl_mode.h>
+#include <dfu.h>
 #include "ahp_xc.h"
 
 #include "rs232.c"
@@ -85,6 +90,33 @@ static char ahp_xc_comport[128];
 static char ahp_xc_header[17] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
+
+static int program_jtag(int fd, const char *drivername, const char *bsdl_path, long frequency)
+{
+    int ret = 1;
+    if(fd < 0)
+        return ret;
+    urj_chain_t *chain;
+    const urj_cable_driver_t *driver;
+    chain = urj_tap_chain_alloc ();
+    if(bsdl_path != NULL)
+        urj_bsdl_set_path (chain, bsdl_path);
+    driver = urj_tap_cable_find (drivername);
+    urj_cable_t *cable = urj_tap_cable_usb_connect (chain, driver, NULL);
+    urj_tap_cable_set_frequency (cable, frequency);
+    int err = urj_tap_detect(chain, 0);
+    if(err == URJ_STATUS_OK) {
+        FILE *svf = fdopen(fd, "r");
+        if(svf != NULL) {
+            err = urj_svf_run (chain, svf, 1, frequency);
+            if(err == URJ_STATUS_OK)
+                ret = 0;
+            fclose (svf);
+        }
+    }
+    urj_tap_chain_free(chain);
+    return ret;
+}
 
 static int get_line_index(int idx, int order)
 {
@@ -325,7 +357,7 @@ unsigned int ahp_xc_get_delaysize()
     if(!ahp_xc_detected) return 0;
     if(ahp_xc_delaysize == 0 || ahp_xc_delaysize == 4)
         return 1<<20;
-    return ahp_xc_delaysize << 3;
+    return ahp_xc_delaysize * 17;
 }
 
 unsigned int ahp_xc_get_autocorrelator_lagsize()
@@ -1109,8 +1141,6 @@ void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size, size
     size >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(size&0x7)));
     size >>= 3;
-    if(ahp_xc_delaysize > 4)
-        size = round((double)size * 2.0 / ahp_xc_delaysize) + 1;
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(0|(size&0x3)));
     size >>= 2;
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(4|(size&0x3)));
@@ -1124,8 +1154,6 @@ void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size, size
     value >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)));
     value >>= 3;
-    if(ahp_xc_delaysize > 4)
-        value = round((double)value * 2.0 / ahp_xc_delaysize);
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(0|(value&0x3)));
     value >>= 2;
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(4|(value&0x3)));
@@ -1158,8 +1186,6 @@ void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size, size_
     size >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(size&0x7)|0x8));
     size >>= 3;
-    if(ahp_xc_delaysize > 4)
-        size = round((double)size * 2.0 / ahp_xc_delaysize) + 1;
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(0|(size&0x3)|0x8));
     size >>= 2;
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(4|(size&0x3)|0x8));
@@ -1173,8 +1199,6 @@ void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size, size_
     value >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(value&0x7)|0x8));
     value >>= 3;
-    if(ahp_xc_delaysize > 4)
-        value = round((double)value * 2.0 / ahp_xc_delaysize);
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(0|(value&0x3)|0x8));
     value >>= 2;
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(4|(value&0x3)|0x8));
@@ -1228,4 +1252,14 @@ double* ahp_xc_get_2d_projection(double alt, double az, double *baseline)
     uv[1] = (baseline[1] * sin(alt) * sin(az) - baseline[0] * sin(alt) * cos(az) + baseline[2] * cos(alt));
     uv[2] = cos(az) * baseline[1] * cos(alt) - baseline[0] * sin(az) * cos(alt) + sin(alt) * baseline[2];
     return uv;
+}
+
+int ahp_xc_flash_svf(int fd, const char *bsdl_path)
+{
+    return program_jtag(fd, "dirtyjtag", bsdl_path, 1000000);
+}
+
+int ahp_xc_flash_dfu(int fd, int *progress, int *finished)
+{
+    return dfu_flash(fd, progress, finished);
 }
