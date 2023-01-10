@@ -120,38 +120,31 @@ static int program_jtag(int fd, const char *drivername, const char *bsdl_path, l
 
 static int get_line_index(int idx, int order)
 {
-    order -= 2;
     return (idx + order * (idx / ahp_xc_get_nlines() + 1)) % ahp_xc_get_nlines();
 }
 
 static int get_crosscorrelation_index(int *lines, int order)
 {
-    int _nbaselines = ahp_xc_get_nlines()-order+1;
-    int o = 0;
-    int *idx = malloc(sizeof(int)*_nbaselines);
-    int *freq = malloc(sizeof(int)*_nbaselines);
-    memset(freq, 0, sizeof(int)*_nbaselines);
-    int y;
-    for(y = 0; y < _nbaselines; y++)
-        for(o = 0; o < order; o++)
-            idx[y] = (lines[o] + o) % ahp_xc_get_nlines() + (ahp_xc_get_nlines() - o) * o;
+    int x, y, idx;
+    int nprisms = ahp_xc_get_nbaseprisms(order);
+    int* matches = (int*)malloc(sizeof(int)*nprisms);
+    memset(matches, 0, sizeof(int)*nprisms);
+    for(x = 0; x < order; x ++) {
+        for(idx = 0; idx < nprisms; idx++) {
+            for(y = 0; y < order; y ++) {
+                if(lines[y] == get_line_index(idx, x))
+                    matches[idx]++;
+            }
+        }
+    }
     int index = 0;
-    for(y = 0; y < _nbaselines; y++) {
-        for(o = 0; o < order; o++) {
-            int line = get_line_index(idx[y], order);
-            if(line == lines[o])
-                freq[y] ++;
+    int best_match = 0;
+    for(idx = 0; idx < nprisms; idx++) {
+        if(matches[idx] > best_match) {
+            best_match = matches[idx];
+            index = idx;
         }
     }
-    int tmp = 0;
-    for(y = 0; y < _nbaselines; y++) {
-        if(freq[y] > tmp) {
-            tmp = freq[y];
-            index = y;
-        }
-    }
-    free(idx);
-    free(freq);
     return index;
 }
 
@@ -349,7 +342,13 @@ unsigned int ahp_xc_get_nbaselines()
     if(!ahp_xc_detected) return 0;
     if(ahp_xc_intensity_crosscorrelator_enabled())
         return 0;
-    return ahp_xc_nbaselines;
+    return ahp_xc_get_nlines() * (ahp_xc_get_nlines() - 1) / 2;
+}
+
+unsigned int ahp_xc_get_nbaseprisms(int order)
+{
+    if(!ahp_xc_detected) return 0;
+    return ahp_xc_get_nlines() * (ahp_xc_get_nlines() - 1) / (pow(order, 2) / 2);
 }
 
 unsigned int ahp_xc_get_delaysize()
@@ -730,6 +729,7 @@ void *_get_crosscorrelation(void *o)
     thread_argument *arg = (thread_argument*)o;
     ahp_xc_sample *sample = arg->sample;
     int *indexes = arg->indexes;
+    int index = arg->index;
     unsigned int num_indexes = arg->order;
     const char *data = arg->data;
     double lag = arg->lag;
@@ -745,18 +745,23 @@ void *_get_crosscorrelation(void *o)
             ahp_xc_get_autocorrelation(samples[y], indexes[y], packet, lag);
         }
         wait_no_threads();
-        for (x = 0; x < num_indexes; x++) {
-            int z = ahp_xc_get_autocorrelator_lagsize()-1;
-            for (y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
-                sample->correlations[z].counts += samples[x]->correlations[z].counts;
-                sample->correlations[z].lag = sample->lag+z*ahp_xc_get_sampletime();
-                sample->correlations[z].magnitude = pow(samples[x]->correlations[z].magnitude * sample->correlations[z].magnitude, 0.5);
-                sample->correlations[z].phase = pow(samples[x]->correlations[z].phase * sample->correlations[z].phase, 0.5);
-                sample->correlations[z].real = sin(sample->correlations[z].phase) * sample->correlations[z].magnitude;
-                sample->correlations[z].imaginary = cos(sample->correlations[z].phase) * sample->correlations[z].magnitude;
-                z--;
+
+        for (y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
+            sample->correlations[y].lag = samples[indexes[0]]->lag+y*ahp_xc_get_sampletime();
+            sample->correlations[y].counts = samples[indexes[0]]->correlations[y].counts;
+            sample->correlations[y].magnitude = samples[indexes[0]]->correlations[y].magnitude;
+            sample->correlations[y].phase = samples[indexes[0]]->correlations[y].phase;
+            sample->correlations[y].real = 0.0;
+            sample->correlations[y].imaginary = 0.0;
+            for (x = 1; x < num_indexes; x++) {
+                sample->correlations[y].counts += samples[x]->correlations[y].counts;
+                sample->correlations[y].magnitude = pow(sample->correlations[y].magnitude * samples[x]->correlations[y].magnitude, 0.5);
+                sample->correlations[y].lag = sample->lag+y*ahp_xc_get_sampletime();
+                sample->correlations[y].real = (cos(sample->correlations[y].phase-samples[x]->correlations[y].phase)-cos(sample->correlations[y].phase+samples[x]->correlations[y].phase)) / 2.0 * sample->correlations[y].magnitude;
+                sample->correlations[y].imaginary = (cos(sample->correlations[y].phase-samples[x]->correlations[y].phase)+cos(sample->correlations[y].phase+samples[x]->correlations[y].phase)) / 2.0 * sample->correlations[y].magnitude;
+                complex_phase_magnitude(&sample->correlations[y]);
+                ahp_xc_free_samples(1, samples[x]);
             }
-            ahp_xc_free_samples(1, samples[x]);
         }
         free(samples);
     } else {
@@ -769,7 +774,7 @@ void *_get_crosscorrelation(void *o)
         }
         packet += n*ahp_xc_get_nlines();
         packet += n*ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()*2;
-        packet += get_crosscorrelation_index(indexes, num_indexes);
+        packet += index;
         for(y = 0; y < sample->lag_size; y++) {
             sample->correlations[y].lag = sample->lag+(y-ahp_xc_get_crosscorrelator_lagsize()+1)*ahp_xc_get_sampletime();
             sample->correlations[y].counts = counts;
@@ -804,13 +809,14 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int *indexes, int order,
 {
     if(!ahp_xc_mutexes_initialized)
         return;
-    int idx = get_crosscorrelation_index(indexes, order);
-    crosscorrelation_thread_args[idx].sample = sample;
-    crosscorrelation_thread_args[idx].indexes = indexes;
-    crosscorrelation_thread_args[idx].order = order;
-    crosscorrelation_thread_args[idx].data = data;
-    crosscorrelation_thread_args[idx].lag = lag;
-    _get_crosscorrelation(&crosscorrelation_thread_args[idx]);
+    int index = get_crosscorrelation_index(indexes, order);
+    crosscorrelation_thread_args[index].sample = sample;
+    crosscorrelation_thread_args[index].index = index;
+    crosscorrelation_thread_args[index].indexes = indexes;
+    crosscorrelation_thread_args[index].order = order;
+    crosscorrelation_thread_args[index].data = data;
+    crosscorrelation_thread_args[index].lag = lag;
+    _get_crosscorrelation(&crosscorrelation_thread_args[index]);
 }
 
 int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t head_start, size_t head_size, off_t tail_start, size_t tail_size, size_t step, int *interrupt, double *percent)

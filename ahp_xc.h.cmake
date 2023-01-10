@@ -403,6 +403,13 @@ DLL_EXPORT unsigned int ahp_xc_get_nlines(void);
 DLL_EXPORT unsigned int ahp_xc_get_nbaselines(void);
 
 /**
+* \brief Obtain the correlator total baseprisms for arbitrary degree of coherence orders
+* \param order The degree of coherence order
+* \return Returns the baselines quantity
+*/
+DLL_EXPORT unsigned int ahp_xc_get_nbaseprisms(int order);
+
+/**
 * \brief Obtain the correlator maximum delay value
 * \return Returns the delay size
 */
