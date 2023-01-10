@@ -110,6 +110,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ga17bd545063e04553d563e7844a610534"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#ga17bd545063e04553d563e7844a610534">ahp_xc_send_command</a> (<a class="el" href="group___types.html#ga582b89ffe8e6484e1d19323b8712f8f0">xc_cmd</a> cmd, unsigned char value)</td></tr>
 <tr class="memdesc:ga17bd545063e04553d563e7844a610534"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send an arbitrary command to the AHP XC device.  <a href="group___cmds.html#ga17bd545063e04553d563e7844a610534">More...</a><br /></td></tr>
 <tr class="separator:ga17bd545063e04553d563e7844a610534"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga891426208dfe5d5e74347388115cf7dc"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#ga891426208dfe5d5e74347388115cf7dc">ahp_xc_flash_svf</a> (int fd, const char *bsdl_path)</td></tr>
+<tr class="memdesc:ga891426208dfe5d5e74347388115cf7dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Program the correlator processor.  <a href="group___cmds.html#ga891426208dfe5d5e74347388115cf7dc">More...</a><br /></td></tr>
+<tr class="separator:ga891426208dfe5d5e74347388115cf7dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf59cc7c084568e81f455445ef86a6466"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#gaf59cc7c084568e81f455445ef86a6466">ahp_xc_flash_dfu</a> (int fd, int *progress, int *finished)</td></tr>
+<tr class="memdesc:gaf59cc7c084568e81f455445ef86a6466"><td class="mdescLeft">&#160;</td><td class="mdescRight">Program the control interface.  <a href="group___cmds.html#gaf59cc7c084568e81f455445ef86a6466">More...</a><br /></td></tr>
+<tr class="separator:gaf59cc7c084568e81f455445ef86a6466"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga059fbb1de100a3fec85f375cd97fff32"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cmds.html#ga059fbb1de100a3fec85f375cd97fff32">ahp_xc_get_version</a> (void)</td></tr>
 <tr class="memdesc:ga059fbb1de100a3fec85f375cd97fff32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain the current libahp-xc version.  <a href="group___cmds.html#ga059fbb1de100a3fec85f375cd97fff32">More...</a><br /></td></tr>
 <tr class="separator:ga059fbb1de100a3fec85f375cd97fff32"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,6 +137,85 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>The input index </dd></dl>
+
+</div>
+</div>
+<a id="gaf59cc7c084568e81f455445ef86a6466"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf59cc7c084568e81f455445ef86a6466">&#9670;&nbsp;</a></span>ahp_xc_flash_dfu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_xc_flash_dfu </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>fd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>progress</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *&#160;</td>
+          <td class="paramname"><em>finished</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">fd</td><td>The file descriptor of the control interface DFU </td></tr>
+    <tr><td class="paramname">progress</td><td>The percent progress of the operation passed by reference </td></tr>
+    <tr><td class="paramname">finished</td><td>The completion flag the operation </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>non-zero on failure </dd></dl>
+
+</div>
+</div>
+<a id="ga891426208dfe5d5e74347388115cf7dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga891426208dfe5d5e74347388115cf7dc">&#9670;&nbsp;</a></span>ahp_xc_flash_svf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_xc_flash_svf </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>fd</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>bsdl_path</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">fd</td><td>The file descriptor of the processor firmware SVF </td></tr>
+    <tr><td class="paramname">bsdl_path</td><td>The path where the BSDL file are stored </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>non-zero on failure </dd></dl>
 
 </div>
 </div>
@@ -543,7 +628,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Oct 10 2022 17:20:34 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Jan 10 2023 13:08:12 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>
