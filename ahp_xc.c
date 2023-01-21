@@ -747,10 +747,10 @@ void *_get_crosscorrelation(void *o)
         wait_no_threads();
 
         for (y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
-            sample->correlations[y].lag = samples[indexes[0]]->lag+y*ahp_xc_get_sampletime();
-            sample->correlations[y].counts = samples[indexes[0]]->correlations[y].counts;
-            sample->correlations[y].magnitude = samples[indexes[0]]->correlations[y].magnitude;
-            sample->correlations[y].phase = samples[indexes[0]]->correlations[y].phase;
+            sample->correlations[y].lag = samples[0]->lag+y*ahp_xc_get_sampletime();
+            sample->correlations[y].counts = samples[0]->correlations[y].counts;
+            sample->correlations[y].magnitude = samples[0]->correlations[y].magnitude;
+            sample->correlations[y].phase = samples[0]->correlations[y].phase;
             sample->correlations[y].real = 0.0;
             sample->correlations[y].imaginary = 0.0;
             for (x = 1; x < num_indexes; x++) {
