@@ -441,10 +441,10 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
         return 1;
     }
 
-    Cptimeouts.ReadTotalTimeoutMultiplier  = 1;
-    Cptimeouts.ReadTotalTimeoutConstant    = 1;
-    Cptimeouts.WriteTotalTimeoutMultiplier  = 1;
-    Cptimeouts.WriteTotalTimeoutConstant    = 1;
+    Cptimeouts.ReadTotalTimeoutMultiplier  = 100;
+    Cptimeouts.ReadTotalTimeoutConstant    = 10;
+    Cptimeouts.WriteTotalTimeoutMultiplier  = 100;
+    Cptimeouts.WriteTotalTimeoutConstant    = 10;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
