@@ -87,7 +87,7 @@ static int ahp_xc_baserate = XC_BASE_RATE;
 static baud_rate ahp_xc_rate = R_BASE;
 static unsigned int ahp_xc_correlation_order = 1;
 static char ahp_xc_comport[128];
-static char ahp_xc_header[17] = { 0 };
+static char ahp_xc_header[18] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
 
@@ -222,7 +222,25 @@ static char * grab_packet(double *timestamp)
         goto err_end;
     }
     int nread = 0;
+#ifdef WINDOWS
+    char c = 0;
+    while (c != '\r' && nread < (int)size) {
+        int err = 0;
+        int ntries = 5;
+retry:
+        if(ntries > 0)
+            err = ahp_serial_RecvBuf((unsigned char*)&c, 1);
+        else break;
+        if(err < 1) {
+            usleep(10000);
+            ntries --;
+            goto retry;
+        }
+        buf[nread++] = c;
+    }
+#else
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
+#endif
     buf[nread-1] = 0;
     if(nread == 0) {
         errno = ENODATA;
@@ -238,7 +256,6 @@ static char * grab_packet(double *timestamp)
             errno = calc_checksum((char*)buf);
         }
     } else if(size == 17) {
-        buf[16] = 0;
         fprintf(stdout, "Model: %s\n", buf);
     }
     if(errno)
@@ -552,10 +569,8 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
 void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size, size_t step)
 {
     if(!ahp_xc_detected) return;
-    ahp_xc_end_autocorrelation_scan(index);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
     ahp_xc_set_channel_auto(index, start, size, step);
-    usleep(ahp_xc_get_packettime()*1000000);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
 }
@@ -564,7 +579,7 @@ void ahp_xc_end_autocorrelation_scan(unsigned int index)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
-    ahp_xc_set_channel_auto(index, 0, 1, 0);
+    ahp_xc_set_channel_auto(index, 0, 1, 1);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
 }
 
@@ -1055,7 +1070,6 @@ int ahp_xc_set_capture_flags(xc_capture_flags flags)
     if(!ahp_xc_connected) return -ENOENT;
     ahp_xc_max_lost_packets = 1;
     ahp_xc_capture_flags = flags;
-    ahp_serial_flushRX();
     return (int)ahp_xc_send_command(ENABLE_CAPTURE, (unsigned char)ahp_xc_capture_flags);
 }
 
@@ -1243,6 +1257,7 @@ void ahp_xc_set_test_flags(unsigned int index, int value)
     if(!ahp_xc_connected) return -ENOENT;
     int ntries = 5;
     int err = 0;
+    ahp_serial_flushRX();
     while(ntries-- > 0)
         err |= ahp_serial_SendByte((unsigned char)(c|(((value<<4)|(value>>4))&0xf3)));
     return err;
