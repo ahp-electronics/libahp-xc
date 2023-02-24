@@ -789,7 +789,7 @@ void *_get_crosscorrelation(void *o)
         }
         packet += n*ahp_xc_get_nlines();
         packet += n*ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()*2;
-        packet += index;
+        packet += n*index*2;
         for(y = 0; y < sample->lag_size; y++) {
             sample->correlations[y].lag = sample->lag+(y-ahp_xc_get_crosscorrelator_lagsize()+1)*ahp_xc_get_sampletime();
             sample->correlations[y].counts = counts;
@@ -968,12 +968,14 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
         packet->counts[x] = (packet->counts[x] == 0 ? 1 : packet->counts[x]);
         buf += n;
     }
+    int idx = 0;
     for(x = 0; x < ahp_xc_get_nlines()*(ahp_xc_get_nlines()-ahp_xc_get_correlation_order()+1)/2; x++) {
         int *inputs = (int*)malloc(sizeof(int)*ahp_xc_get_correlation_order());
         for(y = 0; y < (unsigned int)ahp_xc_get_correlation_order(); y++)
             inputs[y] = get_line_index(x, y);
         for(y = x+ahp_xc_get_correlation_order()-1; y < ahp_xc_get_nlines(); y++) {
-            ahp_xc_get_crosscorrelation(&packet->crosscorrelations[x], inputs, ahp_xc_get_correlation_order(), data, 0.0);
+            ahp_xc_get_crosscorrelation(&packet->crosscorrelations[idx], inputs, ahp_xc_get_correlation_order(), data, 0.0);
+            idx ++;
         }
     }
     for(x = 0; x < ahp_xc_get_nlines(); x++)
