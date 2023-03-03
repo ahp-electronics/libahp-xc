@@ -80,33 +80,36 @@ Functions</h2></td></tr>
 <tr class="memitem:gaa1e8f0dcc699ddb525211eb71c72c0d7"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#gaa1e8f0dcc699ddb525211eb71c72c0d7">ahp_xc_free_packet</a> (<a class="el" href="structahp__xc__packet.html">ahp_xc_packet</a> *packet)</td></tr>
 <tr class="memdesc:gaa1e8f0dcc699ddb525211eb71c72c0d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a previously allocated packet structure.  <a href="group___data.html#gaa1e8f0dcc699ddb525211eb71c72c0d7">More...</a><br /></td></tr>
 <tr class="separator:gaa1e8f0dcc699ddb525211eb71c72c0d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9ed8b44385ee4f17dad4846af7500520"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga9ed8b44385ee4f17dad4846af7500520">ahp_xc_alloc_samples</a> (unsigned long nlines, unsigned long len)</td></tr>
-<tr class="memdesc:ga9ed8b44385ee4f17dad4846af7500520"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and return a samples array.  <a href="group___data.html#ga9ed8b44385ee4f17dad4846af7500520">More...</a><br /></td></tr>
-<tr class="separator:ga9ed8b44385ee4f17dad4846af7500520"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabd9ccd56c50ca103c7cc32eb4f1d4300"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#gabd9ccd56c50ca103c7cc32eb4f1d4300">ahp_xc_alloc_samples</a> (unsigned long nlines, size_t size)</td></tr>
+<tr class="memdesc:gabd9ccd56c50ca103c7cc32eb4f1d4300"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and return a samples array.  <a href="group___data.html#gabd9ccd56c50ca103c7cc32eb4f1d4300">More...</a><br /></td></tr>
+<tr class="separator:gabd9ccd56c50ca103c7cc32eb4f1d4300"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0727bb189915070424e2c55d230b83ee"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga0727bb189915070424e2c55d230b83ee">ahp_xc_copy_samples</a> (<a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> *src, unsigned long nlines, size_t size)</td></tr>
+<tr class="memdesc:ga0727bb189915070424e2c55d230b83ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and return a copy of the passed samples array.  <a href="group___data.html#ga0727bb189915070424e2c55d230b83ee">More...</a><br /></td></tr>
+<tr class="separator:ga0727bb189915070424e2c55d230b83ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga13e381431f1d46cc25c3c066b7e18ac4"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga13e381431f1d46cc25c3c066b7e18ac4">ahp_xc_free_samples</a> (unsigned long nlines, <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> *samples)</td></tr>
 <tr class="memdesc:ga13e381431f1d46cc25c3c066b7e18ac4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a previously allocated samples array.  <a href="group___data.html#ga13e381431f1d46cc25c3c066b7e18ac4">More...</a><br /></td></tr>
 <tr class="separator:ga13e381431f1d46cc25c3c066b7e18ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab4b4e02ac24d11015375bbaa3ce40a25"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#gab4b4e02ac24d11015375bbaa3ce40a25">ahp_xc_get_packet</a> (<a class="el" href="structahp__xc__packet.html">ahp_xc_packet</a> *packet)</td></tr>
 <tr class="memdesc:gab4b4e02ac24d11015375bbaa3ce40a25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Grab a data packet.  <a href="group___data.html#gab4b4e02ac24d11015375bbaa3ce40a25">More...</a><br /></td></tr>
 <tr class="separator:gab4b4e02ac24d11015375bbaa3ce40a25"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1822eec5c53a460c1466610b956d9e13"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga1822eec5c53a460c1466610b956d9e13">ahp_xc_start_autocorrelation_scan</a> (unsigned int index, off_t start, size_t size, size_t step)</td></tr>
-<tr class="memdesc:ga1822eec5c53a460c1466610b956d9e13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate an autocorrelation scan.  <a href="group___data.html#ga1822eec5c53a460c1466610b956d9e13">More...</a><br /></td></tr>
-<tr class="separator:ga1822eec5c53a460c1466610b956d9e13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9dc6ad69e26420aefc8c633e0d9ae5e3"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga9dc6ad69e26420aefc8c633e0d9ae5e3">ahp_xc_start_autocorrelation_scan</a> (unsigned int index, off_t start, size_t size, size_t step, size_t repeat)</td></tr>
+<tr class="memdesc:ga9dc6ad69e26420aefc8c633e0d9ae5e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate an autocorrelation scan.  <a href="group___data.html#ga9dc6ad69e26420aefc8c633e0d9ae5e3">More...</a><br /></td></tr>
+<tr class="separator:ga9dc6ad69e26420aefc8c633e0d9ae5e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9a9be7d862c7ba0c6ad294379c94ce0b"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga9a9be7d862c7ba0c6ad294379c94ce0b">ahp_xc_end_autocorrelation_scan</a> (unsigned int index)</td></tr>
 <tr class="memdesc:ga9a9be7d862c7ba0c6ad294379c94ce0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">End an autocorrelation scan.  <a href="group___data.html#ga9a9be7d862c7ba0c6ad294379c94ce0b">More...</a><br /></td></tr>
 <tr class="separator:ga9a9be7d862c7ba0c6ad294379c94ce0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa45d854f45622ca965358878061490e7"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#gaa45d854f45622ca965358878061490e7">ahp_xc_scan_autocorrelations</a> (unsigned int nlines, unsigned int *indexes, <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, int *interrupt, double *percent)</td></tr>
-<tr class="memdesc:gaa45d854f45622ca965358878061490e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scan all available delay channels and get autocorrelations of each input.  <a href="group___data.html#gaa45d854f45622ca965358878061490e7">More...</a><br /></td></tr>
-<tr class="separator:gaa45d854f45622ca965358878061490e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafb6ffc7eb30bfacf168034b4726ee5f8"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#gafb6ffc7eb30bfacf168034b4726ee5f8">ahp_xc_start_crosscorrelation_scan</a> (unsigned int index, off_t start, size_t size, size_t step)</td></tr>
-<tr class="memdesc:gafb6ffc7eb30bfacf168034b4726ee5f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate a crosscorrelation scan.  <a href="group___data.html#gafb6ffc7eb30bfacf168034b4726ee5f8">More...</a><br /></td></tr>
-<tr class="separator:gafb6ffc7eb30bfacf168034b4726ee5f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga39b7a80c7233828add09c20fadb4eec4"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga39b7a80c7233828add09c20fadb4eec4">ahp_xc_scan_autocorrelations</a> (unsigned int nlines, unsigned int *indexes, <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, size_t *repeats, int *interrupt, double *percent)</td></tr>
+<tr class="memdesc:ga39b7a80c7233828add09c20fadb4eec4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scan all available delay channels and get autocorrelations of each input.  <a href="group___data.html#ga39b7a80c7233828add09c20fadb4eec4">More...</a><br /></td></tr>
+<tr class="separator:ga39b7a80c7233828add09c20fadb4eec4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4d21b374036a239d900655bddd7c2868"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga4d21b374036a239d900655bddd7c2868">ahp_xc_start_crosscorrelation_scan</a> (unsigned int index, off_t start, size_t size, size_t step, size_t repeat)</td></tr>
+<tr class="memdesc:ga4d21b374036a239d900655bddd7c2868"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate a crosscorrelation scan.  <a href="group___data.html#ga4d21b374036a239d900655bddd7c2868">More...</a><br /></td></tr>
+<tr class="separator:ga4d21b374036a239d900655bddd7c2868"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad79482bc7f79f775000b587a65181dec"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#gad79482bc7f79f775000b587a65181dec">ahp_xc_end_crosscorrelation_scan</a> (unsigned int index)</td></tr>
 <tr class="memdesc:gad79482bc7f79f775000b587a65181dec"><td class="mdescLeft">&#160;</td><td class="mdescRight">End a crosscorrelation scan.  <a href="group___data.html#gad79482bc7f79f775000b587a65181dec">More...</a><br /></td></tr>
 <tr class="separator:gad79482bc7f79f775000b587a65181dec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1e6df23f96e665e7923eaf3f289c4663"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga1e6df23f96e665e7923eaf3f289c4663">ahp_xc_scan_crosscorrelations</a> (unsigned int index1, unsigned int index2, <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, int *interrupt, double *percent)</td></tr>
-<tr class="memdesc:ga1e6df23f96e665e7923eaf3f289c4663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scan all available delay channels and get crosscorrelations of each input with others.  <a href="group___data.html#ga1e6df23f96e665e7923eaf3f289c4663">More...</a><br /></td></tr>
-<tr class="separator:ga1e6df23f96e665e7923eaf3f289c4663"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7124b297b0fea6f3cce174e522e96379"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___data.html#ga7124b297b0fea6f3cce174e522e96379">ahp_xc_scan_crosscorrelations</a> (unsigned int index1, unsigned int index2, <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, size_t repeat, int *interrupt, double *percent)</td></tr>
+<tr class="memdesc:ga7124b297b0fea6f3cce174e522e96379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scan all available delay channels and get crosscorrelations of each input with others.  <a href="group___data.html#ga7124b297b0fea6f3cce174e522e96379">More...</a><br /></td></tr>
+<tr class="separator:ga7124b297b0fea6f3cce174e522e96379"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
@@ -129,8 +132,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga9ed8b44385ee4f17dad4846af7500520"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9ed8b44385ee4f17dad4846af7500520">&#9670;&nbsp;</a></span>ahp_xc_alloc_samples()</h2>
+<a id="gabd9ccd56c50ca103c7cc32eb4f1d4300"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gabd9ccd56c50ca103c7cc32eb4f1d4300">&#9670;&nbsp;</a></span>ahp_xc_alloc_samples()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -144,8 +147,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned long&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -163,6 +166,8 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Returns the new allocated <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> array </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group___data.html#ga13e381431f1d46cc25c3c066b7e18ac4" title="Free a previously allocated samples array.">ahp_xc_free_samples</a> </dd>
+<dd>
+<a class="el" href="group___data.html#ga0727bb189915070424e2c55d230b83ee" title="Allocate and return a copy of the passed samples array.">ahp_xc_copy_samples</a> </dd>
 <dd>
 <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> </dd>
 <dd>
@@ -186,6 +191,56 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>Returns a new <a class="el" href="structahp__xc__packet.html" title="Packet structure.">ahp_xc_packet</a> structure pointer </dd></dl>
+
+</div>
+</div>
+<a id="ga0727bb189915070424e2c55d230b83ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0727bb189915070424e2c55d230b83ee">&#9670;&nbsp;</a></span>ahp_xc_copy_samples()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT <a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a>* ahp_xc_copy_samples </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structahp__xc__sample.html">ahp_xc_sample</a> *&#160;</td>
+          <td class="paramname"><em>src</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>nlines</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>size</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">src</td><td>The source samples array. </td></tr>
+    <tr><td class="paramname">nlines</td><td>The Number of samples to be allocated. </td></tr>
+    <tr><td class="paramname">len</td><td>The lag_size and correlations field size of each sample. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Returns the <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> array copy of src </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___data.html#gabd9ccd56c50ca103c7cc32eb4f1d4300" title="Allocate and return a samples array.">ahp_xc_alloc_samples</a> </dd>
+<dd>
+<a class="el" href="group___data.html#ga13e381431f1d46cc25c3c066b7e18ac4" title="Free a previously allocated samples array.">ahp_xc_free_samples</a> </dd>
+<dd>
+<a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> </dd>
+<dd>
+<a class="el" href="structahp__xc__packet.html" title="Packet structure.">ahp_xc_packet</a> </dd></dl>
 
 </div>
 </div>
@@ -293,7 +348,9 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___data.html#ga9ed8b44385ee4f17dad4846af7500520" title="Allocate and return a samples array.">ahp_xc_alloc_samples</a> </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___data.html#gabd9ccd56c50ca103c7cc32eb4f1d4300" title="Allocate and return a samples array.">ahp_xc_alloc_samples</a> </dd>
+<dd>
+<a class="el" href="group___data.html#ga0727bb189915070424e2c55d230b83ee" title="Allocate and return a copy of the passed samples array.">ahp_xc_copy_samples</a> </dd>
 <dd>
 <a class="el" href="structahp__xc__sample.html" title="Sample structure.">ahp_xc_sample</a> </dd>
 <dd>
@@ -323,9 +380,9 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Returns non-zero on error </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___cmds.html#gacc106c72ac2943f1bc1f7096e9a28baa" title="Set the channel of the selected input (for auto-correlation)">ahp_xc_set_channel_auto</a> </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___cmds.html#ga26d0e41e0338d001419c024ab2a402c2" title="Set the channel of the selected input (for auto-correlation)">ahp_xc_set_channel_auto</a> </dd>
 <dd>
-<a class="el" href="group___cmds.html#gac8312bd17d540db7ba6d0f78c3dd3314" title="Set the channel of the selected input (for cross-correlation)">ahp_xc_set_channel_cross</a> </dd>
+<a class="el" href="group___cmds.html#ga409303ef0b00d3584fdba30d7ac46100" title="Set the channel of the selected input (for cross-correlation)">ahp_xc_set_channel_cross</a> </dd>
 <dd>
 <a class="el" href="group___data.html#ga02cf5870c8d6f9b7e9f776c7cecc9dea" title="Allocate and return a packet structure.">ahp_xc_alloc_packet</a> </dd>
 <dd>
@@ -335,8 +392,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gaa45d854f45622ca965358878061490e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa45d854f45622ca965358878061490e7">&#9670;&nbsp;</a></span>ahp_xc_scan_autocorrelations()</h2>
+<a id="ga39b7a80c7233828add09c20fadb4eec4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga39b7a80c7233828add09c20fadb4eec4">&#9670;&nbsp;</a></span>ahp_xc_scan_autocorrelations()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -380,6 +437,12 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">size_t *&#160;</td>
+          <td class="paramname"><em>repeats</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">int *&#160;</td>
           <td class="paramname"><em>interrupt</em>, </td>
         </tr>
@@ -416,8 +479,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga1e6df23f96e665e7923eaf3f289c4663"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1e6df23f96e665e7923eaf3f289c4663">&#9670;&nbsp;</a></span>ahp_xc_scan_crosscorrelations()</h2>
+<a id="ga7124b297b0fea6f3cce174e522e96379"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7124b297b0fea6f3cce174e522e96379">&#9670;&nbsp;</a></span>ahp_xc_scan_crosscorrelations()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -473,6 +536,12 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>repeat</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">int *&#160;</td>
           <td class="paramname"><em>interrupt</em>, </td>
         </tr>
@@ -511,8 +580,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga1822eec5c53a460c1466610b956d9e13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1822eec5c53a460c1466610b956d9e13">&#9670;&nbsp;</a></span>ahp_xc_start_autocorrelation_scan()</h2>
+<a id="ga9dc6ad69e26420aefc8c633e0d9ae5e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9dc6ad69e26420aefc8c633e0d9ae5e3">&#9670;&nbsp;</a></span>ahp_xc_start_autocorrelation_scan()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -539,7 +608,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>step</em>&#160;</td>
+          <td class="paramname"><em>step</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>repeat</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -560,8 +635,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gafb6ffc7eb30bfacf168034b4726ee5f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafb6ffc7eb30bfacf168034b4726ee5f8">&#9670;&nbsp;</a></span>ahp_xc_start_crosscorrelation_scan()</h2>
+<a id="ga4d21b374036a239d900655bddd7c2868"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4d21b374036a239d900655bddd7c2868">&#9670;&nbsp;</a></span>ahp_xc_start_crosscorrelation_scan()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -588,7 +663,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>step</em>&#160;</td>
+          <td class="paramname"><em>step</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>repeat</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -612,7 +693,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jan 10 2023 13:08:12 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Fri Mar 3 2023 19:18:08 for AHP® XC Correlators API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>
