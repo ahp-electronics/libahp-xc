@@ -148,10 +148,12 @@ ahp_print(x, str); \
 #define end_gettime
 #endif
 
+#define DEFAULT_BAUD_RATE 230400
+
 static pthread_mutexattr_t ahp_serial_mutex_attr;
 static pthread_mutex_t ahp_serial_mutex;
 static int ahp_serial_mutexes_initialized = 0;
-static int ahp_serial_baudrate = 230400;
+static int ahp_serial_baudrate = DEFAULT_BAUD_RATE;
 static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
 static int ahp_serial_flowctrl = -1;
 static int ahp_serial_fd = -1;
@@ -527,7 +529,7 @@ static void ahp_serial_CloseComport()
     }
     strcpy(ahp_serial_mode, "   ");
     ahp_serial_flowctrl = -1;
-    ahp_serial_baudrate = -1;
+    ahp_serial_baudrate = DEFAULT_BAUD_RATE;
     ahp_serial_fd = -1;
 }
 

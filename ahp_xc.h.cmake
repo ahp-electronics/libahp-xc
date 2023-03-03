@@ -529,16 +529,31 @@ DLL_EXPORT void ahp_xc_free_packet(ahp_xc_packet *packet);
 * \param len The lag_size and correlations field size of each sample.
 * \return Returns the new allocated ahp_xc_sample array
 * \sa ahp_xc_free_samples
+* \sa ahp_xc_copy_samples
 * \sa ahp_xc_sample
 * \sa ahp_xc_packet
 */
-DLL_EXPORT ahp_xc_sample *ahp_xc_alloc_samples(unsigned long nlines, unsigned long len);
+DLL_EXPORT ahp_xc_sample *ahp_xc_alloc_samples(unsigned long nlines, size_t size);
+
+/**
+* \brief Allocate and return a copy of the passed samples array
+* \param src The source samples array.
+* \param nlines The Number of samples to be allocated.
+* \param len The lag_size and correlations field size of each sample.
+* \return Returns the ahp_xc_sample array copy of src
+* \sa ahp_xc_alloc_samples
+* \sa ahp_xc_free_samples
+* \sa ahp_xc_sample
+* \sa ahp_xc_packet
+*/
+DLL_EXPORT ahp_xc_sample *ahp_xc_copy_samples(ahp_xc_sample* src, unsigned long nlines, size_t size);
 
 /**
 * \brief Free a previously allocated samples array
 * \param nlines The Number of samples to be allocated.
 * \param samples the ahp_xc_sample array to be freed
 * \sa ahp_xc_alloc_samples
+* \sa ahp_xc_copy_samples
 * \sa ahp_xc_sample
 * \sa ahp_xc_packet
 */
@@ -563,7 +578,7 @@ DLL_EXPORT int ahp_xc_get_packet(ahp_xc_packet *packet);
 * \param size The number of channels to scan afterwards.
 * \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_start_autocorrelation_scan(unsigned int index, off_t start, size_t size, size_t step, size_t repeat);
 
 /**
 * \brief End an autocorrelation scan
@@ -585,7 +600,7 @@ DLL_EXPORT void ahp_xc_end_autocorrelation_scan(unsigned int index);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp_xc_sample **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *indexes, ahp_xc_sample **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, size_t *repeats, int *interrupt, double *percent);
 
 /**
 * \brief Initiate a crosscorrelation scan
@@ -594,7 +609,7 @@ DLL_EXPORT int ahp_xc_scan_autocorrelations(unsigned int nlines, unsigned int *i
 * \param size The number of channels to scan afterwards.
 * \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(unsigned int index, off_t start, size_t size, size_t step, size_t repeat);
 
 /**
 * \brief End a crosscorrelation scan
@@ -618,7 +633,7 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(unsigned int index);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, int *interrupt, double *percent);
+DLL_EXPORT int ahp_xc_scan_crosscorrelations(unsigned int index1, unsigned int index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, size_t repeat, int *interrupt, double *percent);
 
 /**\}*/
 /**
@@ -652,7 +667,7 @@ DLL_EXPORT void ahp_xc_set_leds(unsigned int index, int leds);
 * \param size The number of channels to scan
 * \param step The scan stepping in channels
 */
-DLL_EXPORT void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size, size_t step, size_t repeat);
 
 /**
 * \brief Set the channel of the selected input (for auto-correlation)
@@ -661,7 +676,7 @@ DLL_EXPORT void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t
 * \param size The number of channels to scan
 * \param step The scan stepping in channels
 */
-DLL_EXPORT void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size, size_t step, size_t repeat);
 
 /**
 * \brief Set the clock divider for autocorrelation and crosscorrelation
