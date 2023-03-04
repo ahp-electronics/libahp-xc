@@ -1240,11 +1240,11 @@ void ahp_xc_set_channel_cross(unsigned int index, off_t value, size_t size, size
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(4|(value&0x3)));
     idx = 0;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)));
-    value >>= 3;
+    repeat >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)));
-    value >>= 3;
+    repeat >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)));
-    value >>= 3;
+    repeat >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)));
 }
 
@@ -1293,11 +1293,11 @@ void ahp_xc_set_channel_auto(unsigned int index, off_t value, size_t size, size_
     ahp_xc_send_command(SET_FREQ_DIV, (unsigned char)(4|(value&0x3)|0x8));
     idx = 0;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)|0x8));
-    value >>= 3;
+    repeat >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)|0x8));
-    value >>= 3;
+    repeat >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)|0x8));
-    value >>= 3;
+    repeat >>= 3;
     ahp_xc_send_command(SET_DELAY, (unsigned char)((idx++<<4)|(repeat&0x7)|0x8));
 }
 
