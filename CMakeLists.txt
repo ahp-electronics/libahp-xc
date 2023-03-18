@@ -44,11 +44,11 @@ if(WIN32)
     target_link_libraries(ahp_xc ws2_32 setupapi cfgmgr32)
 else(WIN32)
    set_target_properties(ahp_xc PROPERTIES VERSION ${AHPXC_VERSION} SOVERSION ${AHPXC_SOVERSION})
+   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 endif(WIN32)
 
 target_link_libraries(ahp_xc ${URJTAG_LIBRARIES} ${DFU_LIBRARIES} ${USB_LIBRARY} ${FTDI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
 
 install(TARGETS ahp_xc LIBRARY DESTINATION ${LIB_INSTALL_DIR})
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/FindAHPXC.cmake DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules")
