@@ -25,6 +25,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.c
    )
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/99-libahp-xc.rules.cmake ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
 
@@ -48,5 +49,6 @@ endif(WIN32)
 target_link_libraries(ahp_xc ${URJTAG_LIBRARIES} ${DFU_LIBRARIES} ${USB_LIBRARY} ${FTDI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
 
 install(TARGETS ahp_xc LIBRARY DESTINATION ${LIB_INSTALL_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules.cmake DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/FindAHPXC.cmake DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules")
