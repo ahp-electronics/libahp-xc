@@ -382,7 +382,7 @@ unsigned int ahp_xc_get_delaysize()
 {
     if(!ahp_xc_detected) return 0;
     if(ahp_xc_delaysize == 0 || ahp_xc_delaysize == 4)
-        return 1<<20;
+        return pow(2, 20);
     return ahp_xc_delaysize * 17;
 }
 
@@ -1084,7 +1084,7 @@ int ahp_xc_get_properties()
     ahp_xc_flags = _flags;
     ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+16+16+2+1;
     ahp_xc_frequency = (unsigned int)((long)1000000000000/(long)(!_tau?1:_tau));
-    sign = (1<<(ahp_xc_bps-1));
+    sign = (pow(2, ahp_xc_bps-1));
     fill = sign|(sign - 1);
 
     if(ahp_xc_mutexes_initialized) {
@@ -1148,7 +1148,7 @@ void ahp_xc_set_baudrate(baud_rate rate)
     ahp_xc_set_capture_flags(old_flags);
     ahp_serial_CloseComport();
     ahp_serial_OpenComport(ahp_xc_comport);
-    ahp_serial_SetupPort(ahp_xc_baserate<<((int)ahp_xc_rate), "8N2", 0);
+    ahp_serial_SetupPort(ahp_xc_baserate*pow(2, (int)ahp_xc_rate), "8N2", 0);
 }
 
 void ahp_xc_set_correlation_order(unsigned int order)
