@@ -1042,6 +1042,7 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     for(x = 0; x < ahp_xc_get_nlines(); x++)
         ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, data, 0.0);
     wait_no_threads();
+    fprintf(stderr, "%lf\n", packet->timestamp);
     ret = 0;
     goto free_end;
 err_end:
