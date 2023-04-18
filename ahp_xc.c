@@ -190,7 +190,7 @@ double get_timestamp(char *data)
     uint32_t tmp = 0;
     strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
     sscanf(timestamp, "%8X", &tmp);
-    ts = (double)tmp / 4.294967296;
+    ts = (double)tmp * 4.294967296;
     sscanf(&timestamp[8], "%8X", &tmp);
     return (double)ts + tmp / 1000000000.0;
 }
