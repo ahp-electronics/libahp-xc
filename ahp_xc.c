@@ -249,8 +249,10 @@ retry:
 #else
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
 #endif
-    if(buf[0] == '\r')
-        buf++;
+    if(buf[0] == '\r') {
+        ahp_serial_AlignFrame('\r', (int)size);
+        goto err_end;
+    }
     buf[nread-1] = 0;
     if(nread == 0) {
         errno = ENODATA;
