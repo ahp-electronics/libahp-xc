@@ -249,6 +249,8 @@ retry:
 #else
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
 #endif
+    if(buf[0] == '\r')
+        buf++;
     buf[nread-1] = 0;
     if(nread == 0) {
         errno = ENODATA;
