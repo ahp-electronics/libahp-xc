@@ -186,10 +186,13 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
 double get_timestamp(char *data)
 {
     char timestamp[16];
-    uint64_t ts = 0;
+    double ts = 0;
+    uint32_t tmp = 0;
     strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
-    sscanf(timestamp, "%16X", &ts);
-    return (double)ts / 1000000000.0;
+    sscanf(timestamp, "%8X", &tmp);
+    ts = (double)tmp / 4.294967296;
+    sscanf(&timestamp[8], "%8X", &tmp);
+    return (double)ts + tmp / 1000000000.0;
 }
 
 int32_t calc_checksum(char *data)
