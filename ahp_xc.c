@@ -186,8 +186,10 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
 double get_timestamp(char *data)
 {
     char timestamp[16];
+    uint64_t ts = 0;
     strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
-    return (double)strtoul(timestamp, NULL, 16) / 1000000000.0;
+    sscanf(timestamp, "%16X", &ts);
+    return (double)ts / 1000000000.0;
 }
 
 int calc_checksum(char *data)
@@ -1042,7 +1044,6 @@ int ahp_xc_get_packet(ahp_xc_packet *packet)
     for(x = 0; x < ahp_xc_get_nlines(); x++)
         ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, data, 0.0);
     wait_no_threads();
-    fprintf(stderr, "%lf\n", packet->timestamp);
     ret = 0;
     goto free_end;
 err_end:
