@@ -78,7 +78,7 @@ static unsigned int ahp_xc_delaysize = 0;
 static unsigned int ahp_xc_flags = 0;
 static unsigned int ahp_xc_correlator_enabled = 1;
 static unsigned int ahp_xc_intensity_correlator_enabled = 0;
-static unsigned int ahp_xc_frequency = 1;
+static double ahp_xc_frequency = 1;
 static unsigned int ahp_xc_voltage = 0;
 static unsigned int ahp_xc_connected = 0;
 static unsigned int ahp_xc_detected = 0;
@@ -401,7 +401,7 @@ unsigned int ahp_xc_get_crosscorrelator_lagsize()
         return ahp_xc_auto_lagsize;
 }
 
-unsigned int ahp_xc_get_frequency()
+double ahp_xc_get_frequency()
 {
     if(!ahp_xc_detected) return 0;
     return ahp_xc_frequency;
@@ -1083,7 +1083,7 @@ int ahp_xc_get_properties()
     ahp_xc_cross_lagsize = _cross_lagsize+1;
     ahp_xc_flags = _flags;
     ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+16+16+2+1;
-    ahp_xc_frequency = (unsigned int)((long)1000000000000/(long)(!_tau?1:_tau));
+    ahp_xc_frequency = 1000000000000.0/(!_tau?1:_tau);
     sign = (pow(2, ahp_xc_bps-1));
     fill = sign|(sign - 1);
 

@@ -431,13 +431,7 @@ DLL_EXPORT unsigned int ahp_xc_get_crosscorrelator_lagsize(void);
 * \brief Obtain the correlator maximum readout frequency
 * \return Returns the maximum readout frequency
 */
-DLL_EXPORT unsigned int ahp_xc_get_frequency(void);
-
-/**
-* \brief Obtain the correlator clock divider
-* \return Returns the clock divider (powers of 2)
-*/
-DLL_EXPORT unsigned int ahp_xc_get_frequency_divider(void);
+DLL_EXPORT double ahp_xc_get_frequency(void);
 
 /**
 * \brief Obtain the sampling time
