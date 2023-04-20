@@ -18,14 +18,9 @@ if (USB_LIBRARIES AND USB_INCLUDE_DIRS)
   # in cache already
   set(USB_FOUND TRUE)
 else (USB_LIBRARIES AND USB_INCLUDE_DIRS)
-  find_path(USB_INCLUDE_DIR
-    NAMES
-      usb.h
-    PATHS
-      /usr/include
-      /usr/local/include
-      /opt/local/include
-      /sw/include
+  find_path(USB_INCLUDE_DIR usb.h
+        ${_obIncDir}
+        ${GNUWIN32_DIR}/include
   )
 
   find_library(USB_LIBRARY
