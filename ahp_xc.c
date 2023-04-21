@@ -235,25 +235,7 @@ static char * grab_packet(double *timestamp)
         goto err_end;
     }
     int32_t nread = 0;
-#ifdef WINDOWS
-    char c = 0;
-    while (c != '\r' && nread < (int)size) {
-        int32_t err = 0;
-        int32_t ntries = 5;
-retry:
-        if(ntries > 0)
-            err = ahp_serial_RecvBuf((unsigned char*)&c, 1);
-        else break;
-        if(err < 1) {
-            usleep(10000);
-            ntries --;
-            goto retry;
-        }
-        buf[nread++] = c;
-    }
-#else
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
-#endif
     if(buf[0] == '\r') {
         ahp_serial_AlignFrame('\r', (int)size);
         goto err_end;
@@ -1069,7 +1051,7 @@ int32_t ahp_xc_get_properties()
     while(ntries-- > 0) {
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
-        ahp_serial_AlignFrame('\r', 16384);
+        ahp_serial_AlignFrame('\r', -1);
         data = grab_packet(NULL);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         if(data == NULL)

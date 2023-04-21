@@ -390,7 +390,6 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     ahp_serial_new_port_settings.fAbortOnError = 0;
     ahp_serial_new_port_settings.XonLim = 0;
     ahp_serial_new_port_settings.XoffLim = 0;
-    ahp_serial_new_port_settings.fTXContinueOnXoff = 1;
 
     switch(ahp_serial_mode[0]) {
     case '5': ahp_serial_new_port_settings.ByteSize = DATABITS_5; break;
@@ -612,7 +611,7 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
     int c = 0;
     ahp_serial_flushRX();
-    while(c != sof && (maxtries > 0 ? maxtries-- > 0 : 1)) {
+    while(c != sof && (maxtries > 0 ? maxtries-- > 0 : __INT32_MAX__)) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
           if(errno == EAGAIN)
