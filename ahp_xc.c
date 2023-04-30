@@ -258,6 +258,7 @@ static char * grab_packet(double *timestamp)
         }
     } else if(size == 17) {
         fprintf(stdout, "Model: %s\n", buf);
+        errno = 0;
     }
     if(errno)
         goto err_end;
@@ -1047,7 +1048,7 @@ int32_t ahp_xc_get_properties()
     char *data = NULL;
     int32_t n_read = 0;
     int32_t ntries = 16;
-    uint32_t _bps, _nlines, _delaysize, _auto_lagsize, _cross_lagsize, _flags, _tau;
+    int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
     while(ntries-- > 0) {
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);

@@ -148,12 +148,10 @@ ahp_print(x, str); \
 #define end_gettime
 #endif
 
-#define DEFAULT_BAUD_RATE 230400
-
 static pthread_mutexattr_t ahp_serial_mutex_attr;
 static pthread_mutex_t ahp_serial_mutex;
 static int ahp_serial_mutexes_initialized = 0;
-static int ahp_serial_baudrate = DEFAULT_BAUD_RATE;
+static int ahp_serial_baudrate = 230400;
 static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
 static int ahp_serial_flowctrl = -1;
 static int ahp_serial_fd = -1;
@@ -390,6 +388,7 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     ahp_serial_new_port_settings.fAbortOnError = 0;
     ahp_serial_new_port_settings.XonLim = 0;
     ahp_serial_new_port_settings.XoffLim = 0;
+    ahp_serial_new_port_settings.fTXContinueOnXoff = 1;
 
     switch(ahp_serial_mode[0]) {
     case '5': ahp_serial_new_port_settings.ByteSize = DATABITS_5; break;
@@ -442,10 +441,10 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
         return 1;
     }
 
-    Cptimeouts.ReadTotalTimeoutMultiplier  = 100;
-    Cptimeouts.ReadTotalTimeoutConstant    = 10;
-    Cptimeouts.WriteTotalTimeoutMultiplier  = 100;
-    Cptimeouts.WriteTotalTimeoutConstant    = 10;
+    Cptimeouts.ReadTotalTimeoutMultiplier  = 1;
+    Cptimeouts.ReadTotalTimeoutConstant    = 1;
+    Cptimeouts.WriteTotalTimeoutMultiplier  = 1;
+    Cptimeouts.WriteTotalTimeoutConstant    = 1;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
@@ -528,7 +527,7 @@ static void ahp_serial_CloseComport()
     }
     strcpy(ahp_serial_mode, "   ");
     ahp_serial_flowctrl = -1;
-    ahp_serial_baudrate = DEFAULT_BAUD_RATE;
+    ahp_serial_baudrate = -1;
     ahp_serial_fd = -1;
 }
 
@@ -611,7 +610,7 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
     int c = 0;
     ahp_serial_flushRX();
-    while(c != sof && (maxtries > 0 ? maxtries-- > 0 : __INT32_MAX__)) {
+    while(c != sof && (maxtries > 0 ? maxtries-- > 0 : 1)) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
           if(errno == EAGAIN)
