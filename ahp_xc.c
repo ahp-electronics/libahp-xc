@@ -85,7 +85,7 @@ static uint32_t ahp_xc_detected = 0;
 static uint32_t ahp_xc_packetsize = 17;
 static int32_t ahp_xc_baserate = XC_BASE_RATE;
 static baud_rate ahp_xc_rate = R_BASE;
-static uint32_t ahp_xc_correlation_order = 1;
+static uint32_t ahp_xc_correlation_order = 0;
 static char ahp_xc_comport[128];
 static char ahp_xc_header[18] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
@@ -359,8 +359,6 @@ uint32_t ahp_xc_get_nlines()
 uint32_t ahp_xc_get_nbaselines()
 {
     if(!ahp_xc_detected) return 0;
-    if(ahp_xc_intensity_crosscorrelator_enabled())
-        return 0;
     return ahp_xc_get_nlines() * (ahp_xc_get_nlines() - 1) / 2;
 }
 
@@ -585,8 +583,8 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
             free(packet->counts);
         pthread_mutex_destroy(((pthread_mutex_t*)packet->lock));
         free(packet->lock);
-        ahp_xc_free_samples((uint64_t)ahp_xc_get_nlines(), packet->autocorrelations);
-        ahp_xc_free_samples((uint64_t)ahp_xc_get_nbaselines(), packet->crosscorrelations);
+        ahp_xc_free_samples((uint64_t)packet->n_lines, packet->autocorrelations);
+        ahp_xc_free_samples((uint64_t)packet->n_baselines, packet->crosscorrelations);
         free(packet);
     }
 }
