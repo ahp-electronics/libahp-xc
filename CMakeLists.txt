@@ -8,11 +8,6 @@ include(GNUInstallDirs)
 
 find_package(M REQUIRED)
 find_package(Threads REQUIRED)
-find_package(URJTAG REQUIRED)
-find_package(USB REQUIRED)
-find_package(USB1 REQUIRED)
-find_package(DFU REQUIRED)
-find_package(FTDI REQUIRED)
 
 set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(AHP_XC_VERSION_MAJOR 1)

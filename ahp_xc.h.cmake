@@ -36,6 +36,7 @@ extern "C" {
 #define DLL_EXPORT extern
 #endif
 
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -221,7 +222,7 @@ int64_t real;
 ///Q samples count
 int64_t imaginary;
 ///Pulses count
-uint64_t counts;
+u_int64_t counts;
 ///Magnitude of this sample
 double magnitude;
 ///Phase of this sample
@@ -235,7 +236,7 @@ typedef struct {
 ///Lag offset from sample time
 double lag;
 ///Maximum lag in a single shot
-uint64_t lag_size;
+u_int64_t lag_size;
 ///Correlations array, of size lag_size in an ahp_xc_packet
 ahp_xc_correlation *correlations;
 } ahp_xc_sample;
@@ -247,19 +248,19 @@ typedef struct {
 ///Timestamp of the packet (seconds)
 double timestamp;
 ///Number of lines in this correlator
-uint64_t n_lines;
+u_int64_t n_lines;
 ///Total number of baselines obtainable
-uint64_t n_baselines;
+u_int64_t n_baselines;
 ///Bandwidth inverse frequency
-uint64_t tau;
+u_int64_t tau;
 ///Bits capacity in each sample
-uint64_t bps;
+u_int64_t bps;
 ///Crosscorrelators channels per packet
-uint64_t cross_lag;
+u_int64_t cross_lag;
 ///Autocorrelators channels per packet
-uint64_t auto_lag;
+u_int64_t auto_lag;
 ///Counts in the current packet
-uint64_t* counts;
+u_int64_t* counts;
 ///Autocorrelations in the current packet
 ahp_xc_sample* autocorrelations;
 ///Crosscorrelations in the current packet
@@ -289,7 +290,7 @@ DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *basel
 * \brief Set or get the maximum number of concurrent threads
 * \param value If non-zero set the maximum numnber of threads to this value, otherwise just return the current value
 * \return Returns The maximum number of threads
-*/DLL_EXPORT uint64_t ahp_xc_max_threads(uint64_t value);
+*/DLL_EXPORT u_int64_t ahp_xc_max_threads(u_int64_t value);
 
 /**\}*/
 /**
@@ -332,7 +333,7 @@ DLL_EXPORT void ahp_xc_disconnect(void);
 * \sa ahp_xc_disconnect
 * \return Returns non-zero if connected
 */
-DLL_EXPORT uint32_t ahp_xc_is_connected(void);
+DLL_EXPORT u_int32_t ahp_xc_is_connected(void);
 
 /**
 * \brief Report if a correlator was detected
@@ -341,7 +342,7 @@ DLL_EXPORT uint32_t ahp_xc_is_connected(void);
 * \sa ahp_xc_disconnect
 * \return Returns non-zero if a correlator was detected
 */
-DLL_EXPORT uint32_t ahp_xc_is_detected(void);
+DLL_EXPORT u_int32_t ahp_xc_is_detected(void);
 
 /**
 * \brief Obtain the current baud rate
@@ -359,7 +360,7 @@ DLL_EXPORT void ahp_xc_set_baudrate(baud_rate rate);
 * \brief Set the crosscorrelation order
 * \param order The new crosscorrelation order
 */
-DLL_EXPORT void ahp_xc_set_correlation_order(uint32_t order);
+DLL_EXPORT void ahp_xc_set_correlation_order(u_int32_t order);
 
 /**
 * \brief Get the crosscorrelation order
@@ -388,44 +389,44 @@ DLL_EXPORT char* ahp_xc_get_header(void);
 * \brief Obtain the correlator bits per sample
 * \return Returns the bits per sample value
 */
-DLL_EXPORT uint32_t ahp_xc_get_bps(void);
+DLL_EXPORT u_int32_t ahp_xc_get_bps(void);
 
 /**
 * \brief Obtain the correlator number of lines
 * \return Returns the number of lines
 */
-DLL_EXPORT uint32_t ahp_xc_get_nlines(void);
+DLL_EXPORT u_int32_t ahp_xc_get_nlines(void);
 
 /**
 * \brief Obtain the correlator total baselines
 * \return Returns the baselines quantity
 */
-DLL_EXPORT uint32_t ahp_xc_get_nbaselines(void);
+DLL_EXPORT u_int32_t ahp_xc_get_nbaselines(void);
 
 /**
 * \brief Obtain the correlator total baseprisms for arbitrary degree of coherence orders
 * \param order The degree of coherence order
 * \return Returns the baselines quantity
 */
-DLL_EXPORT uint32_t ahp_xc_get_nbaseprisms(int32_t order);
+DLL_EXPORT u_int32_t ahp_xc_get_nbaseprisms(int32_t order);
 
 /**
 * \brief Obtain the correlator maximum delay value
 * \return Returns the delay size
 */
-DLL_EXPORT uint32_t ahp_xc_get_delaysize(void);
+DLL_EXPORT u_int32_t ahp_xc_get_delaysize(void);
 
 /**
 * \brief Obtain the correlator lag buffer size for autocorrelations
 * \return Returns the lag size
 */
-DLL_EXPORT uint32_t ahp_xc_get_autocorrelator_lagsize(void);
+DLL_EXPORT u_int32_t ahp_xc_get_autocorrelator_lagsize(void);
 
 /**
 * \brief Obtain the correlator lag buffer size for crosscorrelations
 * \return Returns the lag size
 */
-DLL_EXPORT uint32_t ahp_xc_get_crosscorrelator_lagsize(void);
+DLL_EXPORT u_int32_t ahp_xc_get_crosscorrelator_lagsize(void);
 
 /**
 * \brief Obtain the correlator maximum readout frequency
@@ -449,7 +450,7 @@ DLL_EXPORT double ahp_xc_get_packettime(void);
 * \brief Obtain the serial packet size
 * \return Returns the packet size in bytes
 */
-DLL_EXPORT uint32_t ahp_xc_get_packetsize(void);
+DLL_EXPORT u_int32_t ahp_xc_get_packetsize(void);
 
 /**
 * \brief Enable the intensity cross-correlation feature
@@ -527,7 +528,7 @@ DLL_EXPORT void ahp_xc_free_packet(ahp_xc_packet *packet);
 * \sa ahp_xc_sample
 * \sa ahp_xc_packet
 */
-DLL_EXPORT ahp_xc_sample *ahp_xc_alloc_samples(uint64_t nlines, size_t size);
+DLL_EXPORT ahp_xc_sample *ahp_xc_alloc_samples(u_int64_t nlines, size_t size);
 
 /**
 * \brief Allocate and return a copy of the passed samples array
@@ -540,7 +541,7 @@ DLL_EXPORT ahp_xc_sample *ahp_xc_alloc_samples(uint64_t nlines, size_t size);
 * \sa ahp_xc_sample
 * \sa ahp_xc_packet
 */
-DLL_EXPORT ahp_xc_sample *ahp_xc_copy_samples(ahp_xc_sample* src, uint64_t nlines, size_t size);
+DLL_EXPORT ahp_xc_sample *ahp_xc_copy_samples(ahp_xc_sample* src, u_int64_t nlines, size_t size);
 
 /**
 * \brief Free a previously allocated samples array
@@ -551,7 +552,7 @@ DLL_EXPORT ahp_xc_sample *ahp_xc_copy_samples(ahp_xc_sample* src, uint64_t nline
 * \sa ahp_xc_sample
 * \sa ahp_xc_packet
 */
-DLL_EXPORT void ahp_xc_free_samples(uint64_t nlines, ahp_xc_sample *samples);
+DLL_EXPORT void ahp_xc_free_samples(u_int64_t nlines, ahp_xc_sample *samples);
 
 /**
 * \brief Grab a data packet
@@ -572,13 +573,13 @@ DLL_EXPORT int32_t ahp_xc_get_packet(ahp_xc_packet *packet);
 * \param size The number of channels to scan afterwards.
 * \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_autocorrelation_scan(uint32_t index, off_t start, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_start_autocorrelation_scan(u_int32_t index, off_t start, size_t size, size_t step);
 
 /**
 * \brief End an autocorrelation scan
 * \param index The line index.
 */
-DLL_EXPORT void ahp_xc_end_autocorrelation_scan(uint32_t index);
+DLL_EXPORT void ahp_xc_end_autocorrelation_scan(u_int32_t index);
 
 /**
 * \brief Scan all available delay channels and get autocorrelations of each input
@@ -594,7 +595,7 @@ DLL_EXPORT void ahp_xc_end_autocorrelation_scan(uint32_t index);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(uint32_t nlines, uint32_t *indexes, ahp_xc_sample **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, int32_t *interrupt, double *percent);
+DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(u_int32_t nlines, u_int32_t *indexes, ahp_xc_sample **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, int32_t *interrupt, double *percent);
 
 /**
 * \brief Initiate a crosscorrelation scan
@@ -603,13 +604,13 @@ DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(uint32_t nlines, uint32_t *index
 * \param size The number of channels to scan afterwards.
 * \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(uint32_t index, off_t start, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(u_int32_t index, off_t start, size_t size, size_t step);
 
 /**
 * \brief End a crosscorrelation scan
 * \param index The line index.
 */
-DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(uint32_t index);
+DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(u_int32_t index);
 
 /**
 * \brief Scan all available delay channels and get crosscorrelations of each input with others
@@ -627,7 +628,7 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(uint32_t index);
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int32_t ahp_xc_scan_crosscorrelations(uint32_t index1, uint32_t index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, int32_t *interrupt, double *percent);
+DLL_EXPORT int32_t ahp_xc_scan_crosscorrelations(u_int32_t index1, u_int32_t index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, int32_t *interrupt, double *percent);
 
 /**\}*/
 /**
@@ -652,7 +653,7 @@ DLL_EXPORT xc_capture_flags ahp_xc_get_capture_flags();
 * \param index The input line index starting from 0
 * \param leds The enable mask of the leds
 */
-DLL_EXPORT void ahp_xc_set_leds(uint32_t index, int32_t leds);
+DLL_EXPORT void ahp_xc_set_leds(u_int32_t index, int32_t leds);
 
 /**
 * \brief Set the channel of the selected input (for cross-correlation)
@@ -661,7 +662,7 @@ DLL_EXPORT void ahp_xc_set_leds(uint32_t index, int32_t leds);
 * \param size The number of channels to scan
 * \param step The scan stepping in channels
 */
-DLL_EXPORT void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_set_channel_cross(u_int32_t index, off_t value, size_t size, size_t step);
 
 /**
 * \brief Set the channel of the selected input (for auto-correlation)
@@ -670,7 +671,7 @@ DLL_EXPORT void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t siz
 * \param size The number of channels to scan
 * \param step The scan stepping in channels
 */
-DLL_EXPORT void ahp_xc_set_channel_auto(uint32_t index, off_t value, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_set_channel_auto(u_int32_t index, off_t value, size_t size, size_t step);
 
 /**
 * \brief Set the clock divider for autocorrelation and crosscorrelation
@@ -683,40 +684,40 @@ DLL_EXPORT void ahp_xc_set_frequency_divider(unsigned char value);
 * \param index The input line index starting from 0
 * \param value The voltage level
 */
-DLL_EXPORT void ahp_xc_set_voltage(uint32_t index, unsigned char value);
+DLL_EXPORT void ahp_xc_set_voltage(u_int32_t index, unsigned char value);
 
 /**
 * \brief Enable tests on the current line
 * \param index The input line index starting from 0
 * \param test The test flags
 */
-DLL_EXPORT void ahp_xc_set_test_flags(uint32_t index, int32_t test);
+DLL_EXPORT void ahp_xc_set_test_flags(u_int32_t index, int32_t test);
 
 /**
 * \brief Get the current status of the test features
 * \param index The line index starting from 0
 * \return The current tests on index input
 */
-DLL_EXPORT unsigned char ahp_xc_get_test_flags(uint32_t index);
+DLL_EXPORT unsigned char ahp_xc_get_test_flags(u_int32_t index);
 
 /**
 * \brief Get the current status of the leds on line
 * \param index The line index starting from 0
 * \return The current led configuration on index input
 */
-DLL_EXPORT unsigned char ahp_xc_get_leds(uint32_t index);
+DLL_EXPORT unsigned char ahp_xc_get_leds(u_int32_t index);
 
 /**
 * \brief Select the input on which to issue next command
 * \param index The input index
 */
-DLL_EXPORT void ahp_xc_select_input(uint32_t index);
+DLL_EXPORT void ahp_xc_select_input(u_int32_t index);
 
 /**
 * \brief Returns the currently selected input on which next command will be issued
 * \return The input index
 */
-DLL_EXPORT uint32_t ahp_xc_current_input();
+DLL_EXPORT u_int32_t ahp_xc_current_input();
 
 /**
 * \brief Send an arbitrary command to the AHP XC device
@@ -727,27 +728,10 @@ DLL_EXPORT uint32_t ahp_xc_current_input();
 DLL_EXPORT int32_t ahp_xc_send_command(xc_cmd cmd, unsigned char value);
 
 /**
-* \brief Program the correlator processor
-* \param fd The file descriptor of the processor firmware SVF
-* \param bsdl_path The path where the BSDL file are stored
-* \return non-zero on failure
-*/
-DLL_EXPORT int32_t ahp_xc_flash_svf(int32_t fd, const char *bsdl_path);
-
-/**
-* \brief Program the control interface
-* \param fd The file descriptor of the control interface DFU
-* \param progress The percent progress of the operation passed by reference
-* \param finished The completion flag the operation
-* \return non-zero on failure
-*/
-DLL_EXPORT int32_t ahp_xc_flash_dfu(int32_t fd, int32_t *progress, int32_t *finished);
-
-/**
 * \brief Obtain the current libahp-xc version
 * \return The current version code
 */
-DLL_EXPORT inline uint32_t ahp_xc_get_version(void) { return AHP_XC_VERSION; }
+DLL_EXPORT inline u_int32_t ahp_xc_get_version(void) { return AHP_XC_VERSION; }
 
 /**\}*/
 /**\}*/
