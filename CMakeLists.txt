@@ -27,10 +27,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
-include_directories(${URJTAG_INCLUDE_DIR})
-include_directories(${USB_INCLUDE_DIR})
-include_directories(${USB1_INCLUDE_DIR})
-include_directories(${DFU_INCLUDE_DIR})
 link_directories(${CMAKE_LIBRARY_PATH})
 
 execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -44,7 +40,7 @@ else(WIN32)
    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 endif(WIN32)
 
-target_link_libraries(ahp_xc ${URJTAG_LIBRARIES} ${DFU_LIBRARIES} ${USB_LIBRARY} ${FTDI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
+target_link_libraries(ahp_xc ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
 
 install(TARGETS ahp_xc LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
