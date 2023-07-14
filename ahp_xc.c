@@ -353,10 +353,7 @@ uint32_t ahp_xc_get_autocorrelator_lagsize()
 uint32_t ahp_xc_get_crosscorrelator_lagsize()
 {
     if(!ahp_xc_detected) return 0;
-    if(ahp_xc_has_crosscorrelator())
-        return ahp_xc_cross_lagsize;
-    else
-        return ahp_xc_auto_lagsize;
+    return ahp_xc_cross_lagsize;
 }
 
 double ahp_xc_get_frequency()
@@ -765,7 +762,6 @@ void *_get_crosscorrelation(void *o)
             ahp_xc_get_autocorrelation(samples[y], indexes[y], packet, lag);
         }
         wait_no_threads();
-
         for (y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
             sample->correlations[y].lag = samples[0]->lag+y*ahp_xc_get_sampletime();
             sample->correlations[y].counts = samples[0]->correlations[y].counts;
@@ -773,6 +769,7 @@ void *_get_crosscorrelation(void *o)
             sample->correlations[y].phase = samples[0]->correlations[y].phase;
             sample->correlations[y].real = 0.0;
             sample->correlations[y].imaginary = 0.0;
+            ahp_xc_free_samples(1, samples[0]);
             for (x = 1; x < num_indexes; x++) {
                 sample->correlations[y].counts += samples[x]->correlations[y].counts;
                 sample->correlations[y].magnitude = pow(sample->correlations[y].magnitude * samples[x]->correlations[y].magnitude, 0.5);
@@ -983,16 +980,13 @@ int32_t ahp_xc_get_packet(ahp_xc_packet *packet)
         packet->counts[x] = (packet->counts[x] == 0 ? 1 : packet->counts[x]);
         buf += n;
     }
-    int32_t idx = 0;
-    for(x = 0; x < ahp_xc_get_nlines()*(ahp_xc_get_nlines()-ahp_xc_get_correlation_order()+1)/2; x++) {
+    for(x = 0; x < ahp_xc_get_nbaselines(); x++) {
         int32_t *inputs = (int*)malloc(sizeof(int)*ahp_xc_get_correlation_order());
         for(y = 0; y < (unsigned int)ahp_xc_get_correlation_order(); y++)
             inputs[y] = get_line_index(x, y);
-        for(y = x+ahp_xc_get_correlation_order()-1; y < ahp_xc_get_nlines(); y++) {
-            ahp_xc_get_crosscorrelation(&packet->crosscorrelations[idx], inputs, ahp_xc_get_correlation_order(), data, 0.0);
-            idx ++;
-        }
+        ahp_xc_get_crosscorrelation(&packet->crosscorrelations[x], inputs, ahp_xc_get_correlation_order(), data, 0.0);
     }
+    wait_no_threads();
     for(x = 0; x < ahp_xc_get_nlines(); x++)
         ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, data, 0.0);
     wait_no_threads();
@@ -1015,9 +1009,9 @@ int32_t ahp_xc_get_properties()
     int32_t n_read = 0;
     int32_t ntries = 16;
     int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(ntries-- > 0) {
-        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
-        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
         ahp_serial_AlignFrame('\r', -1);
         data = grab_packet(NULL);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
@@ -1031,31 +1025,33 @@ int32_t ahp_xc_get_properties()
         }
         free(data);
     }
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     if(n_read != 7)
         return -ENODEV;
+    ahp_xc_flags = _flags;
     ahp_xc_bps = _bps;
     ahp_xc_nlines = _nlines+1;
-    ahp_xc_nbaselines = ahp_xc_nlines*(ahp_xc_nlines-1)/2;
+    ahp_xc_nbaselines = ahp_xc_has_crosscorrelator() ? (ahp_xc_nlines*(ahp_xc_nlines-1)/2) : 0;
     ahp_xc_delaysize = _delaysize;
     ahp_xc_auto_lagsize = _auto_lagsize+1;
     ahp_xc_cross_lagsize = _cross_lagsize+1;
-    ahp_xc_flags = _flags;
     ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+16+16+2+1;
     ahp_xc_frequency = 1000000000000.0/(!_tau?1:_tau);
     sign = (pow(2, ahp_xc_bps-1));
     fill = sign|(sign - 1);
 
     if(ahp_xc_mutexes_initialized) {
+        int nbaselines = ahp_xc_nlines * (ahp_xc_nlines - 1) / 2;
         if(crosscorrelation_threads)
-            crosscorrelation_threads = (pthread_t*)realloc(crosscorrelation_threads, sizeof(pthread_t)*ahp_xc_nbaselines);
+            crosscorrelation_threads = (pthread_t*)realloc(crosscorrelation_threads, sizeof(pthread_t)*nbaselines);
         else
-            crosscorrelation_threads = (pthread_t*)malloc(sizeof(pthread_t)*ahp_xc_nbaselines);
-        memset(crosscorrelation_threads, 0, sizeof(pthread_t)*ahp_xc_nbaselines);
+            crosscorrelation_threads = (pthread_t*)malloc(sizeof(pthread_t)*nbaselines);
+        memset(crosscorrelation_threads, 0, sizeof(pthread_t)*nbaselines);
         if(crosscorrelation_thread_args)
-            crosscorrelation_thread_args = (thread_argument*)realloc(crosscorrelation_thread_args, sizeof(thread_argument)*ahp_xc_nbaselines);
+            crosscorrelation_thread_args = (thread_argument*)realloc(crosscorrelation_thread_args, sizeof(thread_argument)*nbaselines);
         else
-            crosscorrelation_thread_args = (thread_argument*)malloc(sizeof(thread_argument)*ahp_xc_nbaselines);
-        memset(crosscorrelation_thread_args, 0, sizeof(thread_argument)*ahp_xc_nbaselines);
+            crosscorrelation_thread_args = (thread_argument*)malloc(sizeof(thread_argument)*nbaselines);
+        memset(crosscorrelation_thread_args, 0, sizeof(thread_argument)*nbaselines);
         if(autocorrelation_threads)
             autocorrelation_threads = (pthread_t*)realloc(autocorrelation_threads, sizeof(pthread_t)*ahp_xc_nlines);
         else
@@ -1146,9 +1142,10 @@ void ahp_xc_set_leds(uint32_t index, int32_t leds)
     ahp_xc_leds[index] = (unsigned char)leds;
     ahp_xc_select_input(index);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
-    ahp_xc_send_command(SET_LEDS, (unsigned char)((ahp_xc_leds[index]>>4)&0xf));
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
-    ahp_xc_send_command(SET_LEDS, (unsigned char)(ahp_xc_leds[index]&0xf));
+    ahp_xc_send_command(SET_LEDS, (unsigned char)((leds & (0xf & ~AHP_XC_LEDS_MASK)) | (ahp_xc_has_leds() ? leds & AHP_XC_LEDS_MASK : 0)));
+    leds >>= 4;
+    ahp_xc_send_command(SET_LEDS, (unsigned char)((leds & (0xf & ~AHP_XC_LEDS_MASK)) | (ahp_xc_has_leds() ? leds & AHP_XC_LEDS_MASK : 0)));
 }
 
 void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t size, size_t step)

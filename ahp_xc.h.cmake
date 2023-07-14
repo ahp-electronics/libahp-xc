@@ -122,6 +122,8 @@ DLL_EXPORT void ahp_set_stderr(FILE *f);
 #define XC_HIGH_RATE ((int)230400)
 ///The PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
+///The bitwise mask of the led lines enabled when HAS_LEDS is true
+#define AHP_XC_LEDS_MASK 0x3
 
 /**\}
  * \defgroup Types Types and structures
