@@ -165,12 +165,10 @@ SET_INDEX = 1,
 SET_LEDS = 2,
 ///Set the readout and command baud rate
 SET_BAUD_RATE = 3,
-///Set the autocorrelator or crosscorrelator delay
-SET_DELAY = 4,
-///Set the frequency divider in powers of two
-SET_FREQ_DIV = 8,
 ///Set the indexed input voltage, requires HAS_PSU in header
-SET_VOLTAGE = 9,
+SET_VOLTAGE = 4,
+///Set the autocorrelator or crosscorrelator delay
+SET_DELAY = 8,
 ///Enables tests on current input
 ENABLE_TEST = 12,
 ///Enable capture flags
