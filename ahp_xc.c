@@ -589,7 +589,8 @@ static void* _get_autocorrelation(void *o)
     memcpy(subpacket, &packet[index*n], (unsigned int)n);
     uint64_t counts = strtoul(subpacket, NULL, 16)|1;
     packet += n*ahp_xc_get_nlines();
-    packet += n*index*ahp_xc_get_autocorrelator_lagsize()*2;
+    packet += n*ahp_xc_get_nlines()*ahp_xc_get_autocorrelator_lagsize()*2-1;
+    packet -= n*index*ahp_xc_get_autocorrelator_lagsize()*2;
     for(y = 0; y < sample->lag_size; y++) {
         sample->correlations[y].lag = sample->lag+y*ahp_xc_get_sampletime();
         sample->correlations[y].counts = counts;
@@ -794,7 +795,8 @@ void *_get_crosscorrelation(void *o)
         }
         packet += n*ahp_xc_get_nlines();
         packet += n*ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()*2;
-        packet += n*index*2;
+        packet += n*ahp_xc_get_crosscorrelator_lagsize()*ahp_xc_get_nbaselines()*2-1;
+        packet -= n*index*2;
         for(y = 0; y < sample->lag_size; y++) {
             sample->correlations[y].lag = sample->lag+(y-ahp_xc_get_crosscorrelator_lagsize()+1)*ahp_xc_get_sampletime();
             sample->correlations[y].counts = counts;
