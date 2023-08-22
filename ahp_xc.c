@@ -86,21 +86,21 @@ static char ahp_xc_header[18] = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
 
-static int32_t get_line_index(int32_t idx, int32_t order)
+int32_t ahp_xc_get_line_index(int32_t idx, int32_t order)
 {
     return (idx + order * (idx / ahp_xc_get_nlines() + 1)) % ahp_xc_get_nlines();
 }
 
-static int32_t get_crosscorrelation_index(int32_t *lines, int32_t order)
+int32_t ahp_xc_get_crosscorrelation_index(int32_t *lines, int32_t order)
 {
     int32_t x, y, idx;
-    int32_t nprisms = ahp_xc_get_nbaseprisms(order);
+    int32_t nprisms = ahp_xc_get_nbaselines();
     int* matches = (int*)malloc(sizeof(int)*nprisms);
     memset(matches, 0, sizeof(int)*nprisms);
-    for(x = 0; x < order; x ++) {
-        for(idx = 0; idx < nprisms; idx++) {
+    for(idx = 0; idx < nprisms; idx ++) {
+        for(x = 0; x < order; x ++) {
             for(y = 0; y < order; y ++) {
-                if(lines[y] == get_line_index(idx, x))
+                if(lines[x] == ahp_xc_get_line_index(idx, y))
                     matches[idx]++;
             }
         }
@@ -153,7 +153,7 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
 
 double get_timestamp(char *data)
 {
-    char timestamp[16];
+    char timestamp[16] = { 0 };
     double ts = 0;
     uint32_t tmp = 0;
     strncpy(timestamp, &data[ahp_xc_get_packetsize()-19], 16);
@@ -829,7 +829,7 @@ void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int32_t *indexes, int32_
 {
     if(!ahp_xc_mutexes_initialized)
         return;
-    int32_t index = get_crosscorrelation_index(indexes, order);
+    int32_t index = ahp_xc_get_crosscorrelation_index(indexes, order);
     crosscorrelation_thread_args[index].sample = sample;
     crosscorrelation_thread_args[index].index = index;
     crosscorrelation_thread_args[index].indexes = indexes;
@@ -985,7 +985,7 @@ int32_t ahp_xc_get_packet(ahp_xc_packet *packet)
     for(x = 0; x < ahp_xc_get_nbaselines(); x++) {
         int32_t *inputs = (int*)malloc(sizeof(int)*ahp_xc_get_correlation_order());
         for(y = 0; y < (unsigned int)ahp_xc_get_correlation_order(); y++)
-            inputs[y] = get_line_index(x, y);
+            inputs[y] = ahp_xc_get_line_index(x, y);
         ahp_xc_get_crosscorrelation(&packet->crosscorrelations[x], inputs, ahp_xc_get_correlation_order(), data, 0.0);
     }
     wait_no_threads();
