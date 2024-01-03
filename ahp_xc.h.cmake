@@ -224,6 +224,22 @@ double phase;
 } ahp_xc_correlation;
 
 /**
+* \brief Scan request structure
+*/
+typedef struct {
+///Line index
+uint32_t index;
+///Start channel
+off_t start;
+///Number of channels
+size_t len;
+///Separation between channels
+size_t step;
+///Current channel
+off_t cur_chan;
+} ahp_xc_scan_request;
+
+/**
 * \brief Sample structure
 */
 typedef struct {
@@ -593,19 +609,16 @@ DLL_EXPORT void ahp_xc_end_autocorrelation_scan(uint32_t index);
 
 /**
 * \brief Scan all available delay channels and get autocorrelations of each input
-* \param nlines the number of inputs for this scan.
-* \param indexes the input indexes list.
+* \param lines the input lines structure array.
+* \param nlines the element size of the input lines array.
 * \param autocorrelations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
-* \param starts First channel to be scanned list.
-* \param sizes Number of channels to be scanned list.
-* \param steps The scan steps in channels.
 * \param interrupt This should point32_t to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
 * \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
 * \return Returns the number of channels scanned
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(uint32_t nlines, uint32_t *indexes, ahp_xc_sample **autocorrelations, off_t *starts, size_t *sizes, size_t *steps, int32_t *interrupt, double *percent);
+DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **autocorrelations, int32_t *interrupt, double *percent);
 
 /**
 * \brief Initiate a crosscorrelation scan
@@ -624,21 +637,16 @@ DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(uint32_t index);
 
 /**
 * \brief Scan all available delay channels and get crosscorrelations of each input with others
-* \param index1 the first input index.
-* \param index2 the second input index.
+* \param lines the input lines structure array.
+* \param nlines the element size of the input lines array.
 * \param crosscorrelations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
-* \param start1 Initial channel on index1 input.
-* \param size1 Number of channels to scan on index1 input.
-* \param start2 Initial channel on index2 input.
-* \param size2 Number of channels to scan on index2 input.
-* \param step The scan step in channels.
 * \param interrupt This should point32_t to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
 * \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
 * \return Returns the number of channels scanned
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int32_t ahp_xc_scan_crosscorrelations(uint32_t index1, uint32_t index2, ahp_xc_sample **crosscorrelations, off_t start1, size_t size1, off_t start2, size_t size2, size_t step, int32_t *interrupt, double *percent);
+DLL_EXPORT int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **crosscorrelations, int32_t *interrupt, double *percent);
 
 /**\}*/
 /**
