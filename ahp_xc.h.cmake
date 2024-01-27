@@ -113,7 +113,7 @@ DLL_EXPORT void ahp_set_stderr(FILE *f);
 ///The base baud rate of the XC cross-correlators
 #define XC_BASE_RATE ((int)57600)
 ///The base baud rate for big packet XC cross-correlators
-#define XC_HIGH_RATE ((int)230400)
+#define XC_HIGH_RATE ((int)2000000)
 ///The PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 ///The bitwise mask of the led lines enabled when HAS_LEDS is true
