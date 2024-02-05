@@ -1018,7 +1018,7 @@ int32_t ahp_xc_get_properties()
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         if(data == NULL)
             continue;
-        n_read = sscanf((char*)data, "%02X%02X%03X%02X%02X%01X%04X", &_bps, &_nlines, &_delaysize, &_auto_lagsize, &_cross_lagsize, &_flags, &_tau);
+        n_read = sscanf((char*)data, "%02X%06X%01X%01X%01X%02X%04X", &_bps, &_nlines, &_delaysize, &_auto_lagsize, &_cross_lagsize, &_flags, &_tau);
         if(n_read == 7) {
             strncpy(ahp_xc_header, (char*)data, 16);
             free(data);
