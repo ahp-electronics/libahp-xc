@@ -70,12 +70,13 @@ static double ahp_xc_frequency = 1;
 static uint32_t ahp_xc_voltage = 0;
 static uint32_t ahp_xc_connected = 0;
 static uint32_t ahp_xc_detected = 0;
-static uint32_t ahp_xc_packetsize = 17;
+static uint32_t ahp_xc_packetsize = 1344;
 static int32_t ahp_xc_baserate = XC_BASE_RATE;
 static baud_rate ahp_xc_rate = R_BASE;
 static uint32_t ahp_xc_correlation_order = 0;
 static char ahp_xc_comport[128];
-static char ahp_xc_header[18] = { 0 };
+static char *ahp_xc_header = { 0 };
+static int ahp_xc_header_len = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
 
@@ -178,7 +179,7 @@ int32_t calc_checksum(char *data)
     checksum *= 16;
     v = data[ahp_xc_get_packetsize()-2];
     checksum += v < 'A' ? (v - '0') : (v - 'A' + 10);
-    for(x = 16; x < (int)ahp_xc_get_packetsize()-3; x++) {
+    for(x = ahp_xc_header_len; x < (int)ahp_xc_get_packetsize()-3; x++) {
         calculated_checksum += data[x] < 'A' ? (data[x] - '0') : (data[x] - 'A' + 10);
         calculated_checksum &= 0xff;
     }
@@ -191,8 +192,13 @@ int32_t calc_checksum(char *data)
 int32_t check_sof(char *data)
 {
     if(!ahp_xc_connected) return -ENOENT;
-    if(!strncmp(data, "FFFFFFFFFFFFFFFF", 16))
+    char* tmp = (char*)malloc(ahp_xc_header_len);
+    memset(tmp, 'F', ahp_xc_header_len);
+    if(!strncmp(data, tmp, ahp_xc_header_len)) {
+        free(tmp);
         return 1;
+    }
+    free(tmp);
     return 0;
 }
 
@@ -218,7 +224,7 @@ static char * grab_packet(double *timestamp)
     } else if(nread < 0) {
         errno = ETIMEDOUT;
     } else if(nread > 17) {
-        if(strncmp(ahp_xc_get_header(), (char*)buf, 16)) {
+        if(strncmp(ahp_xc_get_header(), (char*)buf, ahp_xc_header_len)) {
             errno = EINVAL;
             ahp_serial_AlignFrame('\r', -1);
         } else if(check_sof((char*)buf)) {
@@ -396,7 +402,7 @@ int32_t ahp_xc_connect_fd(int32_t fd)
     ahp_xc_nbaselines = 0;
     ahp_xc_delaysize = 0;
     ahp_xc_frequency = 0;
-    ahp_xc_packetsize = 17;
+    ahp_xc_packetsize = 1344;
     ahp_xc_rate = R_BASE;
     if(fd > -1) {
         ahp_xc_detected = 0;
@@ -417,15 +423,13 @@ int32_t ahp_xc_connect(const char *port, int32_t high_rate)
 {
     if(ahp_xc_connected)
         return 0;
-    ahp_xc_header[0] = 0;
-    ahp_xc_header[16] = 0;
     int32_t ret = 1;
     ahp_xc_bps = 0;
     ahp_xc_nlines = 0;
     ahp_xc_nbaselines = 0;
     ahp_xc_delaysize = 0;
     ahp_xc_frequency = 0;
-    ahp_xc_packetsize = 17;
+    ahp_xc_packetsize = 1344;
     ahp_xc_baserate = (high_rate ? XC_HIGH_RATE : XC_BASE_RATE);
     ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
@@ -451,6 +455,8 @@ void ahp_xc_disconnect()
             pthread_mutex_destroy(&ahp_xc_mutex);
             ahp_xc_mutexes_initialized = 0;
         }
+        free(ahp_xc_header);
+        ahp_xc_header_len = 0;
         ahp_xc_connected = 0;
         ahp_xc_detected = 0;
         ahp_xc_bps = 0;
@@ -458,7 +464,7 @@ void ahp_xc_disconnect()
         ahp_xc_nbaselines = 0;
         ahp_xc_delaysize = 0;
         ahp_xc_frequency = 0;
-        ahp_xc_packetsize = 17;
+        ahp_xc_packetsize = 1344;
         ahp_serial_CloseComport();
     }
 }
@@ -589,7 +595,7 @@ static void* _get_autocorrelation(void *o)
     memset(subpacket, 0, n+1);
     sample->lag_size = ahp_xc_get_autocorrelator_lagsize();
     sample->lag = lag;
-    packet += 16;
+    packet += ahp_xc_header_len;
     memcpy(subpacket, &packet[index*n], (unsigned int)n);
     uint64_t counts = strtoul(subpacket, NULL, 16)|1;
     packet += n*ahp_xc_get_nlines();
@@ -790,7 +796,7 @@ void *_get_crosscorrelation(void *o)
     } else {
         char *subpacket = (char*)malloc(n+1);
         memset(subpacket, 0, n+1);
-        packet += 16;
+        packet += ahp_xc_header_len;
         uint64_t counts = 0;
         for(y = 0; y < num_indexes; y++) {
             memcpy(subpacket, &packet[indexes[y]*n], (unsigned int)n);
@@ -969,7 +975,7 @@ int32_t ahp_xc_get_packet(ahp_xc_packet *packet)
     sample = (char*)malloc((unsigned int)n+1);
     packet->buf = data;
     const char *buf = packet->buf;
-    buf += 16;
+    buf += ahp_xc_header_len;
     for(x = 0; x < ahp_xc_get_nlines(); x++) {
         sample[n] = 0;
         memcpy(sample, buf, (unsigned int)n);
@@ -1006,6 +1012,10 @@ end:
 int32_t ahp_xc_get_properties()
 {
     if(!ahp_xc_connected) return -ENOENT;
+    if(ahp_xc_detected) return 0;
+    ahp_xc_header = (char*)malloc(0);
+    ahp_xc_header[0] = 0;
+    ahp_xc_header_len = 0;
     char *data = NULL;
     int32_t n_read = 0;
     int32_t ntries = 16;
@@ -1018,12 +1028,98 @@ int32_t ahp_xc_get_properties()
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         if(data == NULL)
             continue;
-        n_read = sscanf((char*)data, "%02X%06X%01X%01X%01X%02X%04X", &_bps, &_nlines, &_delaysize, &_auto_lagsize, &_cross_lagsize, &_flags, &_tau);
-        if(n_read == 7) {
-            strncpy(ahp_xc_header, (char*)data, 16);
+        int len = 0;
+        char *n = (char*)malloc(2);
+        char *buf = data;
+        int xc_header_len = 0;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        int n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_nlines);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _nlines++;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_bps);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _bps++;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_delaysize);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_auto_lagsize);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _auto_lagsize++;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_cross_lagsize);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _cross_lagsize++;
+        buf += len;
+        n_read = sscanf(buf, "%02X%04X", &_flags, &_tau);
+        if(n_read == 2) {
+            ahp_xc_header_len = xc_header_len;
+            ahp_xc_header = (char*)realloc(ahp_xc_header, ahp_xc_header_len);
+            strncpy(ahp_xc_header, (char*)data, ahp_xc_header_len);
             free(data);
             break;
         }
+        free(n);
         free(data);
     }
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
@@ -1036,7 +1132,7 @@ int32_t ahp_xc_get_properties()
     ahp_xc_delaysize = _delaysize;
     ahp_xc_auto_lagsize = _auto_lagsize+1;
     ahp_xc_cross_lagsize = _cross_lagsize+1;
-    ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+16+16+2+1;
+    ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+ahp_xc_header_len+16+2+1;
     ahp_xc_frequency = 1000000000000.0/(!_tau?1:_tau);
     sign = (pow(2, ahp_xc_bps-1));
     fill = sign|(sign - 1);
