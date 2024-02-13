@@ -223,8 +223,9 @@ static char * grab_packet(double *timestamp)
         errno = ENODATA;
     } else if(nread < 0) {
         errno = ETIMEDOUT;
-    } else if(nread > 17) {
-        if(strncmp(ahp_xc_get_header(), (char*)buf, ahp_xc_header_len)) {
+    } else if(nread > ahp_xc_header_len) {
+        char *tmp = buf;
+        if(strncmp(ahp_xc_get_header(), (char*)tmp, ahp_xc_header_len)) {
             errno = EINVAL;
             ahp_serial_AlignFrame('\r', -1);
         } else if(check_sof((char*)buf)) {
@@ -1113,9 +1114,11 @@ int32_t ahp_xc_get_properties()
         buf += len;
         n_read = sscanf(buf, "%02X%04X", &_flags, &_tau);
         if(n_read == 2) {
+            xc_header_len += 6;
             ahp_xc_header_len = xc_header_len;
-            ahp_xc_header = (char*)realloc(ahp_xc_header, ahp_xc_header_len);
+            ahp_xc_header = (char*)realloc(ahp_xc_header, ahp_xc_header_len+1);
             strncpy(ahp_xc_header, (char*)data, ahp_xc_header_len);
+            ahp_xc_header[ahp_xc_header_len] = 0;
             free(data);
             break;
         }
@@ -1123,15 +1126,15 @@ int32_t ahp_xc_get_properties()
         free(data);
     }
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
-    if(n_read != 7)
+    if(ahp_xc_header_len == 0)
         return -ENODEV;
     ahp_xc_flags = _flags;
     ahp_xc_bps = _bps;
-    ahp_xc_nlines = _nlines+1;
+    ahp_xc_nlines = _nlines;
     ahp_xc_nbaselines = (ahp_xc_flags & HAS_CROSSCORRELATOR) ? (ahp_xc_nlines*(ahp_xc_nlines-1)/2) : 0;
     ahp_xc_delaysize = _delaysize;
-    ahp_xc_auto_lagsize = _auto_lagsize+1;
-    ahp_xc_cross_lagsize = _cross_lagsize+1;
+    ahp_xc_auto_lagsize = _auto_lagsize;
+    ahp_xc_cross_lagsize = _cross_lagsize;
     ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+ahp_xc_header_len+16+2+1;
     ahp_xc_frequency = 1000000000000.0/(!_tau?1:_tau);
     sign = (pow(2, ahp_xc_bps-1));
