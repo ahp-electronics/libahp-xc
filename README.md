@@ -14,14 +14,13 @@ The library uses 57600 baud/second UART communication with the correlator
 
 Here below is defined the communication protocol:
 
-    0x0d: Set integration parameters: bit 4 => enable capture, bit 5 => use external clock, bit 6 => reset timestamp when enabling capture, bit 7 => enable extra commands
-    0x01: select active line: bits [7:6] => indexer, bits [5:4] => value (if extra commands bits [5:4] are routed to 4 extra lines)
-    0x02: activate leds or power lines using bits [5:4], invert pulse reading with bit 6, single clock cycle pulse width with bit 7
-    0x03: baudrate 57600 left-shifted by bits [7:4]
-    0x04: bits [1:0] => indexer, bits [6:4] => delay value. If bit 7 is 0, then start delay for cross-correlations is set, if bit 4 is 1, then start delay for autocorrelations is set, if extra commands these values define the size of the correlation scan).
-    0x08: sampling clock tau = clock tau left-shifted by bits [7:4]
-    0x09: power voltage = bits [7:4]
-    0x0c: Set tests: bit 5 => enable pll oscillator signal on led 0, bit 5 => enable autocorrelation scan, bit 6 => enable crosscorrelation scan, bit 7 => BCM encoder on led 0 (pulse XOR by sampling clock) (if extra commands bits [5:4] are routed to 4 extra tests flags)
+    0x0d: Set integration parameters: bit 4 => enable capture, bit 5 => use external clock, bit 6 => reset timestamp when enabling capture, bit 7 => extra commands
+    0x01: select active line: first byte: bits [7:4] => length of command LSN, second byte: length of command MSN, next bytes: bits [7:4] => active line LSN first
+    0x02: led lines: extra commands => nibble indexer, bits [7:4] => power voltage value
+    0x03: if extra commands = 1 first byte: bits [7:4] => length of command LSN, second byte: length of command MSN, next bytes: bits [7:4] => cross-correlator order LSN first, if extra commands = 0 baudrate 57600 left-shifted by bits [7:4] 
+    0x04: Set voltage: extra commands => nibble indexer, bits [7:4] => power voltage value
+    0x08: sampling clock tau =  first two byte: bits [7:4] => length of command LSN first, next bytes: bits [7:4] => value LSN first - if test[5:4] is 0 scan increment, if test[5:4] is 1 scan length if test[5:4] scan start channel if extra commands = 0 autocorrelator, if extra commands = 1 crosscorrelator.
+    0x0c: Set tests: extra commands => nibble indexer, bits [7:4] => test lines value - bit 1 => enable autocorrelation scan, bit 2 => enable crosscorrelation scan, bit 3 => BCM encoder on led 0 (pulse XOR by sampling clock), bits [5:4] => indexer of sampling clock tau
 
 The count of pulses and correlation comes with an ASCII packet string ended with a 0x0d character
 
@@ -29,22 +28,32 @@ Each packet starts with a header with payload length indication, it is possible 
 
 header
 
-    bytes 0-1: hexadecimal sample size value
-    bytes 2-3: hexadecimal inputs quantity
-    bytes 4-6: hexadecimal delay channels quantity
-    bytes 7-10: hexadecimal live delay channels quantity
-    bytes 11: hexadecimal flags [bits: 0=live autocorrelator, 1=live crosscorrelator, 2=leds available, 3=cross-correlator]
-    bytes 12-15: hexadecimal value of the clock tau in picoseconds
+    char 0: Nibble length of input lines hex digits [n0]
+    chars +n0: hexadecimal inputs quantity
+    char +1: Nibble length of sample size value hex digits [n1]
+    chars +n1: hexadecimal sample size value
+    char +1: Nibble length of delay channels hex digits [n2]
+    chars +n2: hexadecimal delay channels
+    char +1: Nibble length of live autocorrelator delay channels hex digits [n3]
+    chars +n3: hexadecimal live autocorrelator delay channels
+    char +1: Nibble length of live crosscorrelator delay channels hex digits [n4]
+    chars +n4: hexadecimal live crosscorrelator delay channels
+    chars +2 hexadecimal flags [bits: 0=live autocorrelator, 1=live crosscorrelator, 2=leds available, 3=cross-correlator, 4=Nyquist sampling, 5=Shannon sampling]
+    chars +4: hexadecimal value of the clock tau in picoseconds
 
 payload
 
-    bytes +lines#: pulses count of each line within the integration time
-    bytes +lines#: autocorrelations count of each line by the selected autocorrelation line delayed by crosscorrelation lag zero
-    bytes +baselines#: crosscorrelations count of pulses of each line with others by the selected delay amount
-    bytes +16: 8-byte timestamp of current packet
+    chars +lines#: pulses count of each line within the integration time
+    chars +lines#: autocorrelations real/imaginary count of each line within the packet time
+    chars +baselines#: crosscorrelations real/imaginary count of pulses of each line with others ones within the packet time
+    chars +16: 8-byte timestamp of current packet
 
 checksum
 
-    bytes +1: 1-byte CRC of packet payload
+    chars +2: 1-byte CRC of packet payload
 
-The packet rate is determined by the baud rate and the packet size, the sampling rate is determined by the clock tau multiplied by the number of mux lines, divided by the clock tau multiplier plus one power of two.
+EOP
+
+    chars +1: carriage return indicates end of packet
+
+The packet time is determined by the baud rate and the packet size, the sampling rate is determined by the clock tau multiplied by the number of mux lines, raised by the clock tau power of two exponent.
