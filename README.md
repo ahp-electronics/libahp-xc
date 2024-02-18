@@ -43,9 +43,9 @@ header
 
 payload
 
-    chars +lines#: pulses count of each line within the integration time
-    chars +lines#: autocorrelations real/imaginary count of each line within the packet time
-    chars +baselines#: crosscorrelations real/imaginary count of pulses of each line with others ones within the packet time
+    chars +lines*(sample size)#: pulses count of each line within the integration time
+    chars +lines*2*(sample size)#: autocorrelations real/imaginary count of each line within the packet time
+    chars +baselines*2*(sample size/4)#: crosscorrelations real/imaginary count of pulses of each line with others ones within the packet time
     chars +16: 8-byte timestamp of current packet
 
 checksum
