@@ -1289,7 +1289,7 @@ void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t size, size_t s
         value >>= 4;
     }
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
-    ahp_xc_set_test_flags(index, flags&~TEST_STEP);
+    ahp_xc_set_test_flags(index, flags|TEST_STEP);
 }
 
 void ahp_xc_set_channel_auto(uint32_t index, off_t value, size_t size, size_t step)
@@ -1301,31 +1301,31 @@ void ahp_xc_set_channel_auto(uint32_t index, off_t value, size_t size, size_t st
         return;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
     int flags = ahp_xc_get_test_flags(index);
+    int len = (((int)log2(ahp_xc_get_delaysize()) & 3) + 4) >> 2;
     ahp_xc_set_test_flags(index, flags&~TEST_STEP);
     ahp_xc_send_command(CLEAR, CLEAR);
-    int len = (((int)log2(ahp_xc_get_delaysize()) & 3) + 4) >> 2;
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
         ahp_xc_send_command(SET_DELAY, (unsigned char)(step&0xf));
         step >>= 4;
     }
+    len = (((int)log2(ahp_xc_get_delaysize()) & 3) + 4) >> 2;
     ahp_xc_set_test_flags(index, flags|0x10);
     ahp_xc_send_command(CLEAR, CLEAR);
-    len = (((int)log2(ahp_xc_get_delaysize()) & 3) + 4) >> 2;
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
         ahp_xc_send_command(SET_DELAY, (unsigned char)(size&0xf));
         size >>= 4;
     }
+    len = (((int)log2(ahp_xc_get_delaysize()) & 3) + 4) >> 2;
     ahp_xc_set_test_flags(index, flags|0x20);
     ahp_xc_send_command(CLEAR, CLEAR);
-    len = (((int)log2(ahp_xc_get_delaysize()) & 3) + 4) >> 2;
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
         ahp_xc_send_command(SET_DELAY, (unsigned char)(value&0xf));
         value >>= 4;
     }
-    ahp_xc_set_test_flags(index, flags&~TEST_STEP);
+    ahp_xc_set_test_flags(index, flags|TEST_STEP);
 }
 
 void ahp_xc_set_voltage(uint32_t index, unsigned char value)
@@ -1347,9 +1347,9 @@ void ahp_xc_set_test_flags(uint32_t index, int32_t value)
     ahp_xc_select_input(index);
     ahp_xc_test[index] = value;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
-    ahp_xc_send_command(ENABLE_TEST, (unsigned char)((ahp_xc_test[index]>>4)&0xf));
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
     ahp_xc_send_command(ENABLE_TEST, (unsigned char)(ahp_xc_test[index]&0xf));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
+    ahp_xc_send_command(ENABLE_TEST, (unsigned char)((ahp_xc_test[index]>>4)&0xf));
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
 }
 
