@@ -708,8 +708,8 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
                 double rad_m = (sample->correlations[0].phase-correlation.phase)/2.0;
                 correlation.counts += sample->correlations[0].counts;
                 correlation.magnitude += sample->correlations[0].magnitude;
-                correlation.real = 2*sin(rad_p)*cos(rad_m)*correlation.magnitude;
-                correlation.imaginary = 2*cos(rad_p)*cos(rad_m)*correlation.magnitude;
+                correlation.real = sin(2*sin(rad_p)*cos(rad_m))*correlation.magnitude;
+                correlation.imaginary = cos(2*cos(rad_p)*cos(rad_m))*correlation.magnitude;
                 complex_phase_magnitude(&correlation);
                 ahp_xc_free_samples(1, sample);
                 memcpy(&correlations[i+off].correlations[0], &correlation, sizeof(ahp_xc_correlation));
