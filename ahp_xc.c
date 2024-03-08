@@ -151,7 +151,6 @@ static void complex_phase_magnitude(ahp_xc_correlation *sample)
         if(sample->imaginary < 0)
             phase = M_PI*2.0-phase;
     }
-    phase += M_PI;
     sample->magnitude = magnitude;
     sample->phase = phase;
 }
@@ -567,21 +566,17 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
     }
 }
 
-void ahp_xc_start_autocorrelation_scan(uint32_t index, off_t start, size_t size, size_t step)
+void ahp_xc_start_autocorrelation_scan(uint32_t index)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
-    ahp_xc_set_channel_auto(index, start, size, step);
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
 }
 
 void ahp_xc_end_autocorrelation_scan(uint32_t index)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
-    ahp_xc_set_channel_auto(index, 0, 1, 1);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
 }
 
 static void* _get_autocorrelation(void *o)
@@ -667,10 +662,12 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
     ahp_xc_sample *correlations = ahp_xc_alloc_samples(size, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
     char* data = (char*)malloc(ahp_xc_get_packetsize()*len);
     for(i = 0; i < nlines; i++)
-        ahp_xc_start_autocorrelation_scan(lines[i].index, lines[i].start, lines[i].len, lines[i].step);
+        ahp_xc_set_channel_auto(i, lines[i].start, lines[i].len, lines[i].step);
+    ahp_xc_start_autocorrelation_scan(lines[i].index);
     i = 0;
     char* buf = NULL;
     i = 0;
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(i < len) {
         if(*interrupt)
             break;
@@ -685,6 +682,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         (*percent) += 100.0 / len;
         r++;
     }
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
     for(i = 0; i < nlines; i++)
         ahp_xc_end_autocorrelation_scan(lines[i].index);
     i = 0;
@@ -703,16 +701,16 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
                 memset(&correlation, 0, sizeof(ahp_xc_correlation));
                 correlation.lag = ts;
                 ahp_xc_sample *sample = ahp_xc_alloc_samples(1, (size_t)ahp_xc_get_autocorrelator_lagsize());
-                ahp_xc_get_autocorrelation(sample, lines[x].index, packet+y*ahp_xc_get_packetsize(), ts);
+                ahp_xc_get_autocorrelation(&correlations[i+off], lines[x].index, packet+y*ahp_xc_get_packetsize(), ts);
                 double rad_p = (sample->correlations[0].phase+correlation.phase)/2.0;
                 double rad_m = (sample->correlations[0].phase-correlation.phase)/2.0;
                 correlation.counts += sample->correlations[0].counts;
                 correlation.magnitude += sample->correlations[0].magnitude;
-                correlation.real = sin(2*sin(rad_p)*cos(rad_m))*correlation.magnitude;
-                correlation.imaginary = cos(2*cos(rad_p)*cos(rad_m))*correlation.magnitude;
+                correlation.real = 2*sin(rad_p)*cos(rad_m)*correlation.magnitude;
+                correlation.imaginary = 2*cos(rad_p)*cos(rad_m)*correlation.magnitude;
                 complex_phase_magnitude(&correlation);
                 ahp_xc_free_samples(1, sample);
-                memcpy(&correlations[i+off].correlations[0], &correlation, sizeof(ahp_xc_correlation));
+                //memcpy(&correlations[i+off].correlations[0], &correlation, sizeof(ahp_xc_correlation));
                 s++;
             }
             off += lines[x].len/lines[x].step;
@@ -725,21 +723,16 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
     return s;
 }
 
-void ahp_xc_start_crosscorrelation_scan(uint32_t index, off_t start, size_t size, size_t step)
+void ahp_xc_start_crosscorrelation_scan(uint32_t index)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_end_crosscorrelation_scan(index);
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
-    if(!ahp_xc_intensity_crosscorrelator_enabled())
-        ahp_xc_set_channel_auto(index, start, size, step);
-    else
-        ahp_xc_set_channel_cross(index, start, size, step);
     usleep(ahp_xc_get_packettime()*1000000);
     if(!ahp_xc_intensity_crosscorrelator_enabled())
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_CROSS);
     else
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
 }
 
 void ahp_xc_end_crosscorrelation_scan(uint32_t index)
@@ -749,11 +742,6 @@ void ahp_xc_end_crosscorrelation_scan(uint32_t index)
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_CROSS);
     else
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
-    if(!ahp_xc_intensity_crosscorrelator_enabled())
-        ahp_xc_set_channel_auto(index, 0, 1, 0);
-    else
-        ahp_xc_set_channel_cross(index, 0, 1, 0);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
 }
 
 void *_get_crosscorrelation(void *o)
@@ -888,6 +876,7 @@ int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nline
             size *= (lines[index].len / lines[index].step);
         }
     }
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
     char *buffer = (char*)malloc(ahp_xc_get_packetsize() * lines[0].len / lines[0].step);
     ahp_xc_sample *correlations = ahp_xc_alloc_samples((unsigned int)size, (unsigned int)ahp_xc_get_crosscorrelator_lagsize());
     char* sample = (char*)malloc((unsigned int)n+1);
@@ -902,15 +891,16 @@ int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nline
                     continue;
                 if(lines[index].cur_chan >= lines[index].start + (off_t)lines[index].step * (off_t)lines[index].len)
                     continue;
-                if(ahp_xc_intensity_crosscorrelator_enabled()) {
-                    ahp_xc_set_channel_auto(lines[index].index, lines[index].cur_chan, 1, 0);
-                    ahp_xc_start_autocorrelation_scan(lines[0].index, lines[0].start, lines[0].len, lines[0].step);
-                } else {
-                    ahp_xc_set_channel_cross(lines[index].index, lines[index].cur_chan, 1, 0);
-                    ahp_xc_start_crosscorrelation_scan(lines[0].index, lines[0].start, lines[0].len, lines[0].step);
-                }
+                if(!ahp_xc_intensity_crosscorrelator_enabled())
+                    ahp_xc_set_channel_auto(index, lines[index].cur_chan, 1, 0);
+                else
+                    ahp_xc_set_channel_cross(index, lines[0].start, lines[0].len, lines[0].step);
+                usleep(ahp_xc_get_packettime()*1000000);
+
+                ahp_xc_start_crosscorrelation_scan(lines[0].index);
                 lines[index].cur_chan += lines[index].step;
                 i = 0;
+                ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
                 while(i < (int)(lines[0].len/lines[0].step)) {
                     if(*interrupt)
                         break;
@@ -925,6 +915,7 @@ int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nline
                     (*percent) += 100.0 / size;
                     i++;
                 }
+                ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
                 if(ahp_xc_intensity_crosscorrelator_enabled()) {
                     ahp_xc_end_autocorrelation_scan(lines[0].index);
                 } else {

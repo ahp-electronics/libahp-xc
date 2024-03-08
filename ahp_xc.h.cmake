@@ -595,11 +595,8 @@ DLL_EXPORT int32_t ahp_xc_get_packet(ahp_xc_packet *packet);
 /**
 * \brief Initiate an autocorrelation scan
 * \param index The line index.
-* \param start The starting channel for this scan.
-* \param size The number of channels to scan afterwards.
-* \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_autocorrelation_scan(uint32_t index, off_t start, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_start_autocorrelation_scan(uint32_t index);
 
 /**
 * \brief End an autocorrelation scan
@@ -623,11 +620,8 @@ DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint
 /**
 * \brief Initiate a crosscorrelation scan
 * \param index The line index.
-* \param start the starting channel for this scan.
-* \param size The number of channels to scan afterwards.
-* \param step The scan step in channels.
 */
-DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(uint32_t index, off_t start, size_t size, size_t step);
+DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(uint32_t index);
 
 /**
 * \brief End a crosscorrelation scan
