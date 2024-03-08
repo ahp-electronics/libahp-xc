@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['tau_222',['tau',['../structahp__xc__packet.html#a625263de83ae826dda789281eb94404d',1,'ahp_xc_packet']]],
-  ['timestamp_223',['timestamp',['../structahp__xc__packet.html#a7391dd483ec6d983d27c7caee678dae8',1,'ahp_xc_packet']]]
+  ['start_230',['start',['../structahp__xc__scan__request.html#ab0ab0e421b5f65c65f59830fe17877b5',1,'ahp_xc_scan_request']]],
+  ['step_231',['step',['../structahp__xc__scan__request.html#a7ed5911cb7ed4e70c84eebb2907a19d5',1,'ahp_xc_scan_request']]]
 ];
