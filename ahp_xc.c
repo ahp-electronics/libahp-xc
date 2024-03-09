@@ -144,11 +144,13 @@ void wait_no_threads()
 static void complex_phase_magnitude(ahp_xc_correlation *sample)
 {
     if(!ahp_xc_detected) return;
-    double magnitude = (double)sqrt(pow((double)sample->real, 2)+pow((double)sample->imaginary, 2));
+    double cr = (double)sample->real / sample->counts;
+    double ci = (double)sample->imaginary / sample->counts;
+    double magnitude = (double)sqrt(pow(cr, 2)+pow((double)ci, 2));
     double phase = 0.0;
     if(magnitude > 0.0) {
-        phase = asin ((double)sample->real / magnitude);
-        if(sample->imaginary < 0)
+        phase = asin ((double)cr / magnitude);
+        if(ci < 0)
             phase = M_PI*2.0-phase;
     }
     sample->magnitude = magnitude;
@@ -452,6 +454,15 @@ int32_t ahp_xc_connect(const char *port, int32_t high_rate)
 void ahp_xc_disconnect()
 {
     if(ahp_xc_connected) {
+        if(ahp_xc_detected) {
+            ahp_xc_send_command(CLEAR, SET_INDEX);
+            ahp_xc_send_command(CLEAR, SET_LEDS);
+            ahp_xc_send_command(CLEAR, SET_BAUD_RATE);
+            ahp_xc_send_command(CLEAR, SET_VOLTAGE);
+            ahp_xc_send_command(CLEAR, SET_DELAY);
+            ahp_xc_send_command(CLEAR, ENABLE_TEST);
+            ahp_xc_send_command(CLEAR, CLEAR);
+        }
         if(ahp_xc_mutexes_initialized) {
             pthread_mutex_unlock(&ahp_xc_mutex);
             pthread_mutex_destroy(&ahp_xc_mutex);
@@ -708,7 +719,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
                 correlation.magnitude += sample->correlations[0].magnitude;
                 correlation.real = 2*sin(rad_p)*cos(rad_m)*correlation.magnitude;
                 correlation.imaginary = 2*cos(rad_p)*cos(rad_m)*correlation.magnitude;
-                complex_phase_magnitude(&correlation);
+                //complex_phase_magnitude(&correlation);
                 ahp_xc_free_samples(1, sample);
                 //memcpy(&correlations[i+off].correlations[0], &correlation, sizeof(ahp_xc_correlation));
                 s++;
@@ -794,7 +805,7 @@ void *_get_crosscorrelation(void *o)
             counts += strtoul(subpacket, NULL, 16)|1;
         }
         packet += n*ahp_xc_get_nlines();
-        packet += n*ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()*2;
+        packet += n*ahp_xc_get_crosscorrelator_lagsize()*ahp_xc_get_nlines()*2;
         packet += n*index*2;
         for(y = 0; y < sample->lag_size; y++) {
             sample->correlations[y].lag = sample->lag+(y-ahp_xc_get_crosscorrelator_lagsize()+1)*ahp_xc_get_sampletime();
@@ -1202,10 +1213,11 @@ void ahp_xc_set_correlation_order(uint32_t order)
     int32_t idx = 0;
     if(order >= ahp_xc_get_nlines())
         return;
-    ahp_xc_correlation_order = order;
+    ahp_xc_correlation_order = fmax(2, order);
+    order -= 2;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
     ahp_xc_send_command(CLEAR, CLEAR);
-    int len = (((int)log2(ahp_xc_get_delaysize()) & 3) + 4) >> 2;
+    int len = (((int)log2(order) & 3) + 4) >> 2;
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
         ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)(order&0xf));
@@ -1216,7 +1228,7 @@ void ahp_xc_set_correlation_order(uint32_t order)
 
 int32_t ahp_xc_get_correlation_order()
 {
-    return ahp_xc_correlation_order + 2;
+    return ahp_xc_correlation_order;
 }
 
 unsigned char ahp_xc_get_test_flags(uint32_t index)
@@ -1326,9 +1338,9 @@ void ahp_xc_set_voltage(uint32_t index, unsigned char value)
     value = (unsigned char)(value < 0xff ? value : 0xff);
     ahp_xc_voltage = value;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
-    ahp_xc_send_command(SET_VOLTAGE, (unsigned char)((ahp_xc_voltage>>4)&0xf));
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
     ahp_xc_send_command(SET_VOLTAGE, (unsigned char)(ahp_xc_voltage&0xf));
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
+    ahp_xc_send_command(SET_VOLTAGE, (unsigned char)((ahp_xc_voltage>>4)&0xf));
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
 }
 
