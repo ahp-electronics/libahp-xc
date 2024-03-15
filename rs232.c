@@ -537,17 +537,22 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         while(bytes_left > 0 && ntries-->0) {
             usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
-            if(n<1) {
+            if(n<0) {
                 err = -errno;
-                continue;
+                if(err == -EAGAIN)
+                    continue;
+                else break;
             }
             nbytes += n;
             bytes_left -= n;
         }
         pthread_mutex_unlock(&ahp_serial_mutex);
     }
-    if(nbytes < size)
+    if(nbytes < size) {
+        if(ntries < 0)
+            return -ENODATA;
         return err;
+    }
     return nbytes;
 }
 

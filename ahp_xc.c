@@ -1028,7 +1028,6 @@ int32_t ahp_xc_get_properties()
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(ntries-- > 0) {
-        ahp_serial_AlignFrame('\r', -1);
         data = grab_packet(NULL);
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         if(data == NULL)
