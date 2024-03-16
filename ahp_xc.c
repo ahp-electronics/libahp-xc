@@ -418,8 +418,8 @@ int32_t ahp_xc_connect_fd(int32_t fd)
         }
         nthreads = 0;
         xc_current_input = 0;
-        ahp_xc_connected = 1;
         ahp_xc_detected = !ahp_xc_get_properties();
+        ahp_xc_connected = ahp_xc_detected;
         return !ahp_xc_detected;
     }
     return 1;
@@ -452,8 +452,8 @@ try_connect:
         }
         nthreads = 0;
         xc_current_input = 0;
-        ahp_xc_connected = 1;
         ahp_xc_detected = !ahp_xc_get_properties();
+        ahp_xc_connected = ahp_xc_detected;
     }
     if(!ahp_xc_detected) {
         if(ahp_xc_rate < R_BASEX16) {
