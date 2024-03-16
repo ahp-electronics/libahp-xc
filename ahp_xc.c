@@ -322,8 +322,7 @@ char* ahp_xc_get_header()
 
 int32_t ahp_xc_get_baudrate()
 {
-    if(!ahp_xc_detected) return 0;
-    return XC_BASE_RATE << ahp_xc_rate;
+    return ahp_xc_baserate << ahp_xc_rate;
 }
 
 uint32_t ahp_xc_get_bps()
@@ -401,6 +400,8 @@ int32_t ahp_xc_connect_fd(int32_t fd)
 {
     if(ahp_xc_connected)
         return 0;
+    ahp_xc_connected = 0;
+    ahp_xc_detected = 0;
     ahp_xc_bps = 0;
     ahp_xc_nlines = 0;
     ahp_xc_nbaselines = 0;
@@ -418,27 +419,32 @@ int32_t ahp_xc_connect_fd(int32_t fd)
         nthreads = 0;
         xc_current_input = 0;
         ahp_xc_connected = 1;
-        return 0;
+        ahp_xc_detected = !ahp_xc_get_properties();
+        return !ahp_xc_detected;
     }
     return 1;
 }
 
-int32_t ahp_xc_connect(const char *port, int32_t high_rate)
+int32_t ahp_xc_connect(const char *port)
 {
     if(ahp_xc_connected)
         return 0;
     int32_t ret = 1;
+    ahp_xc_connected = 0;
+    ahp_xc_detected = 0;
     ahp_xc_bps = 0;
     ahp_xc_nlines = 0;
     ahp_xc_nbaselines = 0;
     ahp_xc_delaysize = 0;
     ahp_xc_frequency = 0;
     ahp_xc_packetsize = 1344;
-    ahp_xc_baserate = (high_rate ? XC_HIGH_RATE : XC_BASE_RATE);
-    ahp_xc_rate = R_BASE;
     strcpy(ahp_xc_comport, port);
+    int32_t try_high_rate = 1;
+    ahp_xc_baserate = XC_BASE_RATE;
+    ahp_xc_rate = R_BASE;
     if(!ahp_serial_OpenComport(ahp_xc_comport))
-        ret = ahp_serial_SetupPort(ahp_xc_baserate, "8N2", 0);
+try_connect:
+        ret = ahp_serial_SetupPort(ahp_xc_get_baudrate(), "8N1", 0);
     if(!ret) {
         if(!ahp_xc_mutexes_initialized) {
             pthread_mutex_init(&ahp_xc_mutex, &ahp_serial_mutex_attr);
@@ -447,9 +453,22 @@ int32_t ahp_xc_connect(const char *port, int32_t high_rate)
         nthreads = 0;
         xc_current_input = 0;
         ahp_xc_connected = 1;
-        ahp_xc_detected = 0;
+        ahp_xc_detected = !ahp_xc_get_properties();
     }
-    return ret;
+    if(!ahp_xc_detected) {
+        if(ahp_xc_rate < R_BASEX16) {
+            ahp_xc_rate ++;
+            goto try_connect;
+        }
+        if(try_high_rate) {
+            try_high_rate = 0;
+            ahp_xc_baserate = XC_HIGH_RATE;
+            ahp_xc_rate = R_BASE;
+            goto try_connect;
+        }
+    }
+connect_end:
+    return !ahp_xc_detected;
 }
 void ahp_xc_disconnect()
 {
@@ -1023,7 +1042,7 @@ int32_t ahp_xc_get_properties()
     ahp_xc_header_len = 0;
     char *data = NULL;
     int32_t n_read = 0;
-    int32_t ntries = 16;
+    int32_t ntries = 2;
     int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);

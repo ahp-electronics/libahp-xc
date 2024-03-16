@@ -311,11 +311,10 @@ DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *basel
 /**
 * \brief Connect to a serial port
 * \param port The serial port name or filename
-* \param high_rate The correlator needs high-speed communicator rate
 * \return Returns non-zero on failure
 * \sa ahp_xc_disconnect
 */
-DLL_EXPORT int32_t ahp_xc_connect(const char *port, int32_t high_rate);
+DLL_EXPORT int32_t ahp_xc_connect(const char *port);
 
 /**
 * \brief Connect to a serial port or other stream associated to the given file descriptor

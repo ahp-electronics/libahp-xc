@@ -528,7 +528,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
 {
     int n = -ENODEV;
     int nbytes = 0;
-    int ntries = size*2;
+    int ntries = 2;
     int bytes_left = size;
     int err = 0;
     if(ahp_serial_mutexes_initialized) {
