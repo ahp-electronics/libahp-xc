@@ -48,34 +48,38 @@ extern "C" {
 #ifdef __ANDROID__
 #include <linux/usbdevice_fs.h>
 #include <sys/ioctl.h>
-int ahp_serial_in_ep = 0;
-int ahp_serial_out_ep = 0;
-void ahp_serial_set_in_ep(int ep) {
-    ahp_serial_in_ep = ep;
+int ahp_in_ep = 0;
+int ahp_out_ep = 0;
+void ahp_set_in_ep(int ep) {
+    ahp_in_ep = ep;
 }
-void ahp_serial_set_out_ep(int ep) {
-    ahp_serial_out_ep = ep;
+void ahp_set_out_ep(int ep) {
+    ahp_out_ep = ep;
 }
+#ifdef write
 #undef write
 ssize_t write(int __fd, const void* __buf, size_t __count) {
     struct usbdevfs_bulktransfer bt;
-    bt.ep = ahp_serial_out_ep;
+    bt.ep = ahp_out_ep;
     bt.len = __count;
     bt.timeout = 100;
     bt.data = __buf;
     ioctl(__fd, USBDEVFS_BULK, &bt);
     return bt.len;
 }
+#endif
+#ifdef read
 #undef read
 ssize_t read(int __fd, void* __buf, size_t __count) {
     struct usbdevfs_bulktransfer bt;
-    bt.ep = ahp_serial_in_ep;
+    bt.ep = ahp_in_ep;
     bt.len = __count;
     bt.timeout = 100;
     bt.data = __buf;
     ioctl(__fd, USBDEVFS_BULK, &bt);
     return bt.len;
 }
+#endif
 #endif
 
 #else
