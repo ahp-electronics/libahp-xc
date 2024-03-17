@@ -45,6 +45,39 @@ extern "C" {
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#ifdef __ANDROID__
+#include <linux/usbdevice_fs.h>
+#include <sys/ioctl.h>
+int ahp_serial_in_ep = 0;
+int ahp_serial_out_ep = 0;
+void ahp_serial_set_in_ep(int ep) {
+    ahp_serial_in_ep = ep;
+}
+void ahp_serial_set_out_ep(int ep) {
+    ahp_serial_out_ep = ep;
+}
+#undef write
+int write(fd, buf, len) {
+    struct usbdevfs_bulktransfer bt;
+    bt.ep = ahp_serial_out_ep;
+    bt.len = len;
+    bt.timeout = 100;
+    bt.data = buf;
+    ioctl(fd, USBDEVFS_BULK, &bt);
+    return bt.len;
+}
+#undef read
+int read(fd, buf, len) {
+    struct usbdevfs_bulktransfer bt;
+    bt.ep = ahp_serial_in_ep;
+    bt.len = len;
+    bt.timeout = 100;
+    bt.data = buf;
+    ioctl(fd, USBDEVFS_BULK, &bt);
+    return bt.len;
+}
+#endif
+
 #else
 #undef UNICODE
 #undef _UNICODE
