@@ -45,6 +45,7 @@ extern "C" {
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#ifdef __ANDROID__
 #include <sys/un.h>
 int ahp_connect_to_unix_socket(const char *name)
 {
@@ -54,12 +55,10 @@ int ahp_connect_to_unix_socket(const char *name)
         memset(&server_address, 0, sizeof(struct sockaddr_un));
         server_address.sun_family = AF_UNIX;
         sprintf(server_address.sun_path, "%s", name);
-        if(!connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)))
-            return client_socket;
+        connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address));
     }
-    return -1;
+    return client_socket;
 }
-#ifdef __ANDROID__
 #endif
 
 #else
