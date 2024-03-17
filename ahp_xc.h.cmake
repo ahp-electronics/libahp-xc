@@ -308,6 +308,15 @@ DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *basel
 */
 /**\{*/
 
+#ifdef __ANDROID__
+/**
+* \brief Connect to an unix socket
+* \param name The name of the socket
+* \return Returns the file descriptor of the connection
+*/
+DLL_EXPORT int32_t ahp_connect_to_unix_socket(const char *name);
+#endif
+
 /**
 * \brief Connect to a serial port
 * \param port The serial port name or filename
