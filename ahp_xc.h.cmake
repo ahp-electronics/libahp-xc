@@ -308,20 +308,6 @@ DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *basel
 */
 /**\{*/
 
-#ifdef __ANDROID__
-/**
-* \brief Set the in endpoint number
-* \param ep endpoint number
-*/
-DLL_EXPORT void ahp_set_in_ep(int ep);
-
-/**
-* \brief Set the out endpoint number
-* \param ep endpoint number
-*/
-DLL_EXPORT void ahp_set_out_ep(int ep);
-#endif
-
 /**
 * \brief Connect to a serial port
 * \param port The serial port name or filename

@@ -46,52 +46,16 @@ extern "C" {
 #include <netinet/in.h>
 
 #ifdef __ANDROID__
-#include <linux/usbdevice_fs.h>
-#include <sys/ioctl.h>
-int ahp_in_ep = -1;
-int ahp_out_ep = -1;
-void ahp_set_in_ep(int ep) {
-    ahp_in_ep = ep;
+#include <sys/un.h>
+int ahp_connect_to_unix_socket(const char *name)
+{
+    int client_socket = socket(AF_UNIX, SOCK_STREAM, 0);
+    struct sockaddr_un server_address;
+    memset(&server_address, 0, sizeof(server_address));
+    server_address.sun_family = AF_UNIX;
+    strcpy(server_address.sun_path, name);
+    connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address));
 }
-void ahp_set_out_ep(int ep) {
-    ahp_out_ep = ep;
-}
-#ifdef write
-#undef write
-ssize_t write(int __fd, const void* __buf, size_t __count) {
-    if(ahp_out_ep < 0) {
-        FILe *f = fdopen(__fd, "w");
-        int err = fwrite(f, __buf, __count);
-        fclose(f);
-        return err;
-    }
-    struct usbdevfs_bulktransfer bt;
-    bt.ep = ahp_out_ep;
-    bt.len = __count;
-    bt.timeout = 100;
-    bt.data = __buf;
-    ioctl(__fd, USBDEVFS_BULK, &bt);
-    return bt.len;
-}
-#endif
-#ifdef read
-#undef read
-ssize_t read(int __fd, void* __buf, size_t __count) {
-    if(ahp_in_ep < 0) {
-        FILe *f = fdopen(__fd, "r");
-        int err = fread(f, __buf, __count);
-        fclose(f);
-        return err;
-    }
-    struct usbdevfs_bulktransfer bt;
-    bt.ep = ahp_in_ep;
-    bt.len = __count;
-    bt.timeout = 100;
-    bt.data = __buf;
-    ioctl(__fd, USBDEVFS_BULK, &bt);
-    return bt.len;
-}
-#endif
 #endif
 
 #else
