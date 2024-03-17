@@ -57,23 +57,23 @@ void ahp_serial_set_out_ep(int ep) {
     ahp_serial_out_ep = ep;
 }
 #undef write
-int write(fd, buf, len) {
+ssize_t write(int __fd, const void* __buf, size_t __count) {
     struct usbdevfs_bulktransfer bt;
     bt.ep = ahp_serial_out_ep;
-    bt.len = len;
+    bt.len = __count;
     bt.timeout = 100;
-    bt.data = buf;
-    ioctl(fd, USBDEVFS_BULK, &bt);
+    bt.data = __buf;
+    ioctl(__fd, USBDEVFS_BULK, &bt);
     return bt.len;
 }
 #undef read
-int read(fd, buf, len) {
+ssize_t read(int __fd, void* __buf, size_t __count) {
     struct usbdevfs_bulktransfer bt;
     bt.ep = ahp_serial_in_ep;
-    bt.len = len;
+    bt.len = __count;
     bt.timeout = 100;
-    bt.data = buf;
-    ioctl(fd, USBDEVFS_BULK, &bt);
+    bt.data = __buf;
+    ioctl(__fd, USBDEVFS_BULK, &bt);
     return bt.len;
 }
 #endif
