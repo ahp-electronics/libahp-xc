@@ -54,7 +54,9 @@ int ahp_connect_to_unix_socket(const char *name)
     memset(&server_address, 0, sizeof(server_address));
     server_address.sun_family = AF_UNIX;
     strcpy(server_address.sun_path, name);
-    connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address));
+    if(!connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)));
+        return client_socket;
+    return -1;
 }
 #endif
 
