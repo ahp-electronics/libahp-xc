@@ -215,7 +215,7 @@ static char * grab_packet(double *timestamp)
     }
     int32_t nread = 0;
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
-    if(buf[0] == '\r') {
+    if(buf[0] == '\r' || buf[0] == '\n') {
         ahp_serial_AlignFrame('\r', (int)size);
         goto err_end;
     }
@@ -398,7 +398,7 @@ int32_t ahp_xc_get_fd()
 
 int32_t ahp_xc_connect_fd(int32_t fd)
 {
-    if(ahp_xc_connected)
+    if(ahp_xc_detected)
         return 0;
     ahp_xc_connected = 0;
     ahp_xc_detected = 0;
@@ -429,7 +429,7 @@ int32_t ahp_xc_connect_fd(int32_t fd)
 
 int32_t ahp_xc_connect(const char *port)
 {
-    if(ahp_xc_connected)
+    if(ahp_xc_detected)
         return 0;
     int32_t ret = 1;
     ahp_xc_connected = 0;
