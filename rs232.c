@@ -525,14 +525,8 @@ static void ahp_serial_flushRXTX()
 
 #endif
 
-static int ahp_serial_OpenComport(const char* devname)
+static int ahp_serial_OpenComport(const char* dev_name)
 {
-    char dev_name[128];
-#ifndef WINDOWS
-    sprintf(dev_name, "/dev/%s", devname);
-#else
-    sprintf(dev_name, "\\\\.\\%s", devname);
-#endif
     if(ahp_serial_fd == -1)
         ahp_serial_fd = open(dev_name, O_RDWR);
 
