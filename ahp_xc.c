@@ -410,6 +410,7 @@ int32_t ahp_xc_connect_fd(int32_t fd)
     ahp_xc_packetsize = 1344;
     ahp_xc_rate = R_BASE;
     if(fd > -1) {
+        ahp_xc_connected = 1;
         ahp_xc_detected = 0;
         ahp_serial_SetFD(fd, XC_BASE_RATE);
         if(!ahp_xc_mutexes_initialized) {
@@ -418,12 +419,12 @@ int32_t ahp_xc_connect_fd(int32_t fd)
         }
         nthreads = 0;
         xc_current_input = 0;
-        ahp_xc_connected = 1;
         ahp_xc_get_properties();
-        ahp_xc_connected = ahp_xc_detected;
-        return !ahp_xc_detected;
     }
-    return 1;
+    if(!ahp_xc_detected)
+        ahp_xc_disconnect();
+    ahp_xc_connected = ahp_xc_detected;
+    return !ahp_xc_detected;
 }
 
 int32_t ahp_xc_connect(const char *port)
@@ -444,6 +445,7 @@ int32_t ahp_xc_connect(const char *port)
     ahp_xc_baserate = XC_BASE_RATE;
     ahp_xc_rate = R_BASE;
     if(!ahp_serial_OpenComport(ahp_xc_comport))
+        ahp_xc_connected = 1;
 try_connect:
         ret = ahp_serial_SetupPort(ahp_xc_get_baudrate(), "8N1", 0);
     if(!ret) {
@@ -453,9 +455,7 @@ try_connect:
         }
         nthreads = 0;
         xc_current_input = 0;
-        ahp_xc_connected = 1;
         ahp_xc_get_properties();
-        ahp_xc_connected = ahp_xc_detected;
     }
     if(!ahp_xc_detected) {
         if(ahp_xc_rate < R_BASEX16) {
@@ -470,6 +470,9 @@ try_connect:
         }
     }
 connect_end:
+    if(!ahp_xc_detected)
+        ahp_xc_disconnect();
+    ahp_xc_connected = ahp_xc_detected;
     return !ahp_xc_detected;
 }
 void ahp_xc_disconnect()
