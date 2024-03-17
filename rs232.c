@@ -45,19 +45,21 @@ extern "C" {
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#ifdef __ANDROID__
 #include <sys/un.h>
 int ahp_connect_to_unix_socket(const char *name)
 {
     int client_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-    struct sockaddr_un server_address;
-    memset(&server_address, 0, sizeof(server_address));
-    server_address.sun_family = AF_UNIX;
-    strcpy(server_address.sun_path, name);
-    if(!connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)));
-        return client_socket;
+    if(client_socket != -1) {
+        struct sockaddr_un server_address;
+        memset(&server_address, 0, sizeof(struct sockaddr_un));
+        server_address.sun_family = AF_UNIX;
+        sprintf(server_address.sun_path, "%s", name);
+        if(!connect(client_socket, (struct sockaddr *) &server_address, sizeof(server_address)))
+            return client_socket;
+    }
     return -1;
 }
+#ifdef __ANDROID__
 #endif
 
 #else
