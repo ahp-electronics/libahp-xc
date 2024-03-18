@@ -396,6 +396,24 @@ int32_t ahp_xc_get_fd()
     return ahp_serial_GetFD();
 }
 
+int32_t ahp_xc_connect_udp(const char *address, int port)
+{
+    int fd = -1;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd >= 0 ) {
+        struct sockaddr_in addr;
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        addr.sin_addr.s_addr = inet_addr(address);
+        if(!connect(fd, (const struct sockaddr *)&addr, sizeof(addr)))
+            return ahp_xc_connect_fd(fd);
+    }
+
+    return 1;
+}
+
 int32_t ahp_xc_connect_fd(int32_t fd)
 {
     if(ahp_xc_detected)

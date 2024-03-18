@@ -308,15 +308,6 @@ DLL_EXPORT double* ahp_xc_get_2d_projection(double alt, double az, double *basel
 */
 /**\{*/
 
-#ifdef __ANDROID__
-/**
-* \brief Connect to an unix socket
-* \param name The name of the socket
-* \return Returns the file descriptor of the connection
-*/
-DLL_EXPORT int32_t ahp_connect_to_unix_socket(const char *name);
-#endif
-
 /**
 * \brief Connect to a serial port
 * \param port The serial port name or filename
@@ -331,6 +322,14 @@ DLL_EXPORT int32_t ahp_xc_connect(const char *port);
 * \return Returns non-zero on failure
 */
 DLL_EXPORT int32_t ahp_xc_connect_fd(int32_t fd);
+
+/**
+* \brief Connect to the XC correlator throught an UDP connection
+* \param address The ip address of the server
+* \param port The port on which the server should connect
+* \return non-zero on failure
+*/
+DLL_EXPORT int32_t ahp_xc_connect_udp(const char *address, int port);
 
 /**
 * \brief Obtain the serial port file descriptor
