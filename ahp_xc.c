@@ -215,11 +215,12 @@ static char * grab_packet(double *timestamp)
     }
     int32_t nread = 0;
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
-    if(buf[0] == '\r' || buf[0] == '\n') {
+    if(buf[0] == '\0' || buf[0] == '\r' || buf[0] == '\n') {
         ahp_serial_AlignFrame('\r', (int)size);
         goto err_end;
     }
     buf[nread-1] = 0;
+    nread = strlen((char*)buf);
     if(nread == 0) {
         errno = ENODATA;
     } else if(nread < 0) {
@@ -231,16 +232,13 @@ static char * grab_packet(double *timestamp)
             ahp_serial_AlignFrame('\r', -1);
         } else if(check_sof((char*)buf)) {
             errno = 0;
-        } else if(strlen((char*)buf) < size-1) {
+        } else if(nread < size-1) {
             errno = ERANGE;
         } else {
             errno = calc_checksum((char*)buf);
         }
-    } else if(size == 17) {
-        fprintf(stdout, "Model: %s\n", buf);
-        errno = 0;
     }
-    if(errno)
+    if(nread == 0 || errno)
         goto err_end;
     if(timestamp != NULL)
         *timestamp = get_timestamp(buf);
@@ -396,24 +394,6 @@ int32_t ahp_xc_get_fd()
     return ahp_serial_GetFD();
 }
 
-int32_t ahp_xc_connect_udp(const char *address, int port)
-{
-    int fd = -1;
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd >= 0 ) {
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-        addr.sin_addr.s_addr = inet_addr(address);
-        if(!connect(fd, (const struct sockaddr *)&addr, sizeof(addr)))
-            return ahp_xc_connect_fd(fd);
-    }
-
-    return 1;
-}
-
 int32_t ahp_xc_connect_fd(int32_t fd)
 {
     if(ahp_xc_detected)
@@ -474,18 +454,6 @@ try_connect:
         nthreads = 0;
         xc_current_input = 0;
         ahp_xc_get_properties();
-    }
-    if(!ahp_xc_detected) {
-        if(ahp_xc_rate < R_BASEX16) {
-            ahp_xc_rate ++;
-            goto try_connect;
-        }
-        if(try_high_rate) {
-            try_high_rate = 0;
-            ahp_xc_baserate = XC_HIGH_RATE;
-            ahp_xc_rate = R_BASE;
-            goto try_connect;
-        }
     }
 connect_end:
     if(!ahp_xc_detected)
@@ -1065,15 +1033,15 @@ int32_t ahp_xc_get_properties()
     ahp_xc_header_len = 0;
     char *data = NULL;
     int32_t n_read = 0;
-    int32_t ntries = 2;
+    int32_t ntries = 5;
     int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(ntries-- > 0) {
         data = grab_packet(NULL);
-        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         if(data == NULL)
             continue;
+        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         int len = 0;
         char *n = (char*)malloc(2);
         char *buf = data;

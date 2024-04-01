@@ -522,7 +522,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
 {
     int n = -ENODEV;
     int nbytes = 0;
-    int ntries = 2;
+    int ntries = size;
     int bytes_left = size;
     int err = 0;
     if(ahp_serial_mutexes_initialized) {
@@ -533,16 +533,14 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<0) {
                 err = -errno;
-                if(err == -EAGAIN)
-                    continue;
-                else break;
+                continue;
             }
             nbytes += n;
             bytes_left -= n;
         }
         pthread_mutex_unlock(&ahp_serial_mutex);
     }
-    if(nbytes < 0) {
+    if(nbytes < 1) {
         if(ntries < 0)
             return -ENODATA;
         return err;
@@ -605,10 +603,7 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
     while(c != sof && (maxtries > 0 ? maxtries-- > 0 : 1)) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
-          if(errno == EAGAIN)
-              continue;
-          else
-              return errno;
+            continue;
         }
     }
     return 0;

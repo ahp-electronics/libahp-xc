@@ -111,9 +111,7 @@ DLL_EXPORT void ahp_set_stderr(FILE *f);
 ///This library version
 #define AHP_XC_VERSION @AHP_XC_VERSION@
 ///The base baud rate of the XC cross-correlators
-#define XC_BASE_RATE ((int)57600)
-///The base baud rate for big packet XC cross-correlators
-#define XC_HIGH_RATE ((int)2000000)
+#define XC_BASE_RATE ((int)2000000)
 ///The PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 ///The bitwise mask of the led lines enabled when HAS_LEDS is true
@@ -322,14 +320,6 @@ DLL_EXPORT int32_t ahp_xc_connect(const char *port);
 * \return Returns non-zero on failure
 */
 DLL_EXPORT int32_t ahp_xc_connect_fd(int32_t fd);
-
-/**
-* \brief Connect to the XC correlator throught an UDP connection
-* \param address The ip address of the server
-* \param port The port on which the server should connect
-* \return non-zero on failure
-*/
-DLL_EXPORT int32_t ahp_xc_connect_udp(const char *address, int port);
 
 /**
 * \brief Obtain the serial port file descriptor
