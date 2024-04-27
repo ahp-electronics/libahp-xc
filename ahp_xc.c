@@ -80,7 +80,7 @@ static int ahp_xc_header_len = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
 
-static uint32_t get_nbaseprisms(int nlines, int32_t order)
+static uint32_t get_npolytopes(int nlines, int32_t order)
 {
     if(!ahp_xc_detected) return 0;
     return nlines * (nlines - 1) / (pow(order, 2) / 2);
@@ -341,7 +341,7 @@ uint32_t ahp_xc_get_nbaselines()
     return ahp_xc_get_nlines() * (ahp_xc_get_nlines() - 1) / 2;
 }
 
-uint32_t ahp_xc_get_nbaseprisms(int32_t order)
+uint32_t ahp_xc_get_npolytopes(int32_t order)
 {
     if(!ahp_xc_detected) return 0;
     return ahp_xc_get_nlines() * (ahp_xc_get_nlines() - 1) / (pow(order, 2) / 2);
@@ -884,7 +884,7 @@ int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nline
     for(i = 0; i < order; i++) {
     }
     int32_t *inputs = (int*)malloc(sizeof(int)*ahp_xc_get_correlation_order());
-    for(x = 0; x < get_nbaseprisms(nlines, order); x++) {
+    for(x = 0; x < get_npolytopes(nlines, order); x++) {
         for(y = 0; y < order; y++) {
             int index = get_line_index(nlines, x, y);
             inputs[y] = lines[index].index;
@@ -905,7 +905,7 @@ int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nline
     (*percent) = 0;
     o = 0;
     while(o < size && !*interrupt) {
-        for(x = 0; x < get_nbaseprisms(nlines, order) && !*interrupt; x++) {
+        for(x = 0; x < get_npolytopes(nlines, order) && !*interrupt; x++) {
             for(y = 1; y < order && !*interrupt; y++) {
                 int index = get_line_index(nlines, x, y);
                 if(lines[0].cur_chan >= lines[0].start + (off_t)lines[0].step * (off_t)lines[0].len)

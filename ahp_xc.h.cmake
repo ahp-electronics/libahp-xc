@@ -111,7 +111,7 @@ DLL_EXPORT void ahp_set_stderr(FILE *f);
 ///This library version
 #define AHP_XC_VERSION @AHP_XC_VERSION@
 ///The base baud rate of the XC cross-correlators
-#define XC_BASE_RATE ((int)2000000)
+#define XC_BASE_RATE ((int)57600)
 ///The PLL frequency of the XC cross-correlators
 #define AHP_XC_PLL_FREQUENCY 400000000
 ///The bitwise mask of the led lines enabled when HAS_LEDS is true
@@ -427,11 +427,11 @@ DLL_EXPORT int32_t ahp_xc_get_crosscorrelation_index(int32_t *lines, int32_t ord
 DLL_EXPORT int32_t ahp_xc_get_line_index(int32_t idx, int32_t order);
 
 /**
-* \brief Obtain the correlator total baseprisms for arbitrary degree of coherence orders
+* \brief Obtain the correlator total polytopes for arbitrary degree of coherence orders
 * \param order The degree of coherence order
 * \return Returns the baselines quantity
 */
-DLL_EXPORT uint32_t ahp_xc_get_nbaseprisms(int32_t order);
+DLL_EXPORT uint32_t ahp_xc_get_npolytopes(int32_t order);
 
 /**
 * \brief Obtain the correlator maximum delay value
