@@ -198,7 +198,7 @@ SCAN_CROSS = 1<<2,
 ///BCM modulation on voltage led
 TEST_BCM = 1<<3,
 ///Set channel scan step
-TEST_STEP = 7<<5,
+TEST_STEP = 3<<4,
 ///All tests enabled
 TEST_ALL = 0xf,
 } xc_test_flags;
