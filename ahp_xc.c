@@ -683,7 +683,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         size += lines[i].len/lines[i].step;
     }
     ahp_xc_sample *correlations = ahp_xc_alloc_samples(size, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
-    char* data = (char*)malloc(ahp_xc_get_packetsize()*len+1);
+    char* data = (char*)malloc(ahp_xc_get_packetsize()*(len+1));
     for(i = 0; i < nlines; i++) {
         ahp_xc_select_input(lines[i].index);
         int capture_flags = ahp_xc_get_capture_flags();
@@ -699,6 +699,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
     ahp_serial_flushRX();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
+    ahp_serial_AlignFrame('\r', ahp_xc_get_packetsize());
     while(i < len) {
         if(*interrupt)
             break;
@@ -706,7 +707,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         ahp_serial_RecvBuf((unsigned char*)buf, ahp_xc_get_packetsize());
         if(check_sof((char*)buf))
             i = 0;
-        memcpy(data+i*ahp_xc_get_packetsize()+1, buf, ahp_xc_get_packetsize());
+        memcpy(data+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
         i++;
         free(buf);
         (*percent) += 100.0 / len;
