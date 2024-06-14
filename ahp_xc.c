@@ -264,7 +264,7 @@ void ahp_xc_select_input(uint32_t index)
     if(index >= ahp_xc_get_nlines())
         return;
     ahp_xc_send_command(CLEAR, SET_INDEX);
-    int len = ((int)log2(ahp_xc_get_nlines()) & ~3) / 4;
+    int len = (((int)log2(ahp_xc_get_nlines()) & ~3) + 4) / 4;
     ahp_xc_send_command(SET_INDEX, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
         ahp_xc_send_command(SET_INDEX, (unsigned char)(index&0xf));
@@ -697,7 +697,9 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
     char* buf = NULL;
     i = 0;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
+    ahp_serial_flushRX();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
+    //ahp_serial_AlignFrame('/r', ahp_xc_get_packetsize());
     while(i < len) {
         if(*interrupt)
             break;
@@ -705,7 +707,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         ahp_serial_RecvBuf((unsigned char*)buf, ahp_xc_get_packetsize());
         if(check_sof((char*)buf))
             i = 0;
-        memcpy(data+i*ahp_xc_get_packetsize(), buf, ahp_xc_get_packetsize());
+        memcpy(data+i*ahp_xc_get_packetsize()+1, buf, ahp_xc_get_packetsize());
         i++;
         free(buf);
         (*percent) += 100.0 / len;
@@ -744,7 +746,8 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         wait_no_threads();
         i++;
     }
-    free(data);
+    if(data != NULL)
+        free(data);
     *autocorrelations = correlations;
     return s;
 }
@@ -1259,7 +1262,7 @@ void ahp_xc_set_correlation_order(uint32_t order)
     ahp_xc_correlation_order = fmax(2, order);
     order -= 2;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
-    int len = ((int)log2(order) & ~3) / 4;
+    int len = (((int)log2(order) & ~3) + 4)/ 4;
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
         ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)(order&0xf));
@@ -1291,8 +1294,8 @@ void ahp_xc_set_leds(uint32_t index, int32_t leds)
 {
     if(!ahp_xc_detected) return;
     ahp_xc_leds[index] = (unsigned char)leds;
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
     ahp_xc_select_input(index);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
     ahp_xc_send_command(SET_LEDS, (unsigned char)((leds & (0xf & ~AHP_XC_LEDS_MASK)) | (ahp_xc_has_leds() ? leds & AHP_XC_LEDS_MASK : 0)));
     leds >>= 4;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
@@ -1312,7 +1315,7 @@ void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t size, size_t s
     ahp_xc_cross_channel[index].step = step;
     int capture_flags = ahp_xc_get_capture_flags();
     int flags = ahp_xc_get_test_flags(index)&~TEST_STEP;
-    int len = ((int)log2(step) & ~3) / 4;
+    int len = (((int)log2(step) & ~3) + 4) / 4;
     ahp_xc_set_test_flags(index, flags);
     ahp_xc_set_capture_flags(CAP_EXTRA_CMD);
     ahp_xc_send_command(CLEAR, SET_DELAY);
@@ -1322,7 +1325,7 @@ void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t size, size_t s
         ahp_xc_send_command(SET_DELAY, (unsigned char)(step&0xf));
         step >>= 4;
     }
-    len = ((int)log2(size) & ~3) / 4;
+    len = (((int)log2(size) & ~3) + 4) / 4;
     ahp_xc_set_test_flags(index, flags|0x10);
     ahp_xc_send_command(CLEAR, CLEAR);
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
@@ -1330,7 +1333,7 @@ void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t size, size_t s
         ahp_xc_send_command(SET_DELAY, (unsigned char)(size&0xf));
         size >>= 4;
     }
-    len = ((int)log2(value) & ~3) / 4;
+    len = (((int)log2(value) & ~3) + 4) / 4;
     ahp_xc_set_test_flags(index, flags|0x20);
     ahp_xc_send_command(CLEAR, CLEAR);
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
@@ -1417,7 +1420,6 @@ void ahp_xc_set_test_flags(uint32_t index, int32_t value)
     int32_t err = 0;
     unsigned char c = (unsigned char)(cmd|(value<<4));
     ahp_serial_flushTX();
-    usleep(1000000/ahp_xc_get_baudrate());
     err |= ahp_serial_SendByte(c);
     return err;
 }
