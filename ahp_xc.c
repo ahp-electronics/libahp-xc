@@ -680,7 +680,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         lines[i].start = (lines[i].start < ahp_xc_get_delaysize()-2 ? lines[i].start : (off_t)ahp_xc_get_delaysize()-2);
         lines[i].len = (lines[i].start+(off_t)lines[i].len < ahp_xc_get_delaysize() ? (off_t)lines[i].len : (off_t)ahp_xc_get_delaysize()-1-lines[i].start);
         len = fmax(len, lines[i].len/lines[i].step);
-        size += lines[i].len/lines[i].step;
+        size += lines[i].len/lines[i].step + 1;
     }
     ahp_xc_sample *correlations = ahp_xc_alloc_samples(size, (unsigned int)ahp_xc_get_autocorrelator_lagsize());
     char* data = (char*)malloc(ahp_xc_get_packetsize()*len);
@@ -705,9 +705,9 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         (*percent) += 100.0 / len;
         r++;
     }
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
     for(i = 0; i < nlines; i++)
         ahp_xc_end_autocorrelation_scan(lines[i].index);
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
     i = 0;
     while((int)i < r) {
         if(*interrupt)
@@ -1286,11 +1286,11 @@ void ahp_xc_set_channel_cross(uint32_t index, off_t value, size_t size, size_t s
     ahp_xc_cross_channel[index].len = size;
     ahp_xc_cross_channel[index].step = step;
     int capture_flags = ahp_xc_get_capture_flags();
-    ahp_xc_set_capture_flags(CAP_EXTRA_CMD);
-    int flags = ahp_xc_get_test_flags(index);
+    int flags = ahp_xc_get_test_flags(index)&~TEST_STEP;
     int len = ((int)log2(ahp_xc_get_delaysize()) & ~3) >> 2;
+    ahp_xc_set_test_flags(index, flags);
+    ahp_xc_set_capture_flags(CAP_EXTRA_CMD);
     ahp_xc_send_command(CLEAR, SET_DELAY);
-    ahp_xc_set_test_flags(index, flags&~TEST_STEP);
     ahp_xc_send_command(CLEAR, CLEAR);
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
@@ -1328,11 +1328,11 @@ void ahp_xc_set_channel_auto(uint32_t index, off_t value, size_t size, size_t st
     ahp_xc_auto_channel[index].len = size;
     ahp_xc_auto_channel[index].step = step;
     int capture_flags = ahp_xc_get_capture_flags();
-    ahp_xc_set_capture_flags(0);
-    int flags = ahp_xc_get_test_flags(index);
+    int flags = ahp_xc_get_test_flags(index)&~TEST_STEP;
     int len = ((int)log2(ahp_xc_get_delaysize()) & ~3) >> 2;
+    ahp_xc_set_test_flags(index, flags);
+    ahp_xc_set_capture_flags(0);
     ahp_xc_send_command(CLEAR, SET_DELAY);
-    ahp_xc_set_test_flags(index, flags&~TEST_STEP);
     ahp_xc_send_command(CLEAR, CLEAR);
     ahp_xc_send_command(SET_DELAY, (unsigned char)(len&0xf));
     for(idx = 0; idx < len; idx ++) {
@@ -1366,9 +1366,9 @@ void ahp_xc_set_voltage(uint32_t index, unsigned char value)
     value = (unsigned char)(value < 0xff ? value : 0xff);
     ahp_xc_voltage = value;
     int flags = ahp_xc_get_capture_flags();
-    ahp_xc_set_capture_flags(flags&~CAP_EXTRA_CMD);
+    ahp_xc_set_capture_flags(0);
     ahp_xc_send_command(SET_VOLTAGE, (unsigned char)(ahp_xc_voltage&0xf));
-    ahp_xc_set_capture_flags(flags|CAP_EXTRA_CMD);
+    ahp_xc_set_capture_flags(CAP_EXTRA_CMD);
     ahp_xc_send_command(SET_VOLTAGE, (unsigned char)((ahp_xc_voltage>>4)&0xf));
     ahp_xc_set_capture_flags(flags);
 }
@@ -1379,9 +1379,9 @@ void ahp_xc_set_test_flags(uint32_t index, int32_t value)
     ahp_xc_select_input(index);
     ahp_xc_test[index] = value;
     int flags = ahp_xc_get_capture_flags();
-    ahp_xc_set_capture_flags(flags&~CAP_EXTRA_CMD);
+    ahp_xc_set_capture_flags(0);
     ahp_xc_send_command(ENABLE_TEST, (unsigned char)(ahp_xc_test[index]&0xf));
-    ahp_xc_set_capture_flags(flags|CAP_EXTRA_CMD);
+    ahp_xc_set_capture_flags(CAP_EXTRA_CMD);
     ahp_xc_send_command(ENABLE_TEST, (unsigned char)((ahp_xc_test[index]>>4)&0xf));
     ahp_xc_set_capture_flags(flags);
 }
@@ -1392,7 +1392,6 @@ void ahp_xc_set_test_flags(uint32_t index, int32_t value)
     int32_t err = 0;
     unsigned char c = (unsigned char)(cmd|(value<<4));
     ahp_serial_flushTX();
-    usleep(100);
     err |= ahp_serial_SendByte(c);
     return err;
 }
