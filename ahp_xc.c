@@ -713,6 +713,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
         (*percent) += 100.0 / len;
         r++;
     }
+    i = 0;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
     for(i = 0; i < nlines; i++) {
         ahp_xc_select_input(lines[i].index);
@@ -732,9 +733,6 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
             break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         ts = get_timestamp(packet);
-        if(ts0 == 0.0)
-            ts0 = ts;
-        ts -= ts0;
         size_t off = 0;
         for(x = 0; x < nlines; x++) {
             if(i < lines[x].len/lines[x].step) {
@@ -968,9 +966,6 @@ int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nline
                         break;
                     char *packet = (char*)buffer+k*ahp_xc_get_packetsize();
                     ts = get_timestamp(packet);
-                    if(ts0 == 0.0)
-                        ts0 = ts;
-                    ts -= ts0;
                     for(z = 0; z < order && !*interrupt; z++)
                         lags[z] = (long)(ts / ahp_xc_get_packettime() * lines[z].step + lines[z].start) % lines[z].len;
                     ahp_xc_get_crosscorrelation(&correlations[o], inputs, order, packet, lags);
