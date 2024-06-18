@@ -413,7 +413,7 @@ DLL_EXPORT uint32_t ahp_xc_get_nlines(void);
 DLL_EXPORT uint32_t ahp_xc_get_nbaselines(void);
 
 /**
-* \brief Return the cross-correlation index of the baseprism correlating the lines array
+* \brief Return the cross-correlation index of the polytopes correlating the lines array
 * \param lines The line indexes array
 * \param order The crosscorrelation order and size of the lines array
 * \return Returns the corresponding cross-correlation index
@@ -421,7 +421,7 @@ DLL_EXPORT uint32_t ahp_xc_get_nbaselines(void);
 DLL_EXPORT int32_t ahp_xc_get_crosscorrelation_index(int32_t *lines, int32_t order);
 
 /**
-* \brief Return the cross-correlation index of the baseprism correlating the lines array
+* \brief Return the cross-correlation index of the polytopes correlating the lines array
 * \param idx The crosscorrelation indexes
 * \param order The crosscorrelation order
 * \return Returns the line index
