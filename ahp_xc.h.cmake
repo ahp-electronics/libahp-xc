@@ -207,7 +207,11 @@ TEST_ALL = 0xf,
 * \brief Correlations structure
 */
 typedef struct {
-///Time lag offsets for polytopes
+///number of nodes in this correlation
+int num_indexes;
+///Indices of the nodes
+int *indexes;
+///Time locations of the nodes
 double *lags;
 ///Time lag offset
 double lag;

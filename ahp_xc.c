@@ -534,12 +534,15 @@ void ahp_xc_free_samples(uint64_t nlines, ahp_xc_sample *samples)
     if(samples != NULL) {
         for(x = 0; x < nlines; x++) {
             if(samples[x].correlations != NULL) {
-                for(y = 0; y < samples[y].lag_size; y++) {
+                for(y = 0; y < samples[x].lag_size; y++) {
                     if(samples[x].correlations[y].lags != NULL) {
                         free(samples[x].correlations[y].lags);
                     }
-                    free(samples[x].correlations);
+                    if(samples[x].correlations[y].indexes != NULL) {
+                        free(samples[x].correlations[y].indexes);
+                    }
                 }
+                free(samples[x].correlations);
             }
         }
         free(samples);
@@ -797,7 +800,11 @@ void *_get_crosscorrelation(void *o)
         }
         wait_no_threads();
         for (y = 0; y < ahp_xc_get_autocorrelator_lagsize(); y++) {
-            sample->correlations[y].lags = arg->lags;
+            sample->correlations[y].num_indexes = num_indexes;
+            sample->correlations[y].indexes = (int*)malloc(sizeof(int) * num_indexes);
+            sample->correlations[y].lags = (double*)malloc(sizeof(double) * num_indexes);
+            memcpy(sample->correlations[y].indexes, arg->indexes, sizeof(int)*num_indexes);
+            memcpy(sample->correlations[y].lags, arg->lags, sizeof(double)*num_indexes);
             sample->correlations[y].lag = samples[0]->lag+y*ahp_xc_get_sampletime();
             sample->correlations[y].counts = samples[0]->correlations[y].counts;
             sample->correlations[y].magnitude = samples[0]->correlations[y].magnitude;
@@ -807,13 +814,18 @@ void *_get_crosscorrelation(void *o)
             ahp_xc_free_samples(1, samples[0]);
             for (x = 1; x < num_indexes; x++) {
                 sample->correlations[y].lag = samples[0]->lag+y*ahp_xc_get_sampletime();
+                sample->correlations[y].lags[x] = arg->lags[x];
+                sample->correlations[y].indexes[x] = arg->indexes[x];
                 sample->correlations[y].counts += samples[x]->correlations[y].counts;
-                sample->correlations[y].magnitude = sample->correlations[y].magnitude * samples[x]->correlations[y].magnitude;
-                sample->correlations[y].phase = fmod(sample->correlations[y].phase + samples[x]->correlations[y].phase, M_PI*2.0);
-                sample->correlations[y].real = sin(sample->correlations[y].phase) * sample->correlations[y].magnitude;
-                sample->correlations[y].imaginary = cos(sample->correlations[y].phase) * sample->correlations[y].magnitude;
+                sample->correlations[y].magnitude *= samples[x]->correlations[y].magnitude;
+                sample->correlations[y].phase += samples[x]->correlations[y].phase;
                 ahp_xc_free_samples(1, samples[x]);
             }
+            sample->correlations[y].counts /= num_indexes;
+            sample->correlations[y].magnitude = pow(sample->correlations[y].magnitude, 1.0/num_indexes);
+            sample->correlations[y].phase = fmod(sample->correlations[y].phase, M_PI*2.0);
+            sample->correlations[y].real = (long)(sin(sample->correlations[y].phase) * sample->correlations[y].magnitude);
+            sample->correlations[y].imaginary = (long)(cos(sample->correlations[y].phase) * sample->correlations[y].magnitude);
         }
         free(samples);
     } else {
@@ -829,7 +841,10 @@ void *_get_crosscorrelation(void *o)
         packet += n*ahp_xc_get_autocorrelator_lagsize()*ahp_xc_get_nlines()*2;
         packet += n*index*2;
         for(y = 0; y < sample->lag_size; y++) {
-            sample->correlations[y].lags = malloc(sizeof(double) * num_indexes);
+            sample->correlations[y].num_indexes = num_indexes;
+            sample->correlations[y].indexes = (int*)malloc(sizeof(int) * num_indexes);
+            sample->correlations[y].lags = (double*)malloc(sizeof(double) * num_indexes);
+            memcpy(sample->correlations[y].indexes, arg->indexes, sizeof(int)*num_indexes);
             memcpy(sample->correlations[y].lags, arg->lags, sizeof(double)*num_indexes);
             sample->correlations[y].lag = sample->lag+(y-ahp_xc_get_crosscorrelator_lagsize()+1)*ahp_xc_get_sampletime();
             sample->correlations[y].counts = counts;
@@ -933,8 +948,8 @@ int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nline
                 ahp_xc_select_input(index);
                 ahp_xc_send_command(CLEAR, SET_DELAY);
                 ahp_xc_set_capture_flags(capture_flags);
-                if(!ahp_xc_intensity_crosscorrelator_enabled())
-                    ahp_xc_set_channel_auto(index, lines[index].cur_chan, 1, 0);
+                if(ahp_xc_intensity_crosscorrelator_enabled())
+                    ahp_xc_set_channel_auto(index, lines[0].start, lines[0].len, lines[0].step);
                 else
                     ahp_xc_set_channel_cross(index, lines[0].start, lines[0].len, lines[0].step);
                 usleep(ahp_xc_get_packettime()*1000000);
