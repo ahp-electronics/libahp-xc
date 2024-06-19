@@ -506,7 +506,7 @@ uint32_t ahp_xc_is_detected()
 
 ahp_xc_sample *ahp_xc_alloc_samples(uint64_t nlines, size_t size)
 {
-    uint64_t x;
+    uint64_t x, y;
     ahp_xc_sample* samples = (ahp_xc_sample*)malloc(sizeof(ahp_xc_sample)*nlines);
     memset(samples, 0, sizeof(ahp_xc_sample)*nlines);
     for(x = 0; x < nlines; x++) {
@@ -534,14 +534,6 @@ void ahp_xc_free_samples(uint64_t nlines, ahp_xc_sample *samples)
     if(samples != NULL) {
         for(x = 0; x < nlines; x++) {
             if(samples[x].correlations != NULL) {
-                for(y = 0; y < samples[x].lag_size; y++) {
-                    if(samples[x].correlations[y].lags != NULL) {
-                        free(samples[x].correlations[y].lags);
-                    }
-                    if(samples[x].correlations[y].indexes != NULL) {
-                        free(samples[x].correlations[y].indexes);
-                    }
-                }
                 free(samples[x].correlations);
             }
         }
@@ -842,8 +834,10 @@ void *_get_crosscorrelation(void *o)
         packet += n*index*2;
         for(y = 0; y < sample->lag_size; y++) {
             sample->correlations[y].num_indexes = num_indexes;
-            sample->correlations[y].indexes = (int*)malloc(sizeof(int) * num_indexes);
-            sample->correlations[y].lags = (double*)malloc(sizeof(double) * num_indexes);
+            if(sample->correlations[y].indexes == NULL)
+                sample->correlations[y].indexes = (int*)malloc(sizeof(int) * num_indexes);
+            if(sample->correlations[y].lags == NULL)
+                sample->correlations[y].lags = (double*)malloc(sizeof(double) * num_indexes);
             memcpy(sample->correlations[y].indexes, arg->indexes, sizeof(int)*num_indexes);
             memcpy(sample->correlations[y].lags, arg->lags, sizeof(double)*num_indexes);
             sample->correlations[y].lag = sample->lag+(y-ahp_xc_get_crosscorrelator_lagsize()+1)*ahp_xc_get_sampletime();
@@ -1074,7 +1068,7 @@ int32_t ahp_xc_get_properties()
 {
     if(!ahp_xc_connected) return -ENOENT;
     if(ahp_xc_detected) return 0;
-    ahp_xc_header = (char*)malloc(0);
+    ahp_xc_header = (char*)malloc(1);
     ahp_xc_header[0] = 0;
     ahp_xc_header_len = 0;
     char *data = NULL;
