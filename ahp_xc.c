@@ -80,7 +80,6 @@ static uint32_t ahp_xc_correlation_order = 0;
 static char ahp_xc_comport[128];
 static char *ahp_xc_header = { 0 };
 static int ahp_xc_header_len = { 0 };
-static int ahp_xc_delaysize_len = { 0 };
 static unsigned char ahp_xc_capture_flags = 0;
 static unsigned char ahp_xc_max_lost_packets = 1;
 
@@ -1050,15 +1049,8 @@ int32_t ahp_xc_get_packet(ahp_xc_packet *packet)
     free(inputs);
     free(lags);
     wait_no_threads();
-    for(x = 0; x < ahp_xc_get_nlines(); x++) {
+    for(x = 0; x < ahp_xc_get_nlines(); x++)
         ahp_xc_get_autocorrelation(&packet->autocorrelations[x], x, data, 0.0);
-        char *arg = (char*)malloc(ahp_xc_delaysize_len+1);
-        arg[ahp_xc_delaysize_len] = 0;
-        strncpy(arg, data[ahp_xc_get_packetsize()-ahp_xc_delaysize_len-ahp_xc_delaysize_len-3], ahp_xc_delaysize_len);
-        packet->auto_lag = strtol(arg, NULL, 16);
-        strncpy(arg, data[ahp_xc_get_packetsize()-ahp_xc_delaysize_len]-3, ahp_xc_delaysize_len);
-        packet->cross_lag = strtol(arg, NULL, 16);
-    }
     wait_no_threads();
     ret = 0;
     goto free_end;
@@ -1139,7 +1131,6 @@ int32_t ahp_xc_get_properties()
         n_read = sscanf(n, "%X", &_delaysize);
         if(n_read < 1)
             return 1;
-        ahp_xc_delaysize_len = len;
         xc_header_len += len + 2;
         buf += len;
         n = (char*)realloc(n, 3);
@@ -1197,7 +1188,7 @@ int32_t ahp_xc_get_properties()
     ahp_xc_delaysize = _delaysize;
     ahp_xc_auto_lagsize = _auto_lagsize;
     ahp_xc_cross_lagsize = _cross_lagsize;
-    ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+ahp_xc_header_len+ahp_xc_delaysize*2+16+2+1;
+    ahp_xc_packetsize = (ahp_xc_nlines+ahp_xc_auto_lagsize*ahp_xc_nlines*2+(ahp_xc_cross_lagsize*2-1)*ahp_xc_nbaselines*2)*ahp_xc_bps/4+ahp_xc_header_len+16+2+1;
     ahp_xc_frequency = 1000000000000.0/(!_tau?1:_tau);
     sign = (pow(2, ahp_xc_bps-1));
     fill = sign|(sign - 1);
