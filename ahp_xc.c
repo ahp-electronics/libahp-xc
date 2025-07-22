@@ -232,6 +232,7 @@ int32_t check_sof(char *data)
 
 static char * grab_packet(double *timestamp)
 {
+    int i;
     errno = 0;
     uint32_t size = ahp_xc_get_packetsize();
     char *buf = (char*)malloc(ahp_xc_get_packetsize());
@@ -242,10 +243,7 @@ static char * grab_packet(double *timestamp)
     }
     int32_t nread = 0;
     nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
-    if(buf[0] == '\0' || buf[0] == '\r' || buf[0] == '\n') {
-        ahp_serial_AlignFrame('\r', (int)size);
-        goto err_end;
-    }
+    ahp_serial_AlignFrame('\r', nread);
     buf[nread-1] = 0;
     nread = strlen((char*)buf);
     if(nread == 0) {
@@ -472,7 +470,7 @@ int32_t ahp_xc_connect(const char *port)
     if(!ahp_serial_OpenComport(ahp_xc_comport))
         ahp_xc_connected = 1;
 try_connect:
-        ret = ahp_serial_SetupPort(ahp_xc_get_baudrate(), "8N2", 0);
+        ret = ahp_serial_SetupPort(ahp_xc_get_baudrate(), "8N1", 0);
     if(!ret) {
         if(!ahp_xc_mutexes_initialized) {
             pthread_mutex_init(&ahp_xc_mutex, &ahp_serial_mutex_attr);
@@ -1472,8 +1470,9 @@ void ahp_xc_set_test_flags(uint32_t index, int32_t value)
     int32_t err = 0;
     unsigned char c = (unsigned char)(cmd|(value<<4));
     ahp_serial_flushTX();
+    pinfo("%02X ", c);
     err |= ahp_serial_SendByte(c);
-    return err;
+    return -err;
 }
 
 double* ahp_xc_get_2d_projection(double alt, double az, double *baseline)
