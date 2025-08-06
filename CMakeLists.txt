@@ -6,7 +6,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 
 include(GNUInstallDirs)
 
-find_package(M REQUIRED)
 find_package(Threads REQUIRED)
 
 set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
@@ -41,7 +40,7 @@ else(WIN32)
    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 endif(WIN32)
 
-target_link_libraries(ahp_xc ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
+target_link_libraries(ahp_xc ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS ahp_xc LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
