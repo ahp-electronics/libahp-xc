@@ -229,48 +229,53 @@ int32_t check_sof(char *data)
     free(tmp);
     return 0;
 }
-
+static char * ahp_xc_buf = {0};
 static char * grab_packet(double *timestamp)
 {
     int i;
     errno = 0;
     uint32_t size = ahp_xc_get_packetsize();
-    char *buf = (char*)malloc(ahp_xc_get_packetsize());
-    memset(buf, 0, (unsigned int)size);
+    ahp_xc_buf = (char*)realloc(ahp_xc_buf, size);
+    memset(ahp_xc_buf, 0, (unsigned int)size);
     if(!ahp_xc_connected){
         errno = ENOENT;
         goto err_end;
     }
     int32_t nread = 0;
-    nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
+    nread = ahp_serial_RecvBuf((unsigned char*)ahp_xc_buf, size);
     ahp_serial_AlignFrame('\r', nread);
-    buf[nread-1] = 0;
-    nread = strlen((char*)buf);
+    while(ahp_xc_buf[0] == '\r') {
+        nread--;
+        for(i = 0; i < nread; i++)
+            ahp_xc_buf[i] = ahp_xc_buf[i+1];
+    }
+    ahp_xc_buf[nread-1] = 0;
+    nread = strlen((char*)ahp_xc_buf);
     if(nread == 0) {
         errno = ENODATA;
     } else if(nread < 0) {
         errno = ETIMEDOUT;
     } else if(nread > ahp_xc_header_len) {
-        char *tmp = buf;
+        char *tmp = ahp_xc_buf;
         if(strncmp(ahp_xc_get_header(), (char*)tmp, ahp_xc_header_len)) {
             errno = EINVAL;
             ahp_serial_AlignFrame('\r', -1);
-        } else if(check_sof((char*)buf)) {
+        } else if(check_sof((char*)ahp_xc_buf)) {
             errno = 0;
         } else if(nread < size-1) {
             errno = ERANGE;
         } else {
-            errno = calc_checksum((char*)buf);
+            errno = calc_checksum((char*)ahp_xc_buf);
         }
     }
     if(nread == 0 || errno)
         goto err_end;
     if(timestamp != NULL)
-        *timestamp = get_timestamp(buf);
-    return buf;
+        *timestamp = get_timestamp(ahp_xc_buf);
+    return ahp_xc_buf;
 err_end:
     fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
-    free(buf);
+    free(ahp_xc_buf);
     return NULL;
 }
 
