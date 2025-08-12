@@ -20,6 +20,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.c
    )
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/brew.sh.cmake ${CMAKE_CURRENT_BINARY_DIR}/brew.sh )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/99-libahp-xc.rules.cmake ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_xc.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
