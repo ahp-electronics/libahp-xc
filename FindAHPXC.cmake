@@ -4,9 +4,9 @@
 #  AHP_XC_FOUND - system has AHP_XC
 #  AHP_XC_INCLUDE_DIR - the AHP_XC include directory
 #  AHP_XC_LIBRARIES - Link these to use AHP_XC
-#  AHP_XC_VERSION_STRING - Human readable version number of ahp_xc
-#  AHP_XC_VERSION_MAJOR  - Major version number of ahp_xc
-#  AHP_XC_VERSION_MINOR  - Minor version number of ahp_xc
+#  AHP_XC_VERSION_STRING - Human readable version number of ahp_gt
+#  AHP_XC_VERSION_MAJOR  - Major version number of ahp_gt
+#  AHP_XC_VERSION_MINOR  - Minor version number of ahp_gt
 
 # Copyright (c) 2017, Ilia Platone, <info@iliaplatone.com>
 # Based on FindLibfacile by Carsten Niehaus, <cniehaus@gmx.de>
@@ -22,9 +22,9 @@ if (AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES)
 
 else (AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES)
 
-    set(AHP_XC_MIN_VERSION_MAJOR @AHP_XC_VERSION_MAJOR@)
-    set(AHP_XC_MIN_VERSION_MINOR @AHP_XC_VERSION_MINOR@)
-    set(AHP_XC_MIN_VERSION_RELEASE @AHP_XC_VERSION_RELEASE@)
+    set(AHP_XC_MIN_VERSION_MAJOR 1)
+    set(AHP_XC_MIN_VERSION_MINOR 4)
+    set(AHP_XC_MIN_VERSION_RELEASE 5)
 
     find_path(AHP_XC_INCLUDE_DIR ahp_xc.h
       PATH_SUFFIXES ahp
@@ -40,25 +40,11 @@ else (AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES)
     HINTS ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}
   )
 
-set(AHP_XC_VERSION $(grep '\\version ' ${AHP_XC_INCLUDE_DIR}/ahp_xc.h | cut -d ' ' -f 3))
-set(AHP_XC_VERSION_MAJOR $(echo ${AHP_XC_VERSION} | cut -d '.' -f 1))
-set(AHP_XC_VERSION_MINOR $(echo ${AHP_XC_VERSION} | cut -d '.' -f 2))
-set(AHP_XC_VERSION_RELEASE $(echo ${AHP_XC_VERSION} | cut -d '.' -f 3))
-
-if(AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES AND
-        AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_MAJOR}  AND
-        AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_MINOR}  AND
-        AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_RELEASE})
-  set(AHP_XC_FOUND TRUE)
-else (AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES AND
-        AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_MAJOR}  AND
-        AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_MINOR}  AND
-        AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_RELEASE})
-  set(AHP_XC_FOUND FALSE)
-endif(AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES AND
-    AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_MAJOR}  AND
-    AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_MINOR}  AND
-    AHP_XC_VERSION_MAJOR >= ${AHP_XC_MIN_VERSION_RELEASE})
+    if(AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES)
+        set(AHP_XC_FOUND TRUE)
+    else(AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES)
+        set(AHP_XC_FOUND FALSE)
+    endif(AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES)
 
   if (AHP_XC_FOUND)
     if (NOT AHP_XC_FIND_QUIETLY)
@@ -66,10 +52,10 @@ endif(AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES AND
     endif (NOT AHP_XC_FIND_QUIETLY)
   else (AHP_XC_FOUND)
     if (AHP_XC_FIND_REQUIRED)
-      message(FATAL_ERROR "AHP_XC not found. Please install libahp_xc-dev")
+      message(FATAL_ERROR "AHP_XC not found. Please install libahp_gt-dev")
     endif (AHP_XC_FIND_REQUIRED)
   endif (AHP_XC_FOUND)
 
   mark_as_advanced(AHP_XC_LIBRARIES)
-  
+
 endif (AHP_XC_INCLUDE_DIR AND AHP_XC_LIBRARIES)
