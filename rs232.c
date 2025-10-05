@@ -1,19 +1,26 @@
 /*
-*    XC Quantum correlators driver library
-*    Copyright (C) 2015-2023  Ilia Platone <info@iliaplatone.com>
+*    MIT License
 *
-*    This program is free software: you can redistribute it and/or modify
-*    it under the terms of the GNU General Public License as published by
-*    the Free Software Foundation, either version 3 of the License, or
-*    (at your option) any later version.
+*    rs232 sources serial communication driver
+*    Copyright (C) 2022  Ilia Platone
 *
-*    This program is distributed in the hope that it will be useful,
-*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*    GNU General Public License for more details.
+*    Permission is hereby granted, free of charge, to any person obtaining a copy
+*    of this software and associated documentation files (the "Software"), to deal
+*    in the Software without restriction, including without limitation the rights
+*    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+*    copies of the Software, and to permit persons to whom the Software is
+*    furnished to do so, subject to the following conditions:
 *
-*    You should have received a copy of the GNU General Public License
-*    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*    The above copyright notice and this permission notice shall be included in all
+*    copies or substantial portions of the Software.
+*
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+*    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+*    SOFTWARE.
 */
 
 #ifdef __cplusplus
@@ -476,8 +483,14 @@ static void ahp_serial_flushRXTX()
 
 #endif
 
-static int ahp_serial_OpenComport(const char* dev_name)
+static int ahp_serial_OpenComport(const char* devname)
 {
+    char dev_name[128];
+#ifndef WINDOWS
+    sprintf(dev_name, "/dev/%s", devname);
+#else
+    sprintf(dev_name, "\\\\.\\%s", devname);
+#endif
     if(ahp_serial_fd == -1)
         ahp_serial_fd = open(dev_name, O_RDWR);
 
@@ -522,16 +535,18 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
 {
     int n = -ENODEV;
     int nbytes = 0;
-    int ntries = size;
+    int ntries = size*2;
     int bytes_left = size;
     int err = 0;
+    errno = 0;
+    memset(buf, -1, size);
     if(ahp_serial_mutexes_initialized) {
         while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
-            if(n<0) {
+            if(n<1) {
                 err = -errno;
                 continue;
             }
@@ -539,11 +554,6 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
             bytes_left -= n;
         }
         pthread_mutex_unlock(&ahp_serial_mutex);
-    }
-    if(nbytes < 1) {
-        if(ntries < 0)
-            return -ENODATA;
-        return err;
     }
     return nbytes;
 }
@@ -577,7 +587,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
 
 static int ahp_serial_RecvByte()
 {
-    int byte = 0;
+    int byte = -1;
     int n = ahp_serial_RecvBuf((unsigned char*)&byte, 1);
     if(n < 1)
     {
@@ -603,7 +613,10 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
     while(c != sof && (maxtries > 0 ? maxtries-- > 0 : 1)) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
-            continue;
+          if(errno == EAGAIN)
+              continue;
+          else
+              return errno;
         }
     }
     return 0;
