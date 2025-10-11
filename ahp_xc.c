@@ -626,8 +626,10 @@ void ahp_xc_free_packet(ahp_xc_packet *packet)
 void ahp_xc_start_autocorrelation_scan(uint32_t index)
 {
     if(!ahp_xc.detected) return;
-    ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
+    int flags = ahp_xc_get_capture_flags();
+    ahp_xc_set_capture_flags((flags|CAP_RESET_TIMESTAMP)&~(CAP_ENABLE|CAP_EXTRA_CMD));
     ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
+    ahp_xc_set_capture_flags(flags);
 }
 
 void ahp_xc_end_autocorrelation_scan(uint32_t index)
@@ -731,7 +733,7 @@ int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines
     }
     char* buf = NULL;
     i = 0;
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
+    ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
     ahp_serial_flushRX();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(i < len) {
@@ -786,12 +788,13 @@ void ahp_xc_start_crosscorrelation_scan(uint32_t index)
 {
     if(!ahp_xc.detected) return;
     ahp_xc_end_crosscorrelation_scan(index);
-    ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
-    usleep(ahp_xc_get_packettime()*1000000);
+    int flags = ahp_xc_get_capture_flags();
+    ahp_xc_set_capture_flags((flags|CAP_RESET_TIMESTAMP)&~(CAP_ENABLE|CAP_EXTRA_CMD));
     if(!ahp_xc_intensity_crosscorrelator_enabled())
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_CROSS);
     else
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)|SCAN_AUTO);
+    ahp_xc_set_capture_flags(flags);
 }
 
 void ahp_xc_end_crosscorrelation_scan(uint32_t index)
@@ -1279,11 +1282,11 @@ void ahp_xc_set_baudrate(baud_rate rate)
 {
     if(!ahp_xc.detected) return;
     ahp_xc.rate = rate;
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_EXTRA_CMD);
+    int flags = ahp_xc_get_capture_flags();
+    ahp_xc_set_capture_flags((xc_capture_flags)(flags&~CAP_EXTRA_CMD));
     ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
-    ahp_serial_CloseComport();
-    ahp_serial_OpenComport(ahp_xc.comport);
-    ahp_serial_SetupPort(ahp_xc.baserate*pow(2, (int)ahp_xc.rate), "8N2", 0);
+    ahp_xc_set_capture_flags((xc_capture_flags)(flags));
+    ahp_serial_SetupPort(ahp_xc.baserate*pow(2, (int)ahp_xc.rate), "8N1", 0);
 }
 
 void ahp_xc_set_correlation_order(uint32_t order)
