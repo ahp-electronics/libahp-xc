@@ -243,16 +243,14 @@ static int grab_packet(double *timestamp)
 {
     errno = 0;
     uint32_t size = ahp_xc_get_packetsize() * 2;
-    char *buf = (char*)malloc(size);
     ahp_xc.buf = (char*)realloc(ahp_xc.buf, size);
     ahp_xc.buf_len = size;
-    memset(ahp_xc.buf, 0, (unsigned int)size);
     if(!ahp_xc.connected){
         errno = ENOENT;
         goto err_end;
     }
     int32_t nread = 0;
-    nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
+    nread = ahp_serial_RecvBuf((unsigned char*)ahp_xc.buf, size);
     if(nread < 1) {
         errno = ENODATA;
     } else if(nread < 0) {
@@ -260,8 +258,7 @@ static int grab_packet(double *timestamp)
     } else if(nread < size-1) {
         errno = ERANGE;
     } else {
-        memcpy(ahp_xc.buf, buf+1, size-1);
-        free(buf);
+        memcpy(ahp_xc.buf, ahp_xc.buf+1, size-1);
         char *eol = strchr(ahp_xc.buf, '\r');
         if((off_t)eol > (off_t)ahp_xc.buf)
             *eol = '\0';
@@ -1098,7 +1095,7 @@ int32_t ahp_xc_get_properties()
 {
     if(!ahp_xc.connected) return -ENOENT;
     if(ahp_xc.detected) return 0;
-    int32_t ntries = 2;
+    int32_t ntries = 5;
     int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
