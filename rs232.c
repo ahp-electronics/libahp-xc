@@ -315,25 +315,6 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
         return 1;
     }
 
-/* http://man7.org/linux/man-pages/man4/tty_ioctl.4.html */
-
-    if(ioctl(ahp_serial_fd, TIOCMGET, &status) == -1)
-    {
-        tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
-        perr("unable to get portstatus\n");
-        return 1;
-    }
-
-    status |= TIOCM_DTR;    /* turn on DTR */
-    status |= TIOCM_RTS;    /* turn on RTS */
-
-    if(ioctl(ahp_serial_fd, TIOCMSET, &status) == -1)
-    {
-        tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
-        perr("unable to set portstatus\n");
-        return 1;
-    }
-
     return 0;
 }
 
@@ -539,7 +520,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int bytes_left = size;
     int err = 0;
     errno = 0;
-    memset(buf, -1, size);
+    memset(buf, 0, size);
     if(ahp_serial_mutexes_initialized) {
         while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);

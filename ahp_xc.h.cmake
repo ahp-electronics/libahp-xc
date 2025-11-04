@@ -596,54 +596,17 @@ DLL_EXPORT void ahp_xc_free_samples(uint64_t nlines, ahp_xc_sample *samples);
 DLL_EXPORT int32_t ahp_xc_get_packet(ahp_xc_packet *packet);
 
 /**
-* \brief Initiate an autocorrelation scan
-* \param index The line index.
-*/
-DLL_EXPORT void ahp_xc_start_autocorrelation_scan(uint32_t index);
-
-/**
-* \brief End an autocorrelation scan
-* \param index The line index.
-*/
-DLL_EXPORT void ahp_xc_end_autocorrelation_scan(uint32_t index);
-
-/**
-* \brief Scan all available delay channels and get autocorrelations of each input
+* \brief Scan all available delay channels and get the visibilities of the variety
 * \param lines the input lines structure array.
 * \param nlines the element size of the input lines array.
-* \param autocorrelations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
+* \param correlations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
 * \param interrupt This should point32_t to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
 * \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
 * \return Returns the number of channels scanned
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **autocorrelations, int32_t *interrupt, double *percent);
-
-/**
-* \brief Initiate a crosscorrelation scan
-* \param index The line index.
-*/
-DLL_EXPORT void ahp_xc_start_crosscorrelation_scan(uint32_t index);
-
-/**
-* \brief End a crosscorrelation scan
-* \param index The line index.
-*/
-DLL_EXPORT void ahp_xc_end_crosscorrelation_scan(uint32_t index);
-
-/**
-* \brief Scan all available delay channels and get crosscorrelations of each input with others
-* \param lines the input lines structure array.
-* \param nlines the element size of the input lines array.
-* \param crosscorrelations An ahp_xc_sample array pointer, can be NULL. Will be allocated by reference and filled by this function.
-* \param interrupt This should point32_t to an int32_t variable, when setting to 1, on a separate thread, scanning will be interrupted.
-* \param percent Like interrupt a variable, passed by reference that will be updated with the percent of completion.
-* \return Returns the number of channels scanned
-* \sa ahp_xc_get_delaysize
-* \sa ahp_xc_sample
-*/
-DLL_EXPORT int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **crosscorrelations, int32_t *interrupt, double *percent);
+DLL_EXPORT int32_t ahp_xc_scan_correlations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **correlations, int32_t *interrupt, double *percent);
 
 /**\}*/
 /**
