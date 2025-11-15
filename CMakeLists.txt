@@ -18,6 +18,7 @@ set(AHPXC_SOVERSION ${AHP_XC_VERSION_MAJOR})
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.h
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/brew.sh.cmake ${CMAKE_CURRENT_BINARY_DIR}/brew.sh )
