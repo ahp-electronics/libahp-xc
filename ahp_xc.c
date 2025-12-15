@@ -36,7 +36,7 @@
 static int32_t xc_current_input = 0;
 static int64_t sign = 1;
 static int64_t fill = 0;
-
+static unsigned char buffer[0x1000000];
 typedef struct  {
     ahp_xc_sample *sample;
     int32_t index;
@@ -47,10 +47,20 @@ typedef struct  {
     double *lags;
 } thread_argument;
 
+
+typedef struct {
+    unsigned char buffer[0x1000000];
+    int threads_running;
+    int size;
+    pthread_mutex_t mutex;
+} read_argument;
+
 typedef struct {
     int32_t nthreads;
+    read_argument read_data;
     thread_argument *autocorrelation_thread_args;
     thread_argument *crosscorrelation_thread_args;
+    pthread_t read_thread;
     pthread_t *autocorrelation_threads;
     pthread_t *crosscorrelation_threads;
     pthread_mutex_t mutex;
@@ -91,7 +101,7 @@ typedef struct {
     unsigned char max_lost_packets;
 } ahp_xc_device;
 
-static ahp_xc_device ahp_xc;
+ahp_xc_device ahp_xc;
 
 static uint32_t get_npolytopes(int nlines, int32_t order)
 {
@@ -111,10 +121,10 @@ int32_t ahp_xc_get_line_index(int32_t idx, int32_t order)
 int32_t ahp_xc_get_crosscorrelation_index(int32_t *lines, int32_t order)
 {
     int32_t x, y, idx;
-    int32_t nprisms = ahp_xc_get_nbaselines();
-    int* matches = (int*)malloc(sizeof(int)*nprisms);
-    memset(matches, 0, sizeof(int)*nprisms);
-    for(idx = 0; idx < nprisms; idx ++) {
+    int32_t npolytopes = ahp_xc_get_nbaselines();
+    int* matches = (int*)malloc(sizeof(int)*npolytopes);
+    memset(matches, 0, sizeof(int)*npolytopes);
+    for(idx = 0; idx < npolytopes; idx ++) {
         for(x = 0; x < order; x ++) {
             for(y = 0; y < order; y ++) {
                 if(lines[x] == ahp_xc_get_line_index(idx, y))
@@ -124,7 +134,7 @@ int32_t ahp_xc_get_crosscorrelation_index(int32_t *lines, int32_t order)
     }
     int32_t index = 0;
     int32_t best_match = 0;
-    for(idx = 0; idx < nprisms; idx++) {
+    for(idx = 0; idx < npolytopes; idx++) {
         if(matches[idx] > best_match) {
             best_match = matches[idx];
             index = idx;
@@ -226,6 +236,24 @@ int32_t calc_checksum(char *data)
     return 0;
 }
 
+static void* read_thread(void* arg)
+{
+    read_argument *data = (read_argument *)arg;
+    data->size = 0;
+    data->threads_running = 1;
+    int nread;
+    while(data->threads_running) {
+        if(pthread_mutex_trylock(&data->mutex)) {
+            nread = ahp_serial_RecvBuf(data->buffer+data->size, 0x10);
+            if(nread > 1) {
+                memcpy(data->buffer+data->size, data->buffer+data->size+1, nread-1);
+                data->size += nread-1;
+            }
+            pthread_mutex_unlock(&data->mutex);
+        }
+    }
+}
+
 static int grab_packet(double *timestamp)
 {
     char message[64];
@@ -234,24 +262,29 @@ static int grab_packet(double *timestamp)
     ahp_xc.buf = (char*)realloc(ahp_xc.buf, size);
     ahp_xc.buf_len = size;
     if(!ahp_xc.connected){
-        strcpy(message, "Not connected");
+        strncpy(message, "Not connected", 64);
         errno = ENOENT;
         goto err_end;
     }
     int32_t nread = 0;
-    nread = ahp_serial_RecvBuf((unsigned char*)ahp_xc.buf, size);
-    memcpy(ahp_xc.buf, ahp_xc.buf+1, nread-1);
+    if(pthread_mutex_trylock(&ahp_xc.read_data.mutex) && ahp_xc.read_data.size > size) {
+        memcpy(ahp_xc.buf, ahp_xc.read_data.buffer, size);
+        memcpy(ahp_xc.read_data.buffer, ahp_xc.read_data.buffer+ahp_xc.read_data.size, ahp_xc.read_data.size - size);
+        ahp_xc.read_data.size -= size;
+        pthread_mutex_unlock(&ahp_xc.read_data.mutex);
+    }
     if(ahp_xc_is_detected()) {
         if(strncmp(ahp_xc_get_header(), ahp_xc.buf, ahp_xc.header_len)) {
             errno = EINVAL;
-            strcpy(message, "Header mismatch");
+            strncpy(message, ahp_xc.buf, 64);
         } else if(calc_checksum((char*)ahp_xc.buf) < 0) {
             errno = EINVAL;
-            strcpy(message, "CRC error");
+            strncpy(message, "CRC error", 64);
         }
     } else {
         int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
         errno = EINVAL;
+        strncpy(message, "Error(s) parsing header", 64);
         int len = 0;
         char *n = (char*)malloc(2);
         char *buf = ahp_xc.buf;
@@ -409,10 +442,10 @@ static int grab_packet(double *timestamp)
     nread = strlen((char*)ahp_xc.buf);
     if(nread < 0) {
         errno = EINVAL;
-        strcpy(message, "Communication error");
+        strncpy(message, "Communication error", 64);
     } else if(nread < 1) {
         errno = EINVAL;
-        strcpy(message, "Empty packet");
+        strncpy(message, "Empty packet", 64);
     }
     if(errno)
         goto err_end;
@@ -589,6 +622,8 @@ int32_t ahp_xc_connect_fd(int32_t fd)
         ahp_serial_SetFD(fd, XC_BASE_RATE);
         if(!ahp_xc.mutexes_initialized) {
             pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
+            pthread_mutex_init(&ahp_xc.read_data.mutex, &ahp_serial_mutex_attr);
+            pthread_create(&ahp_xc.read_thread, NULL, &read_thread, &ahp_xc.read_data);
             ahp_xc.mutexes_initialized = 1;
         }
         ahp_xc.nthreads = 0;
@@ -637,6 +672,8 @@ int32_t ahp_xc_connect(const char *port)
         if(!ret) {
             if(!ahp_xc.mutexes_initialized) {
                 pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
+                pthread_mutex_init(&ahp_xc.read_data.mutex, &ahp_serial_mutex_attr);
+                pthread_create(&ahp_xc.read_thread, NULL, &read_thread, &ahp_xc.read_data);
                 ahp_xc.mutexes_initialized = 1;
             }
             ahp_xc_get_properties();
@@ -659,6 +696,8 @@ void ahp_xc_disconnect()
         if(ahp_xc.mutexes_initialized) {
             pthread_mutex_unlock(&ahp_xc.mutex);
             pthread_mutex_destroy(&ahp_xc.mutex);
+            pthread_mutex_unlock(&ahp_xc.read_data.mutex);
+            pthread_mutex_destroy(&ahp_xc.read_data.mutex);
             ahp_xc.mutexes_initialized = 0;
         }
         free(ahp_xc.buf);
@@ -1239,14 +1278,12 @@ int32_t ahp_xc_get_properties()
     if(!ahp_xc.connected) return -ENOENT;
     if(ahp_xc.detected) return 0;
     int32_t ntries = 50;
-    ahp_serial_flushRX();
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
-    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(ntries-- > 0 && !ahp_xc_is_detected()) {
-        if(grab_packet(NULL) < 0)
-            continue;
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         ahp_serial_flushRX();
+        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
+        if(grab_packet(NULL) < 0)
+            continue;
     }
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     return 0;
@@ -1283,8 +1320,10 @@ void ahp_xc_set_correlation_order(uint32_t order)
     int32_t idx = 0;
     if(order >= ahp_xc_get_nlines())
         return;
-    ahp_xc.correlation_order = fmax(1, order);
-    order -= 2;
+    if(order < 1)
+        return;
+    ahp_xc.correlation_order = order;
+    order --;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_EXTRA_CMD);
     int len = (((int)log2(order) & ~3) + 4) / 4;
     if(len < 0) len = 1;
@@ -1299,7 +1338,7 @@ void ahp_xc_set_correlation_order(uint32_t order)
 
 int32_t ahp_xc_get_correlation_order()
 {
-    return ahp_xc.correlation_order + 2;
+    return ahp_xc.correlation_order;
 }
 
 unsigned char ahp_xc_get_test_flags(uint32_t index)
