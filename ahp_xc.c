@@ -746,7 +746,7 @@ void ahp_xc_get_autocorrelation(ahp_xc_sample *sample, int32_t index, const char
     _get_autocorrelation(&ahp_xc.autocorrelation_thread_args[index]);
 }
 
-static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **autocorrelations, int32_t *interrupt, double *percent)
+int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **autocorrelations, int32_t *interrupt, double *percent)
 {
     if(!ahp_xc.detected) return 0;
     int32_t r = -1;
