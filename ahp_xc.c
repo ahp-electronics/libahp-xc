@@ -270,7 +270,8 @@ static int grab_packet(double *timestamp)
 {
     char message[64];
     errno = 0;
-    uint32_t size = ahp_xc_get_packetsize();
+    uint32_t size = ahp_xc_get_packetsize()+1;
+    char *buf = (char*)malloc(size);
     ahp_xc.buf = (char*)realloc(ahp_xc.buf, size);
     ahp_xc.buf_len = size;
     if(!ahp_xc.connected){
@@ -279,195 +280,40 @@ static int grab_packet(double *timestamp)
         goto err_end;
     }
     int32_t nread = 0;
-    if(pthread_mutex_trylock(&ahp_xc.read_data.mutex)) {
-        if(ahp_xc.read_data.size >= size) {
-            memcpy(ahp_xc.buf, ahp_xc.read_data.buffer, size);
-            memcpy(ahp_xc.read_data.buffer, ahp_xc.read_data.buffer+ahp_xc.read_data.size, ahp_xc.read_data.size - size);
-            ahp_xc.read_data.size -= size;
-            pthread_mutex_unlock(&ahp_xc.read_data.mutex);
-            if(ahp_xc_is_detected()) {
-                if(strncmp(ahp_xc_get_header(), ahp_xc.buf, ahp_xc.header_len)) {
-                    errno = EINVAL;
-                    strncpy(message, ahp_xc.buf, 64);
-                } else if(calc_checksum((char*)ahp_xc.buf) < 0) {
-                    errno = EINVAL;
-                    strncpy(message, "CRC error", 64);
-                }
-            } else {
-                int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
-                errno = EINVAL;
-                strncpy(message, "Error(s) parsing header", 64);
-                int len = 0;
-                char *n = (char*)malloc(2);
-                char *buf = ahp_xc.buf;
-                int xc_header_len = 0;
-                n = (char*)realloc(n, 3);
-                strncpy(n, buf, 2);
-                n[2] = 0;
-                int n_read = sscanf(n, "%X", &len);
-                if(n_read < 1)
-                    goto err_end;
-                n = (char*)realloc(n, len+1);
-                buf += 2;
-                strncpy(n, buf, len);
-                n[len] = 0;
-                n_read = sscanf(n, "%X", &_nlines);
-                if(n_read < 1)
-                    goto err_end;
-                xc_header_len += len + 2;
-                _nlines++;
-                buf += len;
-                n = (char*)realloc(n, 3);
-                strncpy(n, buf, 2);
-                n[2] = 0;
-                n_read = sscanf(n, "%X", &len);
-                if(n_read < 1)
-                    goto err_end;
-                n = (char*)realloc(n, len+1);
-                buf += 2;
-                strncpy(n, buf, len);
-                n[len] = 0;
-                n_read = sscanf(n, "%X", &_bps);
-                if(n_read < 1)
-                    goto err_end;
-                xc_header_len += len + 2;
-                _bps++;
-                buf += len;
-                n = (char*)realloc(n, 3);
-                strncpy(n, buf, 2);
-                n[2] = 0;
-                n_read = sscanf(n, "%X", &len);
-                if(n_read < 1)
-                    goto err_end;
-                n = (char*)realloc(n, len+1);
-                buf += 2;
-                strncpy(n, buf, len);
-                n[len] = 0;
-                n_read = sscanf(n, "%X", &_delaysize);
-                if(n_read < 1)
-                    goto err_end;
-                ahp_xc.delaysize_len = len;
-                xc_header_len += len + 2;
-                buf += len;
-                n = (char*)realloc(n, 3);
-                strncpy(n, buf, 2);
-                n[2] = 0;
-                n_read = sscanf(n, "%X", &len);
-                if(n_read < 1)
-                    goto err_end;
-                n = (char*)realloc(n, len+1);
-                buf += 2;
-                strncpy(n, buf, len);
-                n[len] = 0;
-                n_read = sscanf(n, "%X", &_auto_lagsize);
-                if(n_read < 1)
-                    goto err_end;
-                xc_header_len += len + 2;
-                _auto_lagsize++;
-                buf += len;
-                n = (char*)realloc(n, 3);
-                strncpy(n, buf, 2);
-                n[2] = 0;
-                n_read = sscanf(n, "%X", &len);
-                if(n_read < 1)
-                    goto err_end;
-                n = (char*)realloc(n, len+1);
-                buf += 2;
-                strncpy(n, buf, len);
-                n[len] = 0;
-                n_read = sscanf(n, "%X", &_cross_lagsize);
-                if(n_read < 1)
-                    goto err_end;
-                xc_header_len += len + 2;
-                _cross_lagsize++;
-                buf += len;
-                n_read = sscanf(buf, "%02X%04X", &_flags, &_tau);
-                if(n_read == 2) {
-                    xc_header_len += 6;
-                    ahp_xc.header_len = xc_header_len;
-                    ahp_xc.header = (char*)realloc(ahp_xc.header, ahp_xc.header_len+1);
-                    strncpy(ahp_xc.header, ahp_xc.buf, ahp_xc.header_len);
-                    ahp_xc.header[ahp_xc.header_len] = 0;
-                    errno = 0;
-                }
-                free(n);
-                if(ahp_xc.header_len == 0)
-                  goto err_end;
-                ahp_xc.flags = _flags;
-                ahp_xc.bps = _bps;
-                ahp_xc.nlines = _nlines;
-                ahp_xc.nbaselines = (ahp_xc.flags & HAS_CROSSCORRELATOR) ? (ahp_xc.nlines*(ahp_xc.nlines-1)/2) : 0;
-                ahp_xc.delaysize = _delaysize;
-                ahp_xc.auto_lagsize = _auto_lagsize;
-                ahp_xc.cross_lagsize = _cross_lagsize;
-                ahp_xc.packetsize = (ahp_xc.nlines+ahp_xc.auto_lagsize*ahp_xc.nlines*2+(ahp_xc.cross_lagsize*2-1)*ahp_xc.nbaselines*2)*ahp_xc.bps/4+ahp_xc.delaysize_len*ahp_xc.nlines*2+ahp_xc.header_len+16+2+1;
-                ahp_xc.frequency = 1000000000000.0/(!_tau?1:_tau);
-                sign = (pow(2, ahp_xc.bps-1));
-                fill = sign|(sign - 1);
-
-                if(ahp_xc.mutexes_initialized) {
-                    int nbaselines = ahp_xc.nlines * (ahp_xc.nlines - 1) / 2;
-                    if(ahp_xc.crosscorrelation_threads)
-                        ahp_xc.crosscorrelation_threads = (pthread_t*)realloc(ahp_xc.crosscorrelation_threads, sizeof(pthread_t)*nbaselines);
-                    else
-                        ahp_xc.crosscorrelation_threads = (pthread_t*)malloc(sizeof(pthread_t)*nbaselines);
-                    memset(ahp_xc.crosscorrelation_threads, 0, sizeof(pthread_t)*nbaselines);
-                    if(ahp_xc.crosscorrelation_thread_args)
-                        ahp_xc.crosscorrelation_thread_args = (thread_argument*)realloc(ahp_xc.crosscorrelation_thread_args, sizeof(thread_argument)*nbaselines);
-                    else
-                        ahp_xc.crosscorrelation_thread_args = (thread_argument*)malloc(sizeof(thread_argument)*nbaselines);
-                    memset(ahp_xc.crosscorrelation_thread_args, 0, sizeof(thread_argument)*nbaselines);
-                    if(ahp_xc.autocorrelation_threads)
-                        ahp_xc.autocorrelation_threads = (pthread_t*)realloc(ahp_xc.autocorrelation_threads, sizeof(pthread_t)*ahp_xc.nlines);
-                    else
-                        ahp_xc.autocorrelation_threads = (pthread_t*)malloc(sizeof(pthread_t)*ahp_xc.nlines);
-                    memset(ahp_xc.autocorrelation_threads, 0, sizeof(pthread_t)*ahp_xc.nlines);
-                    if(ahp_xc.autocorrelation_thread_args)
-                        ahp_xc.autocorrelation_thread_args = (thread_argument*)realloc(ahp_xc.autocorrelation_thread_args, sizeof(thread_argument)*ahp_xc.nlines);
-                    else
-                        ahp_xc.autocorrelation_thread_args = (thread_argument*)malloc(sizeof(thread_argument)*ahp_xc.nlines);
-                    memset(ahp_xc.autocorrelation_thread_args, 0, sizeof(thread_argument)*ahp_xc.nlines);
-                }
-                ahp_xc.nthreads = 0;
-                if(ahp_xc.auto_channel)
-                    ahp_xc.auto_channel = (ahp_xc_scan_request*)realloc(ahp_xc.auto_channel, sizeof(ahp_xc_scan_request)*ahp_xc.nlines);
-                else
-                    ahp_xc.auto_channel = (ahp_xc_scan_request*)malloc(sizeof(ahp_xc_scan_request)*ahp_xc.nlines);
-                memset(ahp_xc.auto_channel, 0, sizeof(ahp_xc_scan_request)*ahp_xc.nlines);
-                if(ahp_xc.cross_channel)
-                    ahp_xc.cross_channel = (ahp_xc_scan_request*)realloc(ahp_xc.cross_channel, sizeof(ahp_xc_scan_request)*ahp_xc.nlines);
-                else
-                    ahp_xc.cross_channel = (ahp_xc_scan_request*)malloc(sizeof(ahp_xc_scan_request)*ahp_xc.nlines);
-                memset(ahp_xc.cross_channel, 0, sizeof(ahp_xc_scan_request)*ahp_xc.nlines);
-                if(ahp_xc.test)
-                    ahp_xc.test = (unsigned char*)realloc(ahp_xc.test, ahp_xc.nlines);
-                else
-                    ahp_xc.test = (unsigned char*)malloc(ahp_xc.nlines);
-                memset(ahp_xc.test, 0, ahp_xc.nlines);
-                if(ahp_xc.leds)
-                    ahp_xc.leds = (unsigned char*)realloc(ahp_xc.leds, ahp_xc.nlines);
-                else
-                    ahp_xc.leds = (unsigned char*)malloc(ahp_xc.nlines);
-                memset(ahp_xc.leds, 0, ahp_xc.nlines);
-                ahp_xc.detected = 1;
-            }
-        }
-        nread = strlen((char*)ahp_xc.buf);
-        if(nread < 0) {
-            errno = EINVAL;
-            strncpy(message, "Communication error", 64);
-        } else if(nread < 1) {
-            errno = EINVAL;
-            strncpy(message, "Empty packet", 64);
+    char c = 0;
+    while (c != '\r') {
+        int n = ahp_serial_RecvBuf((unsigned char*)&c, 1);
+        if(n > 0)
+            buf[nread++] = c;
+    }
+    nread = 0;
+    c = 0;
+    while (c != '\r') {
+        int n = ahp_serial_RecvBuf((unsigned char*)&c, 1);
+        if(n > 0)
+            buf[nread++] = c;
+    }
+    buf[nread-1] = '\0';
+    if(nread < 1) {
+        errno = ENODATA;
+    } else if(nread >= ahp_xc_get_packetsize()) {
+        if(ahp_xc.header_len > 0) {
+            if(strncmp(ahp_xc_get_header(), buf, ahp_xc.header_len))
+                errno = EPERM;
+            else
+                errno = calc_checksum((char*)buf);
         }
     }
     if(errno)
         goto err_end;
     if(timestamp != NULL)
-        *timestamp = get_timestamp(ahp_xc.buf);
+        *timestamp = get_timestamp(buf);
+    memcpy(ahp_xc.buf, buf, nread);
+    free(buf);
     return 0;
 err_end:
-    fprintf(stderr, "%s: %s\n", __func__, message);
+    fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
+    free(buf);
     return -1;
 }
 
@@ -1291,14 +1137,108 @@ int32_t ahp_xc_get_properties()
 {
     if(!ahp_xc.connected) return -ENOENT;
     if(ahp_xc.detected) return 0;
-    int32_t ntries = 5;
-    while(ntries-- > 0 && !ahp_xc_is_detected()) {
-        sleep(1);
-        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
-        ahp_serial_flushRX();
-        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
+    int32_t ntries = 2;
+    int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
+    ahp_serial_flushRX();
+    ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
+    while(ntries-- > 0) {
         if(grab_packet(NULL) < 0)
             continue;
+        int len = 0;
+        char *n = (char*)malloc(2);
+        char *buf = ahp_xc.buf;
+        int xc_header_len = 0;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        int n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_nlines);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _nlines++;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_bps);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _bps++;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_delaysize);
+        if(n_read < 1)
+            return 1;
+        ahp_xc.delaysize_len = len;
+        xc_header_len += len + 2;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_auto_lagsize);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _auto_lagsize++;
+        buf += len;
+        n = (char*)realloc(n, 3);
+        strncpy(n, buf, 2);
+        n[2] = 0;
+        n_read = sscanf(n, "%X", &len);
+        if(n_read < 1)
+            return 1;
+        n = (char*)realloc(n, len+1);
+        buf += 2;
+        strncpy(n, buf, len);
+        n[len] = 0;
+        n_read = sscanf(n, "%X", &_cross_lagsize);
+        if(n_read < 1)
+            return 1;
+        xc_header_len += len + 2;
+        _cross_lagsize++;
+        buf += len;
+        n_read = sscanf(buf, "%02X%04X", &_flags, &_tau);
+        if(n_read == 2) {
+            xc_header_len += 6;
+            ahp_xc.header_len = xc_header_len;
+            ahp_xc.header = (char*)realloc(ahp_xc.header, ahp_xc.header_len+1);
+            strncpy(ahp_xc.header, ahp_xc.buf, ahp_xc.header_len);
+            ahp_xc.header[ahp_xc.header_len] = 0;
+            break;
+        }
+        free(n);
     }
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     return 0;
