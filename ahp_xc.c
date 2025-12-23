@@ -270,7 +270,7 @@ static int grab_packet(double *timestamp)
 {
     char message[64];
     errno = 0;
-    uint32_t size = ahp_xc_get_packetsize()+1;
+    uint32_t size = ahp_xc_get_packetsize() * 2;
     char *buf = (char*)malloc(size);
     ahp_xc.buf = (char*)realloc(ahp_xc.buf, size);
     ahp_xc.buf_len = size;
@@ -296,24 +296,33 @@ static int grab_packet(double *timestamp)
     buf[nread-1] = '\0';
     if(nread < 1) {
         errno = ENODATA;
-    } else if(nread >= ahp_xc_get_packetsize()) {
+    } else if(nread < 0) {
+        errno = ETIMEDOUT;
+    } else if(nread < size-1) {
+        errno = ERANGE;
+    } else {
+        memcpy(ahp_xc.buf, buf+1, size-1);
+        free(buf);
+        char *eol = strchr(ahp_xc.buf, '\r');
+        if((off_t)eol > (off_t)ahp_xc.buf)
+            *eol = '\0';
+        else
+            ahp_xc.buf[nread-1] = '\0';
+        nread = strlen((char*)ahp_xc.buf);
         if(ahp_xc.header_len > 0) {
-            if(strncmp(ahp_xc_get_header(), buf, ahp_xc.header_len))
+            if(strncmp(ahp_xc_get_header(), ahp_xc.buf, ahp_xc.header_len))
                 errno = EPERM;
             else
-                errno = calc_checksum((char*)buf);
+                errno = calc_checksum((char*)ahp_xc.buf);
         }
     }
     if(errno)
         goto err_end;
     if(timestamp != NULL)
-        *timestamp = get_timestamp(buf);
-    memcpy(ahp_xc.buf, buf, nread);
-    free(buf);
+        *timestamp = get_timestamp(ahp_xc.buf);
     return 0;
 err_end:
     fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
-    free(buf);
     return -1;
 }
 
@@ -820,7 +829,11 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
     return s;
 }
 
+<<<<<<< Updated upstream
 static void ahp_xc_end_crosscorrelation_scan(uint32_t index)
+=======
+void ahp_xc_end_crosscorrelation_scan(uint32_t index)
+>>>>>>> Stashed changes
 {
     if(!ahp_xc.detected) return;
     if(!ahp_xc_intensity_crosscorrelator_enabled())
@@ -829,7 +842,11 @@ static void ahp_xc_end_crosscorrelation_scan(uint32_t index)
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
 }
 
+<<<<<<< Updated upstream
 static void ahp_xc_start_crosscorrelation_scan(uint32_t index)
+=======
+void ahp_xc_start_crosscorrelation_scan(uint32_t index)
+>>>>>>> Stashed changes
 {
     if(!ahp_xc.detected) return;
     ahp_xc_end_crosscorrelation_scan(index);
@@ -842,7 +859,11 @@ static void ahp_xc_start_crosscorrelation_scan(uint32_t index)
     ahp_xc_set_capture_flags(flags);
 }
 
+<<<<<<< Updated upstream
 static void *_get_crosscorrelation(void *o)
+=======
+void *_get_crosscorrelation(void *o)
+>>>>>>> Stashed changes
 {
     thread_argument *arg = (thread_argument*)o;
     ahp_xc_sample *sample = arg->sample;
@@ -1140,11 +1161,11 @@ int32_t ahp_xc_get_properties()
     int32_t ntries = 2;
     int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
-    ahp_serial_flushRX();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(ntries-- > 0) {
         if(grab_packet(NULL) < 0)
             continue;
+        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         int len = 0;
         char *n = (char*)malloc(2);
         char *buf = ahp_xc.buf;
