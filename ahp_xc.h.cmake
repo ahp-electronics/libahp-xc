@@ -619,7 +619,7 @@ DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint
 * \sa ahp_xc_get_delaysize
 * \sa ahp_xc_sample
 */
-DLL_EXPORT int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **correlations, int32_t *interrupt, double *percent);
+DLL_EXPORT int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_t nlines, ahp_xc_sample **correlations, int32_t *interrupt, double *percent);
 
 /**\}*/
 /**
