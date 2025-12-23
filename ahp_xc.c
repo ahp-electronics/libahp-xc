@@ -242,7 +242,7 @@ int32_t check_sof(char *data)
 static int grab_packet(double *timestamp)
 {
     errno = 0;
-    uint32_t size = ahp_xc_get_packetsize() * 2;
+    uint32_t size = ahp_xc_get_packetsize()+1;
     char *buf = (char*)malloc(size);
     ahp_xc.buf = (char*)realloc(ahp_xc.buf, size);
     ahp_xc.buf_len = size;
@@ -252,36 +252,40 @@ static int grab_packet(double *timestamp)
         goto err_end;
     }
     int32_t nread = 0;
-    nread = ahp_serial_RecvBuf((unsigned char*)buf, size);
+    char c = 0;
+    while (c != '\r') {
+        int n = ahp_serial_RecvBuf((unsigned char*)&c, 1);
+        if(n > 0)
+            buf[nread++] = c;
+    }
+    nread = 0;
+    c = 0;
+    while (c != '\r') {
+        int n = ahp_serial_RecvBuf((unsigned char*)&c, 1);
+        if(n > 0)
+            buf[nread++] = c;
+    }
+    buf[nread-1] = '\0';
     if(nread < 1) {
         errno = ENODATA;
-    } else if(nread < 0) {
-        errno = ETIMEDOUT;
-    } else if(nread < size-1) {
-        errno = ERANGE;
-    } else {
-        memcpy(ahp_xc.buf, buf+1, size-1);
-        free(buf);
-        char *eol = strchr(ahp_xc.buf, '\r');
-        if((off_t)eol > (off_t)ahp_xc.buf)
-            *eol = '\0';
-        else
-            ahp_xc.buf[nread-1] = '\0';
-        nread = strlen((char*)ahp_xc.buf);
+    } else if(nread >= ahp_xc_get_packetsize()) {
         if(ahp_xc.header_len > 0) {
-            if(strncmp(ahp_xc_get_header(), ahp_xc.buf, ahp_xc.header_len))
+            if(strncmp(ahp_xc_get_header(), buf, ahp_xc.header_len))
                 errno = EPERM;
             else
-                errno = calc_checksum((char*)ahp_xc.buf);
+                errno = calc_checksum((char*)buf);
         }
     }
     if(errno)
         goto err_end;
     if(timestamp != NULL)
-        *timestamp = get_timestamp(ahp_xc.buf);
+        *timestamp = get_timestamp(buf);
+    memcpy(ahp_xc.buf, buf, nread);
+    free(buf);
     return 0;
 err_end:
     fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
+    free(buf);
     return -1;
 }
 
@@ -1101,11 +1105,11 @@ int32_t ahp_xc_get_properties()
     int32_t ntries = 2;
     int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
+    ahp_serial_flushRX();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(ntries-- > 0) {
         if(grab_packet(NULL) < 0)
             continue;
-        ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
         int len = 0;
         char *n = (char*)malloc(2);
         char *buf = ahp_xc.buf;
