@@ -829,11 +829,7 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
     return s;
 }
 
-<<<<<<< Updated upstream
 static void ahp_xc_end_crosscorrelation_scan(uint32_t index)
-=======
-void ahp_xc_end_crosscorrelation_scan(uint32_t index)
->>>>>>> Stashed changes
 {
     if(!ahp_xc.detected) return;
     if(!ahp_xc_intensity_crosscorrelator_enabled())
@@ -842,11 +838,7 @@ void ahp_xc_end_crosscorrelation_scan(uint32_t index)
         ahp_xc_set_test_flags(index, ahp_xc_get_test_flags(index)&~SCAN_AUTO);
 }
 
-<<<<<<< Updated upstream
 static void ahp_xc_start_crosscorrelation_scan(uint32_t index)
-=======
-void ahp_xc_start_crosscorrelation_scan(uint32_t index)
->>>>>>> Stashed changes
 {
     if(!ahp_xc.detected) return;
     ahp_xc_end_crosscorrelation_scan(index);
@@ -859,11 +851,7 @@ void ahp_xc_start_crosscorrelation_scan(uint32_t index)
     ahp_xc_set_capture_flags(flags);
 }
 
-<<<<<<< Updated upstream
 static void *_get_crosscorrelation(void *o)
-=======
-void *_get_crosscorrelation(void *o)
->>>>>>> Stashed changes
 {
     thread_argument *arg = (thread_argument*)o;
     ahp_xc_sample *sample = arg->sample;
