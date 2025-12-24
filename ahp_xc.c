@@ -1244,10 +1244,18 @@ int32_t ahp_xc_get_properties()
                 ahp_xc.leds = (unsigned char*)malloc(ahp_xc.nlines);
             if(ahp_xc.test == NULL)
                 ahp_xc.test = (unsigned char*)malloc(ahp_xc.nlines);
-            ahp_xc.autocorrelation_thread_args = (thread_argument *)malloc(sizeof(thread_argument)*ahp_xc.nlines);
-            ahp_xc.crosscorrelation_thread_args = (thread_argument *)malloc(sizeof(thread_argument)*ahp_xc.nlines);
-            ahp_xc.autocorrelation_threads = (pthread_t *)malloc(sizeof(pthread_t)*ahp_xc.nlines);
-            ahp_xc.crosscorrelation_threads = (pthread_t *)malloc(sizeof(pthread_t)*ahp_xc.nlines);
+            if(ahp_xc.autocorrelation_thread_args == NULL)
+                ahp_xc.autocorrelation_thread_args = (thread_argument *)malloc(sizeof(thread_argument)*ahp_xc.nlines);
+            if(ahp_xc.crosscorrelation_thread_args == NULL)
+                ahp_xc.crosscorrelation_thread_args = (thread_argument *)malloc(sizeof(thread_argument)*ahp_xc.nlines);
+            if(ahp_xc.autocorrelation_threads == NULL)
+                ahp_xc.autocorrelation_threads = (pthread_t *)malloc(sizeof(pthread_t)*ahp_xc.nlines);
+            if(ahp_xc.crosscorrelation_threads == NULL)
+                ahp_xc.crosscorrelation_threads = (pthread_t *)malloc(sizeof(pthread_t)*ahp_xc.nlines);
+            if(ahp_xc.auto_channel == NULL)
+                ahp_xc.auto_channel = (ahp_xc_scan_request *)malloc(sizeof(ahp_xc_scan_request)*ahp_xc.nlines);
+            if(ahp_xc.cross_channel == NULL)
+                ahp_xc.cross_channel = (ahp_xc_scan_request *)malloc(sizeof(ahp_xc_scan_request)*ahp_xc.nbaselines);
             ahp_xc.detected = 1;
             break;
         }
