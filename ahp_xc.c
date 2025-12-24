@@ -62,7 +62,6 @@ typedef struct {
     read_argument read_data;
     thread_argument *autocorrelation_thread_args;
     thread_argument *crosscorrelation_thread_args;
-    pthread_t read_thread;
     pthread_t *autocorrelation_threads;
     pthread_t *crosscorrelation_threads;
     pthread_mutex_t mutex;
@@ -268,14 +267,12 @@ static void* read_thread(void* arg)
 
 static int grab_packet(double *timestamp)
 {
-    char message[64];
     errno = 0;
     uint32_t size = ahp_xc_get_packetsize() * 2;
     char *buf = (char*)malloc(size);
     ahp_xc.buf = (char*)realloc(ahp_xc.buf, size);
     ahp_xc.buf_len = size;
     if(!ahp_xc.connected){
-        strncpy(message, "Not connected", 64);
         errno = ENOENT;
         goto err_end;
     }
@@ -298,17 +295,7 @@ static int grab_packet(double *timestamp)
         errno = ENODATA;
     } else if(nread < 0) {
         errno = ETIMEDOUT;
-    } else if(nread < size-1) {
-        errno = ERANGE;
     } else {
-        memcpy(ahp_xc.buf, buf+1, size-1);
-        free(buf);
-        char *eol = strchr(ahp_xc.buf, '\r');
-        if((off_t)eol > (off_t)ahp_xc.buf)
-            *eol = '\0';
-        else
-            ahp_xc.buf[nread-1] = '\0';
-        nread = strlen((char*)ahp_xc.buf);
         if(ahp_xc.header_len > 0) {
             if(strncmp(ahp_xc_get_header(), ahp_xc.buf, ahp_xc.header_len))
                 errno = EPERM;
@@ -320,6 +307,7 @@ static int grab_packet(double *timestamp)
         goto err_end;
     if(timestamp != NULL)
         *timestamp = get_timestamp(ahp_xc.buf);
+    memcpy(ahp_xc.buf, buf, nread);
     return 0;
 err_end:
     fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
@@ -492,7 +480,6 @@ int32_t ahp_xc_connect_fd(int32_t fd)
         if(!ahp_xc.mutexes_initialized) {
             pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
             pthread_mutex_init(&ahp_xc.read_data.mutex, &ahp_serial_mutex_attr);
-            pthread_create(&ahp_xc.read_thread, NULL, &read_thread, &ahp_xc.read_data);
             ahp_xc.mutexes_initialized = 1;
         }
         ahp_xc.nthreads = 0;
@@ -542,7 +529,6 @@ int32_t ahp_xc_connect(const char *port)
             if(!ahp_xc.mutexes_initialized) {
                 pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
                 pthread_mutex_init(&ahp_xc.read_data.mutex, &ahp_serial_mutex_attr);
-                pthread_create(&ahp_xc.read_thread, NULL, &read_thread, &ahp_xc.read_data);
                 ahp_xc.mutexes_initialized = 1;
             }
             ahp_xc_get_properties();
@@ -1146,7 +1132,7 @@ int32_t ahp_xc_get_properties()
 {
     if(!ahp_xc.connected) return -ENOENT;
     if(ahp_xc.detected) return 0;
-    int32_t ntries = 2;
+    int32_t ntries = 5;
     int32_t _bps = -1, _nlines = -1, _delaysize = -1, _auto_lagsize = -1, _cross_lagsize = -1, _flags = -1, _tau = -1;
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
@@ -1245,6 +1231,24 @@ int32_t ahp_xc_get_properties()
             ahp_xc.header = (char*)realloc(ahp_xc.header, ahp_xc.header_len+1);
             strncpy(ahp_xc.header, ahp_xc.buf, ahp_xc.header_len);
             ahp_xc.header[ahp_xc.header_len] = 0;
+            ahp_xc.nlines = _nlines;
+            ahp_xc.nbaselines = _nlines*(_nlines-1)/2;
+            ahp_xc.bps = _bps;
+            ahp_xc.delaysize = _delaysize;
+            ahp_xc.auto_lagsize = _auto_lagsize;
+            ahp_xc.cross_lagsize = _cross_lagsize;
+            ahp_xc.flags = _flags;
+            ahp_xc.frequency = 1000000000000.0/_tau;
+            ahp_xc.packetsize = ahp_xc.header_len+(ahp_xc.nlines*(ahp_xc.nlines+2))*ahp_xc.bps/4+16+2+1;
+            if(ahp_xc.leds == NULL)
+                ahp_xc.leds = (unsigned char*)malloc(ahp_xc.nlines);
+            if(ahp_xc.test == NULL)
+                ahp_xc.test = (unsigned char*)malloc(ahp_xc.nlines);
+            ahp_xc.autocorrelation_thread_args = (thread_argument *)malloc(sizeof(thread_argument)*ahp_xc.nlines);
+            ahp_xc.crosscorrelation_thread_args = (thread_argument *)malloc(sizeof(thread_argument)*ahp_xc.nlines);
+            ahp_xc.autocorrelation_threads = (pthread_t *)malloc(sizeof(pthread_t)*ahp_xc.nlines);
+            ahp_xc.crosscorrelation_threads = (pthread_t *)malloc(sizeof(pthread_t)*ahp_xc.nlines);
+            ahp_xc.detected = 1;
             break;
         }
         free(n);
