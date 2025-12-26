@@ -38,7 +38,6 @@ if(WIN32)
     target_link_libraries(ahp_xc ws2_32 setupapi cfgmgr32)
 else(WIN32)
    set_target_properties(ahp_xc PROPERTIES VERSION ${AHPXC_VERSION} SOVERSION ${AHPXC_SOVERSION})
-   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-xc.rules DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 endif(WIN32)
 
 target_link_libraries(ahp_xc ${CMAKE_THREAD_LIBS_INIT})
