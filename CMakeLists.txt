@@ -18,7 +18,13 @@ set(AHPXC_SOVERSION ${AHP_XC_VERSION_MAJOR})
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/serial.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_win.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_osx.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_linux.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/unix.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/win.cc
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/brew.sh.cmake ${CMAKE_CURRENT_BINARY_DIR}/brew.sh )
@@ -26,6 +32,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_xc.h.cmake ${CMAKE_CURRENT_BINARY
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/FindAHPXC.cmake ${CMAKE_CURRENT_BINARY_DIR}/FindAHPXC.cmake )
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
 link_directories(${CMAKE_LIBRARY_PATH})
