@@ -240,8 +240,6 @@ static int grab_packet(double *timestamp)
 {
     errno = 0;
     uint32_t size = ahp_xc_get_packetsize();
-    ahp_xc.buf_tmp = (unsigned char*)realloc(ahp_xc.buf_tmp, size);
-    ahp_xc.buf = (unsigned char*)realloc(ahp_xc.buf, size);
     ahp_xc.buf_len = size;
     if(!ahp_xc.connected){
         errno = ENOENT;
@@ -250,43 +248,63 @@ static int grab_packet(double *timestamp)
     int32_t nread = 0;
     int32_t ntries = 10;
     char c = 0;
-    while(c != '\r' && ntries-- > 0) {
-        int n = serial_read((unsigned char*)&c, 1);
-        if(n == 1) {
-            ntries = 10;
-            ahp_xc.buf_tmp[nread++] = c;
-        }
-    }
-    if(nread < 2) {
-        int32_t nread = 0;
-        int32_t ntries = 10;
-        char c = 0;
+    if(!ahp_xc.detected) {
         while(c != '\r' && ntries-- > 0) {
             int n = serial_read((unsigned char*)&c, 1);
             if(n == 1) {
                 ntries = 10;
+                ahp_xc.buf_tmp = (unsigned char*)realloc(ahp_xc.buf_tmp, nread+1);
                 ahp_xc.buf_tmp[nread++] = c;
             }
         }
+        ahp_xc.buf_tmp = (unsigned char*)realloc(ahp_xc.buf_tmp, 1);
+        if(nread < 2) {
+            nread = 0;
+            ntries = 10;
+            c = 0;
+            while(c != '\r' && ntries-- > 0) {
+                int n = serial_read((unsigned char*)&c, 1);
+                if(n == 1) {
+                  ntries = 10;
+                  ahp_xc.buf_tmp = (unsigned char*)realloc(ahp_xc.buf_tmp, nread+1);
+                  ahp_xc.buf_tmp[nread++] = c;
+                }
+            }
+        }
+        ahp_xc.buf_tmp[nread-1] = '\0';
+        ahp_xc.buf = (unsigned char*)realloc(ahp_xc.buf, nread);
+        memcpy(ahp_xc.buf, ahp_xc.buf_tmp, nread);
+    } else {
+        nread = serial_read(ahp_xc.buf, size);
     }
-    ahp_xc.buf_tmp[nread-1] = '\0';
     if(nread < 3) {
         errno = ENODATA;
     } else if(nread < 0) {
         errno = ETIMEDOUT;
     } else {
         if(ahp_xc.header_len > 0) {
-            if(strncmp(ahp_xc_get_header(), ahp_xc.buf_tmp, ahp_xc.header_len))
+            if(strncmp(ahp_xc_get_header(), ahp_xc.buf, ahp_xc.header_len)) {
+                nread = 0;
+                ntries = 10;
+                c = 0;
+                while(c != '\r' && ntries-- > 0) {
+                    int n = serial_read((unsigned char*)&c, 1);
+                    if(n == 1) {
+                        ntries = 10;
+                        ahp_xc.buf_tmp = (unsigned char*)realloc(ahp_xc.buf_tmp, nread+1);
+                        ahp_xc.buf_tmp[nread++] = c;
+                    }
+                }
                 errno = EPERM;
-            else
-                errno = calc_checksum((char*)ahp_xc.buf_tmp);
+            } else
+                errno = calc_checksum((char*)ahp_xc.buf);
+            ahp_xc.buf[nread-1] = '\0';
         }
     }
     if(errno)
         goto err_end;
     if(timestamp != NULL)
-        *timestamp = get_timestamp(ahp_xc.buf_tmp);
-    memcpy(ahp_xc.buf, ahp_xc.buf_tmp, nread);
+        *timestamp = get_timestamp(ahp_xc.buf);
     return 0;
 err_end:
     fprintf(stderr, "%s error: %s\n", __func__, strerror(errno));
@@ -1275,6 +1293,7 @@ int32_t ahp_xc_get_properties()
     else
         ahp_xc.leds = (unsigned char*)malloc(ahp_xc.nlines);
     memset(ahp_xc.leds, 0, ahp_xc.nlines);
+    ahp_xc.buf = (unsigned char*)realloc(ahp_xc.buf, ahp_xc_get_packetsize());
     ahp_xc.detected = 1;
     return 0;
 }
@@ -1302,7 +1321,7 @@ void ahp_xc_set_baudrate(baud_rate rate)
     ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
     ahp_xc_set_capture_flags((xc_capture_flags)(flags));
     serial_close();
-    serial_connect(ahp_xc.comport, ahp_xc.baserate*pow(2, (int)ahp_xc.rate), "1N8");
+    serial_connect(ahp_xc.comport, ahp_xc.baserate*pow(2, (int)ahp_xc.rate), "8N1");
 }
 
 void ahp_xc_set_correlation_order(uint32_t order)
