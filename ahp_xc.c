@@ -25,7 +25,7 @@
 #include <sys/time.h>
 #include "ahp_xc.h"
 
-#include "rs232.h"
+#include "serial.h"
 
 #ifndef AIRY
 #define AIRY 1.21966
@@ -1093,7 +1093,6 @@ int32_t ahp_xc_get_packet(ahp_xc_packet *packet)
             ret = -ENOENT;
             goto err_end;
         }
-        packet->counts[x] = (packet->counts[x] == 0 ? 1 : packet->counts[x]);
         buf += n;
     }
     int32_t *inputs = (int*)malloc(sizeof(int)*ahp_xc_get_correlation_order());

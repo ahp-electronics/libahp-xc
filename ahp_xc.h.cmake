@@ -550,7 +550,7 @@ DLL_EXPORT void ahp_xc_free_packet(ahp_xc_packet *packet);
 /**
 * \brief Allocate and return a samples array
 * \param nlines The Number of samples to be allocated.
-* \param len The lag_size and correlations field size of each sample.
+* \param size The lag_size and correlations field size of each sample.
 * \return Returns the new allocated ahp_xc_sample array
 * \sa ahp_xc_free_samples
 * \sa ahp_xc_copy_samples
@@ -563,7 +563,7 @@ DLL_EXPORT ahp_xc_sample *ahp_xc_alloc_samples(uint64_t nlines, size_t size);
 * \brief Allocate and return a copy of the passed samples array
 * \param src The source samples array.
 * \param nlines The Number of samples to be allocated.
-* \param len The lag_size and correlations field size of each sample.
+* \param size The lag_size and correlations field size of each sample.
 * \return Returns the ahp_xc_sample array copy of src
 * \sa ahp_xc_alloc_samples
 * \sa ahp_xc_free_samples
