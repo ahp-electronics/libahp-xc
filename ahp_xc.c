@@ -1064,8 +1064,8 @@ int32_t ahp_xc_get_packet(ahp_xc_packet *packet)
     sample = (char*)malloc((unsigned int)n+1);
     packet->buf = ahp_xc.buf;
     const char *buf = packet->buf;
-    int32_t *inputs = (int*)calloc(sizeof(int), ahp_xc_get_correlation_order());
-    double *lags = (double*)calloc(sizeof(double), ahp_xc_get_correlation_order());
+    int32_t *inputs = (int*)calloc(ahp_xc_get_correlation_order(), sizeof(int));
+    double *lags = (double*)calloc(ahp_xc_get_correlation_order(), sizeof(double));
     memset(inputs, 0, sizeof(int)*ahp_xc_get_correlation_order());
     memset(lags, 0, sizeof(double)*ahp_xc_get_correlation_order());
     buf += ahp_xc.header_len;
