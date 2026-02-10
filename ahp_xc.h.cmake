@@ -282,7 +282,7 @@ ahp_xc_sample* crosscorrelations;
 ///Packet lock mutex
 void *lock;
 ///Packet buffer string
-const char* buf;
+char* buf;
 } ahp_xc_packet;
 
 /**\}*/

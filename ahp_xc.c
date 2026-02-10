@@ -663,7 +663,7 @@ static void* _get_autocorrelation(void *o)
     thread_argument *arg = (thread_argument*)o;
     ahp_xc_sample *sample = arg->sample;
     int32_t index = arg->index;
-    char *data = arg->data;
+    char *data = (char*)arg->data;
     double lag = arg->lag;
     uint32_t y;
     int32_t n = ahp_xc_get_bps() / 4;
@@ -706,7 +706,7 @@ static void* _get_autocorrelation(void *o)
     return NULL;
 }
 
-void ahp_xc_get_autocorrelation(ahp_xc_sample *sample, int32_t index, const char *data, double lag)
+void ahp_xc_get_autocorrelation(ahp_xc_sample *sample, int32_t index, char *data, double lag)
 {
     if(!ahp_xc.mutexes_initialized)
         return;
@@ -820,7 +820,7 @@ static void *_get_crosscorrelation(void *o)
     int32_t *indexes = arg->indexes;
     int32_t index = arg->index;
     uint32_t num_indexes = arg->order;
-    char *data = arg->data;
+    char *data = (char*)arg->data;
     double lag = arg->lag;
     uint32_t x, y;
     int32_t n = ahp_xc_get_bps() / 4;
@@ -913,7 +913,7 @@ static void *_get_crosscorrelation(void *o)
     return NULL;
 }
 
-void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int32_t *indexes, int32_t order, const char *data, double *lags)
+void ahp_xc_get_crosscorrelation(ahp_xc_sample *sample, int32_t *indexes, int32_t order, char *data, double *lags)
 {
     if(!ahp_xc.mutexes_initialized)
         return;
