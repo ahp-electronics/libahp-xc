@@ -57,7 +57,7 @@ typedef struct {
 } read_argument;
 
 typedef struct {
-    int32_t nthreads;
+    uint64_t nthreads;
     thread_argument *autocorrelation_thread_args;
     thread_argument *crosscorrelation_thread_args;
     pthread_t *autocorrelation_threads;
@@ -89,7 +89,6 @@ typedef struct {
     uint32_t correlation_order;
     char comport[128];
 
-    char *buf_tmp;
     char *buf;
     char *header;
     int32_t buf_allocd;
@@ -272,7 +271,7 @@ static int grab_packet(double *timestamp)
         }
         ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~CAP_ENABLE);
     } else {
-        nread = serial_read(ahp_xc.buf, size);
+        nread = serial_read((unsigned char*)ahp_xc.buf, size);
     }
     if(nread < 3) {
         errno = ENODATA;
@@ -467,7 +466,6 @@ int32_t ahp_xc_connect_fd(int32_t fd)
     if(fd > -1) {
         ahp_xc.connected = 1;
         ahp_xc.buf = (char*)malloc(ahp_xc.packetsize);
-        ahp_xc.buf_tmp = (char*)malloc(ahp_xc.packetsize);
         ahp_xc.detected = 0;
         serial_set_fd(fd, XC_BASE_RATE);
         if(!ahp_xc.mutexes_initialized) {
@@ -489,7 +487,6 @@ int32_t ahp_xc_connect(const char *port)
     if(ahp_xc.detected)
         return 0;
     sleep(1);
-    int32_t ret = 1;
     xc_current_input = 0;
     ahp_xc.nthreads = 0;
     ahp_xc.connected = 0;
@@ -510,10 +507,8 @@ int32_t ahp_xc_connect(const char *port)
     if(serial_is_open()) {
         ahp_xc.connected = 1;
         ahp_xc.buf = (char*)malloc(ahp_xc.packetsize);
-        ahp_xc.buf_tmp = (char*)malloc(ahp_xc.packetsize);
         ahp_xc.buf_allocd = 1;
         ahp_xc.buf[0] = 0;
-        ahp_xc.buf_tmp[0] = 0;
         ahp_xc.buf_len = 0;
         ahp_xc.header = (char*)malloc(1);
         ahp_xc.header_allocd = 1;
@@ -547,7 +542,6 @@ void ahp_xc_disconnect()
             ahp_xc.mutexes_initialized = 0;
         }
         free(ahp_xc.buf);
-        free(ahp_xc.buf_tmp);
         free(ahp_xc.header);
         serial_close();
     }
@@ -589,7 +583,7 @@ ahp_xc_sample *ahp_xc_copy_samples(ahp_xc_sample* src, uint64_t nlines, size_t s
 
 void ahp_xc_free_samples(uint64_t nlines, ahp_xc_sample *samples)
 {
-    uint64_t x, y;
+    uint64_t x;
     if(samples != NULL) {
         for(x = 0; x < nlines; x++) {
             if(samples[x].correlations != NULL) {
@@ -1276,7 +1270,7 @@ int32_t ahp_xc_get_properties()
     else
         ahp_xc.leds = (unsigned char*)malloc(ahp_xc.nlines);
     memset(ahp_xc.leds, 0, ahp_xc.nlines);
-    ahp_xc.buf = (unsigned char*)realloc(ahp_xc.buf, ahp_xc_get_packetsize());
+    ahp_xc.buf = (char*)realloc(ahp_xc.buf, ahp_xc_get_packetsize());
     ahp_xc.detected = 1;
     return 0;
 err_end:

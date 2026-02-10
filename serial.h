@@ -188,7 +188,7 @@ DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
     strcpy(ahp_serial_mode, m);
     ahp_serial_flowctrl = fc;
     ahp_serial_baudrate = bauds;
-    int baudr, status;
+    int baudr;
     switch(ahp_serial_baudrate)
     {
     case      50 : baudr = B50;
@@ -486,7 +486,7 @@ DLL_EXPORT void serial_flush()
 
 #endif
 
-DLL_EXPORT int serial_connect(char* devname, int baudrate, const char *mode)
+DLL_EXPORT int serial_connect(const char* devname, int baudrate, const char *mode)
 {
     char dev_name[128];
 #ifndef WINDOWS
@@ -540,7 +540,6 @@ DLL_EXPORT int serial_read(unsigned char *buf, int size)
     int nbytes = 0;
     int ntries = size*2;
     int bytes_left = size;
-    int err = 0;
     errno = 0;
     memset(buf, 0, size);
     if(ahp_serial_mutexes_initialized) {
