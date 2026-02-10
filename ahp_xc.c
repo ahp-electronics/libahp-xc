@@ -559,7 +559,7 @@ uint32_t ahp_xc_is_detected()
 
 ahp_xc_sample *ahp_xc_alloc_samples(uint64_t nlines, size_t size)
 {
-    uint64_t x, y;
+    uint64_t x;
     ahp_xc_sample* samples = (ahp_xc_sample*)malloc(sizeof(ahp_xc_sample)*nlines);
     memset(samples, 0, sizeof(ahp_xc_sample)*nlines);
     for(x = 0; x < nlines; x++) {
@@ -663,11 +663,11 @@ static void* _get_autocorrelation(void *o)
     thread_argument *arg = (thread_argument*)o;
     ahp_xc_sample *sample = arg->sample;
     int32_t index = arg->index;
-    const char *data = arg->data;
+    char *data = arg->data;
     double lag = arg->lag;
     uint32_t y;
     int32_t n = ahp_xc_get_bps() / 4;
-    const char *packet = data;
+    char *packet = data;
     char *subpacket = (char*)malloc(n+1);
     memset(subpacket, 0, n+1);
     sample->lag_size = ahp_xc_get_autocorrelator_lagsize();
@@ -724,8 +724,6 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
     uint32_t i = 0;
     uint32_t x = 0;
     uint32_t y = 0;
-    double ts = 0.0;
-    double ts0 = 0.0;
     int32_t s = 0;
     *autocorrelations = NULL;
     (*percent) = 0;
@@ -777,7 +775,6 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
             break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
         if(calc_checksum(packet)) continue;
-        ts = get_timestamp(packet);
         double off = 0;
         for(x = 0; x < nlines; x++) {
             off = ahp_xc_get_current_channel_auto(lines[x].index, packet)/lines[x].step;
@@ -823,11 +820,11 @@ static void *_get_crosscorrelation(void *o)
     int32_t *indexes = arg->indexes;
     int32_t index = arg->index;
     uint32_t num_indexes = arg->order;
-    const char *data = arg->data;
+    char *data = arg->data;
     double lag = arg->lag;
     uint32_t x, y;
     int32_t n = ahp_xc_get_bps() / 4;
-    const char *packet = data;
+    char *packet = data;
     sample->lag_size = ahp_xc_get_crosscorrelator_lagsize();
     sample->lag = lag;
     if(ahp_xc_intensity_crosscorrelator_enabled()) {
@@ -944,8 +941,6 @@ static int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_
     uint32_t x = 0;
     int y = 0;
     int z = 0;
-    double ts = 0.0;
-    double ts0 = 0.0;
     int order = ahp_xc_get_correlation_order();
     uint32_t n = ahp_xc_get_bps()/4;
     *crosscorrelations = NULL;
@@ -1017,13 +1012,11 @@ static int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_
                     ahp_xc_end_crosscorrelation_scan(lines[0].index);
                 }
                 k = 0;
-                ts0 = 0.0;
                 while(k < lines[0].len/lines[0].step) {
                     if(*interrupt)
                         break;
                     char *packet = (char*)buffer+k*ahp_xc_get_packetsize();
                     double *lags = (double*)malloc(sizeof(double)*order);
-                    ts = get_timestamp(packet);
                     for(z = 0; z < order && !*interrupt; z++)
                         lags[z] = ahp_xc_get_current_channel_cross(index, buffer);
                     ahp_xc_get_crosscorrelation(&correlations[o], inputs, order, packet, lags);

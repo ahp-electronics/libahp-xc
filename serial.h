@@ -549,7 +549,6 @@ DLL_EXPORT int serial_read(unsigned char *buf, int size)
             usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
-                err = -errno;
                 continue;
             }
             nbytes += n;
