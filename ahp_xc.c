@@ -196,7 +196,7 @@ double ahp_xc_get_current_channel_auto(int n, const char *data)
     char *current_channel = (char*)malloc(ahp_xc.delaysize_len);
     double channel = 0;
     uint32_t tmp = 0;
-    char *message = &data[ahp_xc_get_packetsize()-19-ahp_xc.delaysize_len*ahp_xc_get_nlines()-ahp_xc.delaysize_len*(n+1)];
+    const char *message = &data[ahp_xc_get_packetsize()-19-ahp_xc.delaysize_len*ahp_xc_get_nlines()-ahp_xc.delaysize_len*(n+1)];
     strncpy(current_channel, message, ahp_xc.delaysize_len);
     sscanf(current_channel, "%X", &tmp);
     channel = (double)tmp;
@@ -208,7 +208,7 @@ double ahp_xc_get_current_channel_cross(int n, const char *data)
     char *current_channel = (char*)malloc(ahp_xc.delaysize_len);
     double channel = 0;
     uint32_t tmp = 0;
-    char *message = &data[ahp_xc_get_packetsize()-19-ahp_xc.delaysize_len*(n+1)];
+    const char *message = &data[ahp_xc_get_packetsize()-19-ahp_xc.delaysize_len*(n+1)];
     strncpy(current_channel, message, ahp_xc.delaysize_len);
     sscanf(current_channel, "%X", &tmp);
     channel = (double)tmp;
