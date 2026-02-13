@@ -25,7 +25,7 @@
 #include <sys/time.h>
 #include "ahp_xc.h"
 
-#include "seral.h"
+#include "serial.h"
 
 #ifndef AIRY
 #define AIRY 1.21966
