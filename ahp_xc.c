@@ -248,7 +248,7 @@ static int grab_packet(double *timestamp)
     int32_t nread = 0;
     char c = 0;
     while (c != '\r') {
-        int n = ahp_serial_RecvBuf((unsigned char*)&c, 1);
+        int n = serial_read((unsigned char*)&c, 1);
         if(n > 0)
             ahp_xc.tmp_buf[nread++] = c;
     }
@@ -256,7 +256,7 @@ static int grab_packet(double *timestamp)
         nread = 0;
         c = 0;
         while (c != '\r') {
-            int n = ahp_serial_RecvBuf((unsigned char*)&c, 1);
+            int n = serial_read((unsigned char*)&c, 1);
             if(n > 0)
                 ahp_xc.tmp_buf[nread++] = c;
         }
@@ -428,7 +428,7 @@ uint32_t ahp_xc_get_packetsize()
 
 int32_t ahp_xc_get_fd()
 {
-    return ahp_serial_GetFD();
+    return flush_get_fd();
 }
 
 int32_t ahp_xc_connect_fd(int32_t fd)
@@ -449,9 +449,9 @@ int32_t ahp_xc_connect_fd(int32_t fd)
         ahp_xc.buf = (char*)malloc(ahp_xc.packetsize);
         ahp_xc.tmp_buf = (char*)malloc(ahp_xc.packetsize);
         ahp_xc.detected = 0;
-        ahp_serial_SetFD(fd, XC_BASE_RATE);
+        flush_set_fd(fd, XC_BASE_RATE);
         if(!ahp_xc.mutexes_initialized) {
-            pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
+            pthread_mutex_init(&ahp_xc.mutex, &serial_mutex_attr);
             ahp_xc.mutexes_initialized = 1;
         }
         ahp_xc.nthreads = 0;
@@ -486,7 +486,7 @@ int32_t ahp_xc_connect(const char *port)
     ahp_xc.rate = R_BASE;
     ahp_xc.correlator_enabled = 1;
     strcpy(ahp_xc.comport, port);
-    if(!ahp_serial_OpenComport(port)) {
+    if(!serial_connect(port, ahp_xc_get_baudrate(), "8N1")) {
         ahp_xc.connected = 1;
         ahp_xc.buf = (char*)malloc(ahp_xc.packetsize);
         ahp_xc.tmp_buf = (char*)malloc(ahp_xc.packetsize);
@@ -498,14 +498,11 @@ int32_t ahp_xc_connect(const char *port)
         ahp_xc.header_allocd = 1;
         ahp_xc.header[0] = 0;
         ahp_xc.header_len = 0;
-        ret = ahp_serial_SetupPort(ahp_xc_get_baudrate(), "8N1", 0);
-        if(!ret) {
-            if(!ahp_xc.mutexes_initialized) {
-                pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
-                ahp_xc.mutexes_initialized = 1;
-            }
-            ahp_xc_get_properties();
+        if(!ahp_xc.mutexes_initialized) {
+            pthread_mutex_init(&ahp_xc.mutex, &serial_mutex_attr);
+            ahp_xc.mutexes_initialized = 1;
         }
+        ahp_xc_get_properties();
     }
     return !ahp_xc.detected;
 }
@@ -529,7 +526,7 @@ void ahp_xc_disconnect()
         free(ahp_xc.buf);
         free(ahp_xc.tmp_buf);
         free(ahp_xc.header);
-        ahp_serial_CloseComport();
+        serial_close();
     }
 }
 
@@ -593,7 +590,7 @@ ahp_xc_packet *ahp_xc_alloc_packet()
     packet->autocorrelations = ahp_xc_alloc_samples((uint64_t)ahp_xc_get_nlines(), (uint64_t)ahp_xc_get_autocorrelator_lagsize());
     packet->crosscorrelations = ahp_xc_alloc_samples((uint64_t)ahp_xc_get_nbaselines(), (uint64_t)ahp_xc_get_crosscorrelator_lagsize()*2-1);
     packet->lock = malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(((pthread_mutex_t*)packet->lock), &ahp_serial_mutex_attr);
+    pthread_mutex_init(((pthread_mutex_t*)packet->lock), &serial_mutex_attr);
     return packet;
 }
 
@@ -740,13 +737,13 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
     char* buf = NULL;
     i = 0;
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
-    ahp_serial_flushRX();
+    serial_flush_rx();
     ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
     while(i < len) {
         if(*interrupt)
             break;
         unsigned char *buf = (unsigned char*)malloc(ahp_xc_get_packetsize());
-        ahp_serial_RecvBuf((unsigned char*)buf, ahp_xc_get_packetsize());
+        serial_read((unsigned char*)buf, ahp_xc_get_packetsize());
         memcpy(data+i*ahp_xc_get_packetsize(), buf+1, ahp_xc_get_packetsize()-1);
         *((char*)data+i*ahp_xc_get_packetsize()+ahp_xc_get_packetsize()) = '\r';
         i++;
@@ -988,13 +985,13 @@ static int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_
                 lines[index].cur_chan += lines[index].step;
                 int i = 0;
                 ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()&~(CAP_ENABLE|CAP_RESET_TIMESTAMP));
-                ahp_serial_flushRX();
+                serial_flush_rx();
                 ahp_xc_set_capture_flags(ahp_xc_get_capture_flags()|CAP_ENABLE);
                 while(i < (int)(lines[0].len/lines[0].step)) {
                     if(*interrupt)
                         break;
                     unsigned char *buf = (unsigned char*)malloc(ahp_xc_get_packetsize());
-                    ahp_serial_RecvBuf((unsigned char*)buf, ahp_xc_get_packetsize());
+                    serial_read((unsigned char*)buf, ahp_xc_get_packetsize());
                     memcpy(buffer+i*ahp_xc_get_packetsize(), buf+1, ahp_xc_get_packetsize()-1);
                     *((char*)buffer+i*ahp_xc_get_packetsize()+ahp_xc_get_packetsize()) = '\r';
                     free(buf);
@@ -1262,7 +1259,8 @@ void ahp_xc_set_baudrate(baud_rate rate)
     ahp_xc_set_capture_flags((xc_capture_flags)(flags&~CAP_EXTRA_CMD));
     ahp_xc_send_command(SET_BAUD_RATE, (unsigned char)rate);
     ahp_xc_set_capture_flags((xc_capture_flags)(flags));
-    ahp_serial_SetupPort(ahp_xc.baserate*pow(2, (int)ahp_xc.rate), "8N1", 0);
+    serial_close();
+    serial_connect(ahp_xc.comport, ahp_xc.baserate*pow(2, (int)ahp_xc.rate), "8N1");
 }
 
 void ahp_xc_set_correlation_order(uint32_t order)
@@ -1445,9 +1443,9 @@ void ahp_xc_set_test_flags(uint32_t index, int32_t value)
     if(!ahp_xc.connected) return -ENOENT;
     int32_t err = 0;
     unsigned char c = (unsigned char)(cmd|(value<<4));
-    ahp_serial_flushTX();
+    serial_flush_tx();
     perr("%02X ", c);
-    err |= ahp_serial_SendByte(c);
+    err |= serial_write(&c, 1);
     return err;
 }
 
