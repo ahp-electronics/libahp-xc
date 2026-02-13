@@ -428,7 +428,7 @@ uint32_t ahp_xc_get_packetsize()
 
 int32_t ahp_xc_get_fd()
 {
-    return flush_get_fd();
+    return serial_get_fd();
 }
 
 int32_t ahp_xc_connect_fd(int32_t fd)
@@ -449,9 +449,9 @@ int32_t ahp_xc_connect_fd(int32_t fd)
         ahp_xc.buf = (char*)malloc(ahp_xc.packetsize);
         ahp_xc.tmp_buf = (char*)malloc(ahp_xc.packetsize);
         ahp_xc.detected = 0;
-        flush_set_fd(fd, XC_BASE_RATE);
+        serial_set_fd(fd, XC_BASE_RATE);
         if(!ahp_xc.mutexes_initialized) {
-            pthread_mutex_init(&ahp_xc.mutex, &serial_mutex_attr);
+            pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
             ahp_xc.mutexes_initialized = 1;
         }
         ahp_xc.nthreads = 0;
@@ -499,7 +499,7 @@ int32_t ahp_xc_connect(const char *port)
         ahp_xc.header[0] = 0;
         ahp_xc.header_len = 0;
         if(!ahp_xc.mutexes_initialized) {
-            pthread_mutex_init(&ahp_xc.mutex, &serial_mutex_attr);
+            pthread_mutex_init(&ahp_xc.mutex, &ahp_serial_mutex_attr);
             ahp_xc.mutexes_initialized = 1;
         }
         ahp_xc_get_properties();
