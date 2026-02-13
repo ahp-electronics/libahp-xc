@@ -57,7 +57,7 @@ typedef struct {
 } read_argument;
 
 typedef struct {
-    int32_t nthreads;
+    uint32_t nthreads;
     thread_argument *autocorrelation_thread_args;
     thread_argument *crosscorrelation_thread_args;
     pthread_t *autocorrelation_threads;
@@ -191,7 +191,7 @@ double get_timestamp(char *data)
     return (double)ts + tmp / 1000000000.0;
 }
 
-double ahp_xc_get_current_channel_auto(int n, char *data)
+double ahp_xc_get_current_channel_auto(int n, const char *data)
 {
     char *current_channel = (char*)malloc(ahp_xc.delaysize_len);
     double channel = 0;
@@ -203,7 +203,7 @@ double ahp_xc_get_current_channel_auto(int n, char *data)
     return channel;
 }
 
-double ahp_xc_get_current_channel_cross(int n, char *data)
+double ahp_xc_get_current_channel_cross(int n, const char *data)
 {
     char *current_channel = (char*)malloc(ahp_xc.delaysize_len);
     double channel = 0;
@@ -469,7 +469,6 @@ int32_t ahp_xc_connect(const char *port)
     if(ahp_xc.detected)
         return 0;
     sleep(1);
-    int32_t ret = 1;
     xc_current_input = 0;
     ahp_xc.nthreads = 0;
     ahp_xc.connected = 0;
@@ -542,7 +541,7 @@ uint32_t ahp_xc_is_detected()
 
 ahp_xc_sample *ahp_xc_alloc_samples(uint64_t nlines, size_t size)
 {
-    uint64_t x, y;
+    uint64_t x;
     ahp_xc_sample* samples = (ahp_xc_sample*)malloc(sizeof(ahp_xc_sample)*nlines);
     memset(samples, 0, sizeof(ahp_xc_sample)*nlines);
     for(x = 0; x < nlines; x++) {
@@ -566,7 +565,7 @@ ahp_xc_sample *ahp_xc_copy_samples(ahp_xc_sample* src, uint64_t nlines, size_t s
 
 void ahp_xc_free_samples(uint64_t nlines, ahp_xc_sample *samples)
 {
-    uint64_t x, y;
+    uint64_t x;
     if(samples != NULL) {
         for(x = 0; x < nlines; x++) {
             if(samples[x].correlations != NULL) {
@@ -590,7 +589,7 @@ ahp_xc_packet *ahp_xc_alloc_packet()
     packet->autocorrelations = ahp_xc_alloc_samples((uint64_t)ahp_xc_get_nlines(), (uint64_t)ahp_xc_get_autocorrelator_lagsize());
     packet->crosscorrelations = ahp_xc_alloc_samples((uint64_t)ahp_xc_get_nbaselines(), (uint64_t)ahp_xc_get_crosscorrelator_lagsize()*2-1);
     packet->lock = malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(((pthread_mutex_t*)packet->lock), &serial_mutex_attr);
+    pthread_mutex_init(((pthread_mutex_t*)packet->lock), &ahp_serial_mutex_attr);
     return packet;
 }
 
@@ -708,8 +707,6 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
     uint32_t i = 0;
     uint32_t x = 0;
     uint32_t y = 0;
-    double ts = 0.0;
-    double ts0 = 0.0;
     int32_t s = 0;
     *autocorrelations = NULL;
     (*percent) = 0;
@@ -734,7 +731,6 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
         ahp_xc_set_channel_auto(lines[i].index, lines[i].start, lines[i].len, lines[i].step);
         ahp_xc_start_autocorrelation_scan(lines[i].index);
     }
-    char* buf = NULL;
     i = 0;
     ahp_xc_set_capture_flags((ahp_xc_get_capture_flags()|CAP_RESET_TIMESTAMP)&~CAP_ENABLE);
     serial_flush_rx();
@@ -767,7 +763,6 @@ static int32_t ahp_xc_scan_autocorrelations(ahp_xc_scan_request *lines, uint32_t
         if(*interrupt)
             break;
         char *packet = (char*)data+i*ahp_xc_get_packetsize();
-        ts = get_timestamp(packet);
         size_t off = 0;
         for(x = 0; x < nlines; x++) {
             if(i < lines[x].len/lines[x].step) {
@@ -932,8 +927,6 @@ static int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_
     uint32_t x = 0;
     int y = 0;
     int z = 0;
-    double ts = 0.0;
-    double ts0 = 0.0;
     int order = ahp_xc_get_correlation_order();
     uint32_t n = ahp_xc_get_bps()/4;
     *crosscorrelations = NULL;
@@ -1011,7 +1004,6 @@ static int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_
                         break;
                     char *packet = (char*)buffer+k*ahp_xc_get_packetsize();
                     double *lags = (double*)malloc(sizeof(double)*order);
-                    ts = get_timestamp(packet);
                     for(z = 0; z < order && !*interrupt; z++)
                         lags[z] = ts;
                     ahp_xc_get_crosscorrelation(&correlations[o], inputs, order, packet, lags);
