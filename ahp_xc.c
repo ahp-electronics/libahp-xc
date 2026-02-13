@@ -998,14 +998,13 @@ static int32_t ahp_xc_scan_crosscorrelations(ahp_xc_scan_request *lines, uint32_
                     ahp_xc_end_crosscorrelation_scan(lines[0].index);
                 }
                 k = 0;
-                ts0 = 0.0;
                 while(k < lines[0].len/lines[0].step) {
                     if(*interrupt)
                         break;
                     char *packet = (char*)buffer+k*ahp_xc_get_packetsize();
                     double *lags = (double*)malloc(sizeof(double)*order);
                     for(z = 0; z < order && !*interrupt; z++)
-                        lags[z] = ts;
+                        lags[z] = ahp_xc_get_current_channel_cross(lines[0].index, packet);
                     ahp_xc_get_crosscorrelation(&correlations[o], inputs, order, packet, lags);
                     free(lags);
                     wait_no_threads();
